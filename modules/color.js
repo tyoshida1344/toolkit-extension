@@ -7,10 +7,10 @@ Toolkit.registerTab({
       <label class="tm-label">カラーピッカー</label>
       <div class="tm-inline">
         <input type="color" id="cl-picker" value="#cba6f7"
-          style="width:48px;height:36px;padding:2px;background:none;border:1px solid #45475a;border-radius:4px;cursor:pointer">
+          style="width:48px;height:34px;padding:2px;background:none;border:1px solid #45475a;border-radius:4px;cursor:pointer">
         <input type="text" class="tm-input" id="cl-hex" value="#cba6f7" style="flex:1" placeholder="#RRGGBB">
         <button class="tm-btn tm-btn-primary tm-btn-sm" id="cl-apply">適用</button>
-        <button class="tm-btn tm-btn-secondary tm-btn-sm" id="cl-eyedrop" title="画面上の色を取得">💉</button>
+        ${Toolkit.iconButton('💉', { id: 'cl-eyedrop', title: '画面上の色を取得（スポイト）' })}
       </div>
     </div>
     <div class="tm-color-preview" id="cl-preview" style="background:#cba6f7"></div>
@@ -19,28 +19,28 @@ Toolkit.registerTab({
         <label class="tm-label">HEX</label>
         <div class="tm-inline">
           <div class="tm-output" id="cl-hex-out" style="flex:1;min-height:auto">#cba6f7</div>
-          <button class="tm-btn tm-btn-secondary tm-btn-sm cl-copy-btn" data-target="cl-hex-out">コピー</button>
+          ${Toolkit.copyButton('cl-hex-out')}
         </div>
       </div>
       <div class="tm-row">
         <label class="tm-label">RGB</label>
         <div class="tm-inline">
           <div class="tm-output" id="cl-rgb-out" style="flex:1;min-height:auto">rgb(203, 166, 247)</div>
-          <button class="tm-btn tm-btn-secondary tm-btn-sm cl-copy-btn" data-target="cl-rgb-out">コピー</button>
+          ${Toolkit.copyButton('cl-rgb-out')}
         </div>
       </div>
       <div class="tm-row">
         <label class="tm-label">HSL</label>
         <div class="tm-inline">
           <div class="tm-output" id="cl-hsl-out" style="flex:1;min-height:auto">hsl(267, 84%, 81%)</div>
-          <button class="tm-btn tm-btn-secondary tm-btn-sm cl-copy-btn" data-target="cl-hsl-out">コピー</button>
+          ${Toolkit.copyButton('cl-hsl-out')}
         </div>
       </div>
       <div class="tm-row">
         <label class="tm-label">RGB 10進</label>
         <div class="tm-inline">
           <div class="tm-output" id="cl-dec-out" style="flex:1;min-height:auto">203, 166, 247</div>
-          <button class="tm-btn tm-btn-secondary tm-btn-sm cl-copy-btn" data-target="cl-dec-out">コピー</button>
+          ${Toolkit.copyButton('cl-dec-out')}
         </div>
       </div>
     </div>
@@ -102,15 +102,6 @@ Toolkit.registerTab({
         const result = await new EyeDropper().open();
         updateColor(result.sRGBHex);
       } catch (e) { /* cancelled */ }
-    });
-
-    document.querySelectorAll('.cl-copy-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        Toolkit.copyText(document.getElementById(btn.dataset.target).textContent);
-        const orig = btn.textContent;
-        btn.textContent = '✓';
-        setTimeout(() => btn.textContent = orig, 1000);
-      });
     });
   },
 });
