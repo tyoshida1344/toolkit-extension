@@ -62,14 +62,18 @@ body {
 .tm-textarea { resize: vertical; min-height: 80px; }
 
 .tm-btn {
-  padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
-  font-size: 12px; font-weight: 600; transition: .15s;
+  height: 34px; padding: 0 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  transition: background .15s, color .15s, transform .1s;
 }
+.tm-btn:active { transform: scale(.96); }
 .tm-btn-primary { background: #cba6f7; color: #1e1e2e; }
 .tm-btn-primary:hover { background: #b4befe; }
 .tm-btn-secondary { background: #45475a; color: #cdd6f4; }
 .tm-btn-secondary:hover { background: #585b70; }
-.tm-btn-sm { padding: 5px 10px; font-size: 11px; }
+.tm-btn-sm { padding: 0 10px; font-size: 11px; }
 
 .tm-output {
   background: #11111b; border: 1px solid #313244; border-radius: 6px;
@@ -92,11 +96,37 @@ body {
 }
 .tm-check-label input { accent-color: #cba6f7; }
 
-.tm-copy-msg {
-  color: #a6e3a1; font-size: 11px; margin-left: 8px;
-  opacity: 0; transition: opacity .3s;
+/* ── 汎用アイコンボタン (コピー・更新・スポイト等で共通) ── */
+.tm-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; flex-shrink: 0; padding: 0;
+  border: 1px solid #45475a; border-radius: 6px;
+  background: #313244; color: #a6adc8; cursor: pointer;
+  font-size: 16px; line-height: 1;
+  transition: background .15s, color .15s, border-color .15s, transform .1s;
 }
-.tm-copy-msg.show { opacity: 1; }
+.tm-icon-btn:hover { background: #45475a; color: #cdd6f4; }
+.tm-icon-btn:active { transform: scale(.92); }
+.tm-icon-btn .tm-ico { width: 16px; height: 16px; }
+
+/* コピーボタン: 成功時にチェックアイコンへ切替 */
+.tm-copy-btn .tm-copy-ico-done { display: none; }
+.tm-copy-btn.copied { color: #a6e3a1; border-color: #a6e3a1; }
+.tm-copy-btn.copied .tm-copy-ico-default { display: none; }
+.tm-copy-btn.copied .tm-copy-ico-done { display: inline; }
+
+/* ── Toast (コピー完了通知) ── */
+.tm-toast {
+  position: fixed; left: 50%; bottom: 16px;
+  transform: translate(-50%, 8px);
+  background: #a6e3a1; color: #1e1e2e;
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+  opacity: 0; pointer-events: none; z-index: 100;
+  transition: opacity .2s, transform .2s;
+}
+.tm-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ── Color ── */
 .tm-color-preview {
@@ -106,13 +136,9 @@ body {
 .tm-color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 /* ── Translate ── */
-.tm-tr-swap {
-  width: 32px; height: 32px; border-radius: 50%; border: 1px solid #45475a;
-  background: #313244; color: #cba6f7; font-size: 16px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: .15s; flex-shrink: 0;
-}
-.tm-tr-swap:hover { background: #45475a; }
+/* 言語入れ替えボタン: 汎用アイコンボタンの丸型アクセント版 */
+.tm-tr-swap { border-radius: 50%; color: #cba6f7; }
+.tm-tr-swap:hover { color: #cba6f7; }
 .tm-tr-lang { flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: #a6adc8; }
 .tm-tr-area {
   width: 100%; box-sizing: border-box; min-height: 120px;

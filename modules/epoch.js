@@ -6,8 +6,9 @@ Toolkit.registerTab({
     <div class="tm-row">
       <label class="tm-label">現在のエポックミリ秒</label>
       <div class="tm-inline">
-        <div class="tm-output" id="ep-now" style="flex:1;min-height:auto;cursor:pointer" title="クリックでコピー"></div>
-        <button class="tm-btn tm-btn-secondary tm-btn-sm" id="ep-refresh">更新</button>
+        <div class="tm-output" id="ep-now" style="flex:1;min-height:auto"></div>
+        ${Toolkit.copyButton('ep-now')}
+        ${Toolkit.iconButton(Toolkit.ICONS.refresh, { id: 'ep-refresh', title: '更新' })}
       </div>
     </div>
     <hr class="tm-hr">
@@ -40,9 +41,6 @@ Toolkit.registerTab({
     refresh();
 
     document.getElementById('ep-refresh').addEventListener('click', refresh);
-    document.getElementById('ep-now').addEventListener('click', () => {
-      Toolkit.copyText(document.getElementById('ep-now').textContent);
-    });
 
     document.getElementById('ep-ms2date').addEventListener('click', () => {
       const v = document.getElementById('ep-ms-input').value.trim();

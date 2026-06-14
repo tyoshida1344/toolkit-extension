@@ -5,7 +5,7 @@ Toolkit.registerTab({
   html: `
     <div class="tm-row tm-inline" style="justify-content:center">
       <span class="tm-tr-lang" id="tr-src-label">日本語</span>
-      <button class="tm-tr-swap" id="tr-swap" title="言語を入れ替え">⇄</button>
+      ${Toolkit.iconButton('⇄', { id: 'tr-swap', title: '言語を入れ替え', cls: 'tm-tr-swap' })}
       <span class="tm-tr-lang" id="tr-tgt-label">English</span>
     </div>
     <div class="tm-row">
@@ -13,8 +13,7 @@ Toolkit.registerTab({
     </div>
     <div class="tm-row tm-inline">
       <button class="tm-btn tm-btn-primary" id="tr-exec">翻訳</button>
-      <button class="tm-btn tm-btn-secondary tm-btn-sm" id="tr-copy">結果をコピー</button>
-      <span class="tm-copy-msg" id="tr-copied">✓</span>
+      ${Toolkit.copyButton('tr-result', { title: '結果をコピー' })}
       <span style="flex:1"></span>
       <span style="font-size:11px;color:#6c7086" id="tr-status"></span>
     </div>
@@ -60,8 +59,5 @@ Toolkit.registerTab({
       }
     });
 
-    document.getElementById('tr-copy').addEventListener('click', () => {
-      Toolkit.copyText(document.getElementById('tr-result').textContent, document.getElementById('tr-copied'));
-    });
   },
 });

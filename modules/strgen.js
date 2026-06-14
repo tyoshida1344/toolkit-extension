@@ -19,8 +19,7 @@ Toolkit.registerTab({
       <label class="tm-label" style="white-space:nowrap;margin:0">文字数</label>
       <input type="number" class="tm-input" id="sg-len" value="10" min="1" max="10000" style="width:100px">
       <button class="tm-btn tm-btn-primary" id="sg-exec">生成</button>
-      <button class="tm-btn tm-btn-secondary tm-btn-sm" id="sg-copy">コピー</button>
-      <span class="tm-copy-msg" id="sg-copied">✓</span>
+      ${Toolkit.copyButton('sg-output')}
     </div>
     <div class="tm-row">
       <div class="tm-output" id="sg-output"></div>
@@ -60,10 +59,6 @@ Toolkit.registerTab({
       let result = '';
       for (let i = 0; i < len; i++) result += pool[Math.floor(Math.random() * pool.length)];
       document.getElementById('sg-output').textContent = result;
-    });
-
-    document.getElementById('sg-copy').addEventListener('click', () => {
-      Toolkit.copyText(document.getElementById('sg-output').textContent, document.getElementById('sg-copied'));
     });
 
     // 文字数カウント
