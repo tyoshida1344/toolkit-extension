@@ -45,21 +45,10 @@ Toolkit.registerTab({
       'sg-symbol': '!@#$%^&*()-_=+[]{}|;:,.<>?/',
       'sg-hkata': 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ',
     };
-
-    document.getElementById('sg-exec').addEventListener('click', () => {
-      let pool = '';
-      for (const [id, chars] of Object.entries(CHAR_SETS)) {
-        if (document.getElementById(id).checked) pool += chars;
-      }
-      if (!pool) {
-        document.getElementById('sg-output').textContent = '⚠ 文字種を1つ以上選択してください';
-        return;
-      }
-      const len = Math.max(1, Math.min(10000, parseInt(document.getElementById('sg-len').value) || 10));
-      let result = '';
-      for (let i = 0; i < len; i++) result += pool[Math.floor(Math.random() * pool.length)];
-      document.getElementById('sg-output').textContent = result;
-    });
+    const CHECK_IDS = Object.keys(CHAR_SETS);
+    const out = document.getElementById('sg-output');
+    const lenInput = document.getElementById('sg-len');
+    const countInput = document.getElementById('sg-count-input');
 
     // 文字数カウント
     function utf8ByteLen(str) {
@@ -74,11 +63,53 @@ Toolkit.registerTab({
       return b;
     }
 
-    document.getElementById('sg-count-input').addEventListener('input', e => {
-      const v = e.target.value;
+    function updateCount() {
+      const v = countInput.value;
       document.getElementById('sg-c-char').textContent = [...v].length;
       document.getElementById('sg-c-byte').textContent = utf8ByteLen(v);
       document.getElementById('sg-c-line').textContent = v ? v.split('\n').length : 0;
+    }
+
+    // 状態の永続化（チェック・文字数・生成結果・カウント入力）
+    function save() {
+      Toolkit.saveState('strgen', {
+        checks: CHECK_IDS.reduce((o, id) => (o[id] = document.getElementById(id).checked, o), {}),
+        len: lenInput.value,
+        output: out.textContent,
+        count: countInput.value,
+      });
+    }
+
+    document.getElementById('sg-exec').addEventListener('click', () => {
+      let pool = '';
+      for (const [id, chars] of Object.entries(CHAR_SETS)) {
+        if (document.getElementById(id).checked) pool += chars;
+      }
+      if (!pool) {
+        out.textContent = '⚠ 文字種を1つ以上選択してください';
+        return;
+      }
+      const len = Math.max(1, Math.min(10000, parseInt(lenInput.value) || 10));
+      let result = '';
+      for (let i = 0; i < len; i++) result += pool[Math.floor(Math.random() * pool.length)];
+      out.textContent = result;
+      save();
+    });
+
+    CHECK_IDS.forEach(id => document.getElementById(id).addEventListener('change', save));
+    lenInput.addEventListener('input', save);
+
+    countInput.addEventListener('input', () => { updateCount(); save(); });
+
+    // 復元
+    Toolkit.loadState('strgen', s => {
+      if (!s) return;
+      if (s.checks) CHECK_IDS.forEach(id => {
+        if (id in s.checks) document.getElementById(id).checked = s.checks[id];
+      });
+      if (s.len != null && s.len !== '') lenInput.value = s.len;
+      if (s.output) out.textContent = s.output;
+      if (s.count) { countInput.value = s.count; updateCount(); }
     });
   },
 });
