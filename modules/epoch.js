@@ -24,10 +24,14 @@ Toolkit.registerTab({
     <div class="tm-row">
       <label class="tm-label">日時 → エポックミリ秒</label>
       <div class="tm-inline">
-        <input type="datetime-local" class="tm-input" id="ep-date-input" step="1">
+        <input type="datetime-local" class="tm-input tm-input-picker" id="ep-date-input" step="1">
         <button class="tm-btn tm-btn-primary tm-btn-sm" id="ep-date2ms">変換</button>
       </div>
-      <div class="tm-output" id="ep-date-result" style="margin-top:6px"></div>
+      <div class="tm-inline" style="margin-top:6px">
+        <div class="tm-output" id="ep-date-result" style="flex:1;min-height:auto"></div>
+        <span class="tm-unit" id="ep-date-unit" hidden>ミリ秒</span>
+        ${Toolkit.copyButton('ep-date-result')}
+      </div>
     </div>
   `,
   init() {
@@ -54,13 +58,24 @@ Toolkit.registerTab({
         `ローカル: ${fmtDate(d)}\nUTC: ${d.toISOString()}`;
     });
 
+    // 入力欄のどこをクリックしてもカレンダーを開く（カレンダーアイコンだけだと当たり判定が小さいため）
+    const dateInput = document.getElementById('ep-date-input');
+    const openPicker = () => { try { dateInput.showPicker(); } catch (_) { /* 既に表示中など */ } };
+    dateInput.addEventListener('click', openPicker);
+    dateInput.addEventListener('focus', openPicker);
+
+    const dateResult = document.getElementById('ep-date-result');
+    const dateUnit = document.getElementById('ep-date-unit');
     document.getElementById('ep-date2ms').addEventListener('click', () => {
-      const v = document.getElementById('ep-date-input').value;
+      const v = dateInput.value;
       if (!v) {
-        document.getElementById('ep-date-result').textContent = '⚠ 日時を入力してください';
+        dateResult.textContent = '⚠ 日時を入力してください';
+        dateUnit.hidden = true;
         return;
       }
-      document.getElementById('ep-date-result').textContent = `${new Date(v).getTime()} ミリ秒`;
+      // コピペしやすいよう出力は数値のみ。単位「ミリ秒」は外出し表示する。
+      dateResult.textContent = new Date(v).getTime();
+      dateUnit.hidden = false;
     });
   },
 });
