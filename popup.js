@@ -96,6 +96,30 @@ const Toolkit = (() => {
       .catch(() => { showToast('⚠ コピーに失敗しました'); return false; });
   }
 
+  /**
+   * 共通ヘルパー: 状態の永続化 (chrome.storage.local)
+   * 各モジュールがタブごとの入力値・変換結果を保存し、再表示時に復元するために使う。
+   * キーには `tm_state_` プレフィックスを付けて他データと衝突しないようにする。
+   */
+  const _store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
+  const STATE_PREFIX = 'tm_state_';
+  const _saveTimers = {};
+
+  /** 状態を保存する（同一キーへの連続呼び出しはデバウンスされる） */
+  function saveState(key, value, delay = 200) {
+    if (!_store) return;
+    clearTimeout(_saveTimers[key]);
+    _saveTimers[key] = setTimeout(() => {
+      _store.set({ [STATE_PREFIX + key]: value });
+    }, delay);
+  }
+
+  /** 保存済みの状態を読み込んで cb(value) を呼ぶ（未保存なら undefined） */
+  function loadState(key, cb) {
+    if (!_store) { cb(undefined); return; }
+    _store.get(STATE_PREFIX + key, data => cb(data[STATE_PREFIX + key]));
+  }
+
   /** UI構築 */
   function buildUI() {
     const sidebar = document.getElementById('tm-sidebar');
@@ -126,21 +150,30 @@ const Toolkit = (() => {
         tabs[0].icon + ' ' + tabs[0].label;
     }
 
+    // タブをアクティブ化する共通処理（クリック・復元の両方から使う）
+    function activateTab(id, persist = true) {
+      const tab = tabs.find(t => t.id === id);
+      if (!tab) return;
+      sidebar.querySelectorAll('.tm-tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.tab === id));
+      content.querySelectorAll('.tm-section').forEach(s =>
+        s.classList.toggle('active', s.id === 'sec-' + id));
+      document.getElementById('tm-header-title').textContent = tab.icon + ' ' + tab.label;
+      if (persist) saveState('activeTab', id);
+    }
+
     // タブ切り替え
     sidebar.querySelectorAll('.tm-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        sidebar.querySelectorAll('.tm-tab').forEach(t => t.classList.remove('active'));
-        content.querySelectorAll('.tm-section').forEach(s => s.classList.remove('active'));
-        btn.classList.add('active');
-        const tab = tabs.find(t => t.id === btn.dataset.tab);
-        document.getElementById('sec-' + tab.id).classList.add('active');
-        document.getElementById('tm-header-title').textContent =
-          tab.icon + ' ' + tab.label;
-      });
+      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
     });
 
     // 各モジュールの init を実行
     tabs.forEach(tab => { if (tab.init) tab.init(); });
+
+    // 前回開いていたタブを復元（保存が無ければ先頭タブのまま）
+    loadState('activeTab', id => {
+      if (id && tabs.some(t => t.id === id)) activateTab(id, false);
+    });
   }
 
   /** コピーボタンの共通クリック処理（イベント委譲なのでDOM再構築後も有効） */
@@ -162,5 +195,5 @@ const Toolkit = (() => {
     buildUI();
   });
 
-  return { registerTab, copyText, copyButton, iconButton, showToast, ICONS };
+  return { registerTab, copyText, copyButton, iconButton, showToast, ICONS, saveState, loadState };
 })();

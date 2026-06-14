@@ -83,6 +83,8 @@ Toolkit.registerTab({
       document.getElementById('cl-rgb-out').textContent = `rgb(${r}, ${g}, ${b})`;
       document.getElementById('cl-hsl-out').textContent = `hsl(${h}, ${s}%, ${l}%)`;
       document.getElementById('cl-dec-out').textContent = `${r}, ${g}, ${b}`;
+      // 現在色を永続化（updateColor が色変更の唯一の入口）
+      Toolkit.saveState('color', { hex: full });
     }
 
     document.getElementById('cl-picker').addEventListener('input', e => updateColor(e.target.value));
@@ -102,6 +104,11 @@ Toolkit.registerTab({
         const result = await new EyeDropper().open();
         updateColor(result.sRGBHex);
       } catch (e) { /* cancelled */ }
+    });
+
+    // 復元（保存色があれば再描画。なければ HTML の初期値のまま）
+    Toolkit.loadState('color', s => {
+      if (s && s.hex) updateColor(s.hex);
     });
   },
 });

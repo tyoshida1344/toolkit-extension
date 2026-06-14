@@ -46,36 +46,68 @@ Toolkit.registerTab({
 
     document.getElementById('ep-refresh').addEventListener('click', refresh);
 
+    const msInput = document.getElementById('ep-ms-input');
+    const msResult = document.getElementById('ep-ms-result');
+    const dateInput = document.getElementById('ep-date-input');
+    const dateResult = document.getElementById('ep-date-result');
+    const dateUnit = document.getElementById('ep-date-unit');
+
+    // 状態の永続化（各入力値と変換結果。現在時刻はライブなので保存しない）
+    function save() {
+      Toolkit.saveState('epoch', {
+        msInput: msInput.value,
+        msResult: msResult.textContent,
+        dateInput: dateInput.value,
+        dateResult: dateResult.textContent,
+        unit: !dateUnit.hidden,
+      });
+    }
+
+    msInput.addEventListener('input', save);
+
     document.getElementById('ep-ms2date').addEventListener('click', () => {
-      const v = document.getElementById('ep-ms-input').value.trim();
+      const v = msInput.value.trim();
       const ms = Number(v);
       if (!v || isNaN(ms)) {
-        document.getElementById('ep-ms-result').textContent = '⚠ 有効な数値を入力してください';
+        msResult.textContent = '⚠ 有効な数値を入力してください';
+        save();
         return;
       }
       const d = new Date(ms);
-      document.getElementById('ep-ms-result').textContent =
-        `ローカル: ${fmtDate(d)}\nUTC: ${d.toISOString()}`;
+      msResult.textContent = `ローカル: ${fmtDate(d)}\nUTC: ${d.toISOString()}`;
+      save();
     });
 
     // 入力欄のどこをクリックしてもカレンダーを開く（カレンダーアイコンだけだと当たり判定が小さいため）
-    const dateInput = document.getElementById('ep-date-input');
     const openPicker = () => { try { dateInput.showPicker(); } catch (_) { /* 既に表示中など */ } };
     dateInput.addEventListener('click', openPicker);
     dateInput.addEventListener('focus', openPicker);
+    dateInput.addEventListener('change', save);
 
-    const dateResult = document.getElementById('ep-date-result');
-    const dateUnit = document.getElementById('ep-date-unit');
     document.getElementById('ep-date2ms').addEventListener('click', () => {
       const v = dateInput.value;
       if (!v) {
         dateResult.textContent = '⚠ 日時を入力してください';
         dateUnit.hidden = true;
+        save();
         return;
       }
       // コピペしやすいよう出力は数値のみ。単位「ミリ秒」は外出し表示する。
       dateResult.textContent = new Date(v).getTime();
       dateUnit.hidden = false;
+      save();
+    });
+
+    // 復元
+    Toolkit.loadState('epoch', s => {
+      if (!s) return;
+      if (s.msInput) msInput.value = s.msInput;
+      if (s.msResult) msResult.textContent = s.msResult;
+      if (s.dateInput) dateInput.value = s.dateInput;
+      if (s.dateResult) {
+        dateResult.textContent = s.dateResult;
+        dateUnit.hidden = !s.unit;
+      }
     });
   },
 });

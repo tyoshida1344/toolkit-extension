@@ -32,22 +32,36 @@ Toolkit.registerTab({
       return data[0].map(s => s[0]).join('');
     }
 
+    const input = document.getElementById('tr-input');
+    const result = document.getElementById('tr-result');
+
+    // 状態の永続化（言語の向き・入力テキスト・翻訳結果）
+    function save() {
+      Toolkit.saveState('translate', {
+        src, tgt,
+        input: input.value,
+        result: result.textContent,
+      });
+    }
+
+    input.addEventListener('input', save);
+
     document.getElementById('tr-swap').addEventListener('click', () => {
       [src, tgt] = [tgt, src];
       document.getElementById('tr-src-label').textContent = LABELS[src];
       document.getElementById('tr-tgt-label').textContent = LABELS[tgt];
-      const resultText = document.getElementById('tr-result').textContent;
+      const resultText = result.textContent;
       if (resultText) {
-        document.getElementById('tr-input').value = resultText;
-        document.getElementById('tr-result').textContent = '';
+        input.value = resultText;
+        result.textContent = '';
       }
+      save();
     });
 
     document.getElementById('tr-exec').addEventListener('click', async () => {
-      const text = document.getElementById('tr-input').value.trim();
+      const text = input.value.trim();
       if (!text) return;
       const status = document.getElementById('tr-status');
-      const result = document.getElementById('tr-result');
       status.textContent = '翻訳中...';
       result.textContent = '';
       try {
@@ -57,7 +71,19 @@ Toolkit.registerTab({
         result.textContent = '⚠ 翻訳に失敗しました';
         status.textContent = '';
       }
+      save();
     });
 
+    // 復元
+    Toolkit.loadState('translate', s => {
+      if (!s) return;
+      if (s.src && s.tgt && LABELS[s.src] && LABELS[s.tgt]) {
+        src = s.src; tgt = s.tgt;
+        document.getElementById('tr-src-label').textContent = LABELS[src];
+        document.getElementById('tr-tgt-label').textContent = LABELS[tgt];
+      }
+      if (s.input) input.value = s.input;
+      if (s.result) result.textContent = s.result;
+    });
   },
 });
