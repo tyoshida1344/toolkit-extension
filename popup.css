@@ -87,6 +87,12 @@ body {
 .tm-inline > * { flex-shrink: 0; }
 .tm-inline .tm-input, .tm-inline .tm-select { flex: 1; }
 
+.tm-unit { color: #a6adc8; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+/* クリック領域を入力欄全体に広げる（init 側で showPicker を呼ぶ） */
+.tm-input-picker { cursor: pointer; }
+.tm-input-picker::-webkit-calendar-picker-indicator { cursor: pointer; }
+
 .tm-hr { border: none; border-top: 1px solid #313244; margin: 12px 0; }
 
 .tm-check-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
