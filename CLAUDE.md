@@ -23,6 +23,8 @@ node --check modules/<編集したファイル>.js
 
 **共通 UI ヘルパーを使う**: ボタンやコピーは独自マークアップを書かず `Toolkit.copyButton` / `iconButton` 等を使う。特にコピーは `.tm-copy-btn` への**イベント委譲**で一括処理されるので、モジュール側で独自のコピーハンドラを付けない（対象要素の id を指すボタンを出力するだけ）。コントロールは 34px 高さで統一。
 
+**状態の永続化**: 入力値・変換結果はモジュール側で `Toolkit.saveState(key, value)` / `loadState(key, cb)` を使って `chrome.storage.local` に保存・復元する（キーは内部で `tm_state_` プレフィックスが付く。`saveState` は同一キー 200ms デバウンス）。保存はモジュール内に閉じる ＝ `popup.js` はストレージ I/O のヘルパーだけを提供し、何を保存するかは各モジュールが決める。新規モジュールでも入力・出力を変える箇所で `saveState` を呼び、`init` 末尾の `loadState` コールバックで復元すること（**コールバックは非同期**なので、DOM 構築直後の同期処理に依存しない）。アクティブタブ自体も `popup.js` が同じ仕組みで `activeTab` キーに保存している。`modules/memo.js` だけは歴史的経緯で独自キー `tm_toolkit_memo` を直接使う。
+
 ## 外部連携の注意
 
 翻訳 (`modules/translate.js`) は非公式の `translate.googleapis.com` エンドポイントを直接 `fetch` する。ホストを変えるなら `manifest.json` の `host_permissions` も合わせて更新が必要。
