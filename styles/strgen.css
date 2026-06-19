@@ -1,0 +1,7 @@
+/* ── 文字列生成: 文字種チェックボックス ── */
+.tm-check-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.tm-check-label {
+  display: flex; align-items: center; gap: 4px; font-size: 12px;
+  cursor: pointer; color: #a6adc8;
+}
+.tm-check-label input { accent-color: #cba6f7; }

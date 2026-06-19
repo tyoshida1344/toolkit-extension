@@ -1,0 +1,32 @@
+/* ── Regex tester ── */
+.tm-re-help { color: #cba6f7; width: 28px; height: 28px; font-size: 13px; }
+.tm-re-note { font-size: 11px; color: #6c7086; line-height: 1.5; }
+.tm-re-note code {
+  font-family: 'Consolas', 'Monaco', monospace; color: #cba6f7;
+  background: #313244; border-radius: 3px; padding: 0 4px;
+}
+.tm-re-output {
+  width: 100%; box-sizing: border-box; min-height: 80px; max-height: 160px;
+  overflow-y: auto; background: #11111b; border: 1px solid #313244;
+  border-radius: 6px; padding: 10px; font-size: 13px; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+  font-family: 'Consolas', 'Monaco', 'Hiragino Sans', monospace;
+}
+.tm-re-output .tm-re-hit {
+  background: #f9e2af; color: #1e1e2e; border-radius: 2px; padding: 0 1px;
+}
+.tm-re-status { font-size: 11px; color: #f38ba8; margin-top: 4px; min-height: 14px; }
+
+/* ── 正規表現チートシート (regex の tm-modal 内で使用) ── */
+.tm-cheat-section { margin-bottom: 12px; }
+.tm-cheat-section:last-child { margin-bottom: 0; }
+.tm-cheat-section h4 {
+  font-size: 12px; color: #a6adc8; font-weight: 700; margin-bottom: 6px;
+}
+.tm-cheat-item { display: flex; gap: 10px; align-items: baseline; padding: 2px 0; font-size: 12px; }
+.tm-cheat-item code {
+  flex-shrink: 0; min-width: 72px;
+  font-family: 'Consolas', 'Monaco', monospace; font-size: 12px;
+  color: #cba6f7; background: #313244; border-radius: 4px; padding: 1px 6px;
+}
+.tm-cheat-item span { color: #cdd6f4; }
