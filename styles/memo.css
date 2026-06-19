@@ -1,0 +1,10 @@
+/* ── Memo ── */
+.tm-notepad-area {
+  width: 100%; box-sizing: border-box; min-height: 380px;
+  background: #313244; color: #cdd6f4; border: 1px solid #45475a;
+  border-radius: 6px; padding: 10px; font-size: 13px;
+  font-family: 'Consolas', 'Monaco', 'Hiragino Sans', monospace;
+  outline: none; resize: vertical; line-height: 1.6;
+}
+.tm-notepad-area:focus { border-color: #cba6f7; }
+.tm-note-status { font-size: 11px; color: #6c7086; text-align: right; margin-top: 4px; }

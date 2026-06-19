@@ -1,0 +1,6 @@
+/* ── Color ── */
+.tm-color-preview {
+  width: 100%; height: 48px; border-radius: 6px;
+  border: 1px solid #45475a; margin-bottom: 8px;
+}
+.tm-color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
