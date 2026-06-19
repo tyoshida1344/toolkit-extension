@@ -1,0 +1,19 @@
+/* ── Modal / オーバーレイ (チートシート等で共通) ── */
+.tm-modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(17, 17, 27, .72);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.tm-modal-overlay[hidden] { display: none; }
+.tm-modal {
+  width: 100%; max-width: 440px; max-height: 100%;
+  background: #1e1e2e; border: 1px solid #45475a; border-radius: 10px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .5);
+}
+.tm-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 8px 8px 12px; border-bottom: 1px solid #313244;
+  font-size: 13px; font-weight: 700; color: #cba6f7; background: #181825;
+}
+.tm-modal-body { padding: 12px; overflow-y: auto; }
