@@ -1,5 +1,5 @@
 /* ── エポック変換 ── */
-.tm-unit { color: #a6adc8; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tm-unit { color: var(--tm-text-muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
 
 /* クリック領域を入力欄全体に広げる（init 側で showPicker を呼ぶ） */
 .tm-input-picker { cursor: pointer; }
