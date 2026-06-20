@@ -15,7 +15,7 @@ Toolkit.registerTab({
       <button class="tm-btn tm-btn-primary" id="tr-exec">翻訳</button>
       ${Toolkit.copyButton('tr-result', { title: '結果をコピー' })}
       <span style="flex:1"></span>
-      <span style="font-size:11px;color:#6c7086" id="tr-status"></span>
+      <span style="font-size:11px;color:var(--tm-text-faint)" id="tr-status"></span>
     </div>
     <div class="tm-row">
       <div class="tm-tr-result" id="tr-result"></div>

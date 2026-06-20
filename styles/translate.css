@@ -1,18 +1,18 @@
 /* ── Translate ── */
 /* 言語入れ替えボタン: 汎用アイコンボタンの丸型アクセント版 */
-.tm-tr-swap { border-radius: 50%; color: #cba6f7; }
-.tm-tr-swap:hover { color: #cba6f7; }
-.tm-tr-lang { flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: #a6adc8; }
+.tm-tr-swap { border-radius: 50%; color: var(--tm-accent); }
+.tm-tr-swap:hover { color: var(--tm-accent); }
+.tm-tr-lang { flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--tm-text-muted); }
 .tm-tr-area {
   width: 100%; box-sizing: border-box; min-height: 120px;
-  background: #313244; color: #cdd6f4; border: 1px solid #45475a;
+  background: var(--tm-bg); color: var(--tm-text); border: 1px solid var(--tm-border-strong);
   border-radius: 6px; padding: 10px; font-size: 13px;
   font-family: inherit; outline: none; resize: vertical; line-height: 1.6;
 }
-.tm-tr-area:focus { border-color: #cba6f7; }
+.tm-tr-area:focus { border-color: var(--tm-accent); }
 .tm-tr-result {
   width: 100%; box-sizing: border-box; min-height: 120px;
-  background: #11111b; border: 1px solid #313244; border-radius: 6px;
+  background: var(--tm-bg-sunken); border: 1px solid var(--tm-border); border-radius: 6px;
   padding: 10px; font-size: 13px; line-height: 1.6; user-select: all;
   overflow-y: auto; white-space: pre-wrap;
 }

@@ -28,10 +28,10 @@ Toolkit.registerTab({
     <div class="tm-row">
       <label class="tm-label">文字数カウント</label>
       <textarea class="tm-textarea" id="sg-count-input" placeholder="ここにテキストを入力すると文字数をカウントします..." rows="3"></textarea>
-      <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;color:#a6adc8">
-        <span>文字数: <strong style="color:#cba6f7" id="sg-c-char">0</strong></span>
-        <span>バイト(UTF-8): <strong style="color:#cba6f7" id="sg-c-byte">0</strong></span>
-        <span>行数: <strong style="color:#cba6f7" id="sg-c-line">0</strong></span>
+      <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;color:var(--tm-text-muted)">
+        <span>文字数: <strong style="color:var(--tm-accent)" id="sg-c-char">0</strong></span>
+        <span>バイト(UTF-8): <strong style="color:var(--tm-accent)" id="sg-c-byte">0</strong></span>
+        <span>行数: <strong style="color:var(--tm-accent)" id="sg-c-line">0</strong></span>
       </div>
     </div>
   `,
