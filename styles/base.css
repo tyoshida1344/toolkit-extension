@@ -21,6 +21,7 @@
   /* ステータス */
   --tm-success: #16a34a;
   --tm-error: #dc2626;
+  --tm-error-hover: #b91c1c;
   --tm-highlight: #fef08a;      /* 検索ヒット強調 */
 }
 
@@ -60,6 +61,7 @@ body {
   z-index: 10;
 }
 .tm-tab:hover::after { opacity: 1; }
+.tm-tab[hidden] { display: none; } /* 設定で非表示にしたタブ */
 
 /* ── Main ── */
 .tm-main {
@@ -67,13 +69,22 @@ body {
   overflow: hidden; order: 0;
 }
 .tm-header {
-  padding: 10px 14px; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 8px 6px 14px; font-size: 13px; font-weight: 700;
   color: var(--tm-text-heading); border-bottom: 1px solid var(--tm-border);
   background: var(--tm-bg-muted); flex-shrink: 0;
 }
+/* ヘッダー右の設定(⚙️)ボタン: ヘッダー面になじむよう枠線なし */
+.tm-settings-btn { border-color: transparent; background: transparent; font-size: 18px; }
+.tm-settings-btn:hover { background: var(--tm-bg-sunken); border-color: transparent; color: var(--tm-text); }
 .tm-content { padding: 14px; overflow-y: auto; flex: 1; }
 .tm-section { display: none; }
 .tm-section.active { display: block; }
+/* 表示タブが1つも無いときの空状態 */
+.tm-tabs-empty {
+  color: var(--tm-text-muted); font-size: 12px; line-height: 1.7;
+  text-align: center; padding: 32px 16px;
+}
 
 /* ── Form elements ── */
 .tm-label { display: block; margin-bottom: 4px; color: var(--tm-text-muted); font-size: 12px; font-weight: 600; }
@@ -86,6 +97,22 @@ body {
 }
 .tm-input:focus, .tm-select:focus, .tm-textarea:focus { border-color: var(--tm-accent); }
 .tm-textarea { resize: vertical; min-height: 80px; }
+
+/* トグルスイッチ (設定の ON/OFF 等で共通) */
+.tm-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+.tm-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.tm-switch-slider {
+  position: absolute; inset: 0; cursor: pointer; border-radius: 999px;
+  background: var(--tm-border-strong); transition: background .15s;
+}
+.tm-switch-slider::before {
+  content: ''; position: absolute; height: 16px; width: 16px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: transform .15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+}
+.tm-switch input:checked + .tm-switch-slider { background: var(--tm-accent); }
+.tm-switch input:checked + .tm-switch-slider::before { transform: translateX(16px); }
+.tm-switch input:focus-visible + .tm-switch-slider { outline: 2px solid var(--tm-accent); outline-offset: 2px; }
 
 .tm-btn {
   height: 34px; padding: 0 16px;
@@ -102,6 +129,8 @@ body {
   border: 1px solid var(--tm-border-strong);
 }
 .tm-btn-secondary:hover { background: var(--tm-border); }
+.tm-btn-danger { background: var(--tm-error); color: var(--tm-on-accent); }
+.tm-btn-danger:hover { background: var(--tm-error-hover); }
 .tm-btn-sm { padding: 0 10px; font-size: 11px; }
 
 .tm-output {
@@ -149,3 +178,32 @@ body {
   transition: opacity .2s, transform .2s;
 }
 .tm-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ── 設定オーバーレイ (ヘッダー⚙️から開く / popup.js コアが構築) ── */
+/* 設定はポップアップ全体を覆う（中央寄せの小モーダルにせず、余白なしの全面表示）。
+ * id を含めて .tm-modal（modal.css・後読み）より詳細度を高くし、全面化を確実に効かせる。 */
+#tm-settings-overlay { padding: 0; }
+#tm-settings-overlay .tm-settings-modal {
+  width: 100%; height: 100%; max-width: none; max-height: 100%;
+  border: none; border-radius: 0; box-shadow: none;
+}
+/* 左ナビ＋右コンテンツのタブ構成。アクティブなセクションだけ表示する。 */
+.tm-settings-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+.tm-settings-nav {
+  flex-shrink: 0; width: 120px; padding: 8px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--tm-bg-muted); border-right: 1px solid var(--tm-border);
+}
+.tm-settings-nav-item {
+  text-align: left; border: none; background: transparent; cursor: pointer;
+  padding: 8px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  line-height: 1.3; color: var(--tm-text-muted); font-family: inherit;
+}
+.tm-settings-nav-item:hover { background: var(--tm-bg-sunken); color: var(--tm-text); }
+.tm-settings-nav-item.active { background: var(--tm-accent-surface); color: var(--tm-accent); }
+.tm-settings-body { flex: 1; min-width: 0; }
+.tm-settings-section { display: none; }
+.tm-settings-section.active { display: block; }
+.tm-settings-title {
+  font-size: 13px; font-weight: 700; color: var(--tm-text-heading); margin-bottom: 10px;
+}
