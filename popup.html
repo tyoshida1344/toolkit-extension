@@ -12,11 +12,16 @@
   <link rel="stylesheet" href="styles/regex.css">
   <link rel="stylesheet" href="styles/calc.css">
   <link rel="stylesheet" href="styles/memo.css">
+  <link rel="stylesheet" href="styles/appsettings.css">
+  <link rel="stylesheet" href="styles/storage.css">
 </head>
 <body>
   <div id="app">
     <div class="tm-main">
-      <div class="tm-header" id="tm-header-title">✏️ 文字列生成</div>
+      <div class="tm-header">
+        <span id="tm-header-title">✏️ 文字列生成</span>
+        <button type="button" class="tm-icon-btn tm-settings-btn" id="tm-settings-open" title="設定" aria-label="設定">⚙️</button>
+      </div>
       <div class="tm-content" id="tm-content"></div>
     </div>
     <div class="tm-sidebar" id="tm-sidebar"></div>
@@ -31,5 +36,7 @@
   <script src="modules/regex.js"></script>
   <script src="modules/calc.js"></script>
   <script src="modules/memo.js"></script>
+  <script src="modules/appsettings.js"></script>
+  <script src="modules/storage.js"></script>
 </body>
 </html>

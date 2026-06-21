@@ -350,6 +350,7 @@ Toolkit.registerTab({
     document.addEventListener('keydown', (e) => {
       const sec = document.getElementById('sec-calc');
       if (!sec || !sec.classList.contains('active')) return;
+      if (document.querySelector('.tm-modal-overlay:not([hidden])')) return; // モーダル表示中は無視
       const tag = (e.target.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -370,6 +371,7 @@ Toolkit.registerTab({
     document.addEventListener('paste', (e) => {
       const sec = document.getElementById('sec-calc');
       if (!sec || !sec.classList.contains('active')) return;
+      if (document.querySelector('.tm-modal-overlay:not([hidden])')) return; // モーダル表示中は無視
       const tag = (e.target.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
       const cb = e.clipboardData || window.clipboardData;

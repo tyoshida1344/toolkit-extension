@@ -1,0 +1,37 @@
+/* ── アプリ基本設定（表示するツール / 入力状態の保持） ── */
+
+.tm-set-desc {
+  font-size: 12px; line-height: 1.6; color: var(--tm-text-muted); margin-bottom: 10px;
+}
+
+/* テキスト＋スイッチを左右に並べる設定行 */
+.tm-set-row { display: flex; align-items: center; gap: 12px; }
+.tm-set-row-text { flex: 1; font-size: 12px; line-height: 1.6; color: var(--tm-text); }
+
+/* 表示するツールの一覧（並び替え可能） */
+.tm-tabcfg-list { display: flex; flex-direction: column; gap: 4px; }
+.tm-tabcfg-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border: 1px solid var(--tm-border); border-radius: 6px;
+  background: var(--tm-bg);
+}
+.tm-tabcfg-item.dragging { opacity: .5; }
+.tm-tabcfg-handle {
+  cursor: grab; color: var(--tm-text-faint); font-size: 14px; line-height: 1;
+  user-select: none; flex-shrink: 0;
+}
+.tm-tabcfg-handle:active { cursor: grabbing; }
+.tm-tabcfg-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+.tm-tabcfg-label { flex: 1; font-size: 12px; color: var(--tm-text); }
+
+/* 入力状態の保持（全体＋ツールごと） */
+.tm-persist-global { margin-bottom: 8px; }
+.tm-persist-list { display: flex; flex-direction: column; gap: 4px; }
+.tm-persist-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border: 1px solid var(--tm-border); border-radius: 6px;
+  background: var(--tm-bg);
+}
+.tm-persist-item.is-disabled { opacity: .5; } /* 全体OFF中は個別を無効表示 */
+.tm-persist-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+.tm-persist-label { flex: 1; font-size: 12px; color: var(--tm-text); }
