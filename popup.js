@@ -5,6 +5,8 @@
  */
 const Toolkit = (() => {
   const tabs = [];
+  const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション。タブではない。
+  let tabConfig = { order: [], hidden: [] }; // タブの表示順と非表示ID（設定で変更）
   let initialized = false;
 
   /**
@@ -19,6 +21,20 @@ const Toolkit = (() => {
   function registerTab({ id, icon, label, html, init }) {
     tabs.push({ id, icon, label, html, init });
     if (initialized) buildUI();
+  }
+
+  /**
+   * 設定画面のセクションを登録する（タブではなく、ヘッダーの⚙️から開くオーバーレイに表示）。
+   * registerTab と対の自己登録 API。機能ロジックはモジュール側に置く。
+   * @param {object} opts
+   * @param {string} opts.id        - セクションの一意ID
+   * @param {string} [opts.title]   - セクション見出し
+   * @param {string} opts.html      - セクション内のHTML
+   * @param {function} [opts.init]  - DOM構築後に呼ばれる初期化関数
+   */
+  function registerSetting({ id, title = '', html, init }) {
+    settings.push({ id, title, html, init });
+    if (initialized) buildSettings();
   }
 
   /** 共通ヘルパー: コピー完了トースト */
@@ -105,19 +121,123 @@ const Toolkit = (() => {
   const STATE_PREFIX = 'tm_state_';
   const _saveTimers = {};
 
+  // アプリ自身の設定キー。「入力状態の保持」をオフにしても、これらは保存・復元を続ける
+  // （タブ構成・最後のタブ・保持設定自体はツールの入力状態ではなくアプリ設定のため）。
+  const CORE_STATE_KEYS = new Set(['activeTab', 'tabConfig', 'persistEnabled', 'persistByTool']);
+  let persistGlobal = true;  // 入力状態の保持（全体マスター）
+  const persistByTool = {};  // ツールごとの保持（toolId → bool。未設定は有効扱い）
+
+  /**
+   * 指定キー（=ツールID）が現在の保持設定で保存・復元してよいか。
+   * コア設定キーは常に許可。ツールは「全体ON かつ 個別が無効でない」とき許可。
+   */
+  function persistAllowed(key) {
+    if (CORE_STATE_KEYS.has(key)) return true;
+    return persistGlobal && persistByTool[key] !== false;
+  }
+
   /** 状態を保存する（同一キーへの連続呼び出しはデバウンスされる） */
   function saveState(key, value, delay = 200) {
-    if (!_store) return;
+    if (!_store || !persistAllowed(key)) return;
     clearTimeout(_saveTimers[key]);
     _saveTimers[key] = setTimeout(() => {
       _store.set({ [STATE_PREFIX + key]: value });
     }, delay);
   }
 
-  /** 保存済みの状態を読み込んで cb(value) を呼ぶ（未保存なら undefined） */
+  /** 保存済みの状態を読み込んで cb(value) を呼ぶ（未保存・保持オフなら undefined） */
   function loadState(key, cb) {
-    if (!_store) { cb(undefined); return; }
+    if (!_store || !persistAllowed(key)) { cb(undefined); return; }
     _store.get(STATE_PREFIX + key, data => cb(data[STATE_PREFIX + key]));
+  }
+
+  /** 入力状態の保持が有効か。toolId 指定時はそのツールの実効値（全体×個別） */
+  function isPersistEnabled(toolId) {
+    if (!toolId) return persistGlobal;
+    return persistGlobal && persistByTool[toolId] !== false;
+  }
+
+  /** 保持設定のスナップショット（設定UIが全体/個別を正確に描くため） */
+  function getPersistConfig() {
+    return { global: persistGlobal, byTool: Object.assign({}, persistByTool) };
+  }
+
+  /** 保持の有効/無効を切り替える。toolId 指定で個別、未指定で全体（設定は常に保存） */
+  function setPersistEnabled(on, toolId) {
+    if (toolId) {
+      persistByTool[toolId] = !!on;
+      if (_store) _store.set({ [STATE_PREFIX + 'persistByTool']: persistByTool });
+    } else {
+      persistGlobal = !!on;
+      if (_store) _store.set({ [STATE_PREFIX + 'persistEnabled']: persistGlobal });
+    }
+  }
+
+  /** タブをアクティブ化する共通処理（クリック・復元・設定変更から使う） */
+  function activateTab(id, persist = true) {
+    const tab = tabs.find(t => t.id === id);
+    const sidebar = document.getElementById('tm-sidebar');
+    const content = document.getElementById('tm-content');
+    const empty = document.getElementById('tm-tabs-empty');
+    if (!sidebar || !content) return;
+    if (!tab) { // 表示タブが無い等：すべて非アクティブにして空状態を表示
+      sidebar.querySelectorAll('.tm-tab').forEach(t => t.classList.remove('active'));
+      content.querySelectorAll('.tm-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('tm-header-title').textContent = '便利ツール';
+      if (empty) empty.hidden = false;
+      return;
+    }
+    sidebar.querySelectorAll('.tm-tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.tab === id));
+    content.querySelectorAll('.tm-section').forEach(s =>
+      s.classList.toggle('active', s.id === 'sec-' + id));
+    document.getElementById('tm-header-title').textContent = tab.icon + ' ' + tab.label;
+    if (empty) empty.hidden = true;
+    if (persist) saveState('activeTab', id);
+  }
+
+  /** 登録済みタブの一覧（設定UIが表示順・名称を読むため） */
+  function getTabs() { return tabs.map(t => ({ id: t.id, icon: t.icon, label: t.label })); }
+
+  /** 正規化済みのタブ構成を返す（未登録IDを除き、登録済みで未掲載のIDは末尾に補う） */
+  function getTabConfig() {
+    const ids = tabs.map(t => t.id);
+    const order = (tabConfig.order || []).filter(id => ids.includes(id));
+    ids.forEach(id => { if (!order.includes(id)) order.push(id); });
+    const hidden = (tabConfig.hidden || []).filter(id => ids.includes(id));
+    return { order, hidden };
+  }
+
+  /** タブ構成をDOMへ反映する（サイドバー/セクションの並び替えと表示/非表示） */
+  function applyTabConfig() {
+    const sidebar = document.getElementById('tm-sidebar');
+    const content = document.getElementById('tm-content');
+    if (!sidebar || !content) return;
+    const cfg = getTabConfig();
+    // 並び替え（既存ノードを移動するだけ。再生成しないので init は走らない）
+    cfg.order.forEach(id => {
+      const btn = sidebar.querySelector(`.tm-tab[data-tab="${id}"]`);
+      const sec = document.getElementById('sec-' + id);
+      if (btn) { sidebar.appendChild(btn); btn.hidden = cfg.hidden.includes(id); }
+      if (sec) content.appendChild(sec);
+    });
+    // 空状態の要素は常にコンテンツ末尾へ
+    const empty = document.getElementById('tm-tabs-empty');
+    if (empty) content.appendChild(empty);
+    // アクティブタブが非表示になったら、先頭の表示タブへ切り替える（無ければ空状態）
+    const visible = cfg.order.filter(id => !cfg.hidden.includes(id));
+    const activeBtn = sidebar.querySelector('.tm-tab.active');
+    const activeId = activeBtn ? activeBtn.dataset.tab : null;
+    if (!activeId || cfg.hidden.includes(activeId)) {
+      activateTab(visible.length ? visible[0] : null, false);
+    }
+  }
+
+  /** タブ構成を更新して反映・保存する（設定UIから呼ぶ） */
+  function setTabConfig(cfg) {
+    tabConfig = { order: (cfg && cfg.order) || [], hidden: (cfg && cfg.hidden) || [] };
+    applyTabConfig();
+    saveState('tabConfig', tabConfig);
   }
 
   /** UI構築 */
@@ -144,22 +264,18 @@ const Toolkit = (() => {
       content.appendChild(sec);
     });
 
+    // 表示タブが1つも無いときの空状態
+    const empty = document.createElement('div');
+    empty.className = 'tm-tabs-empty';
+    empty.id = 'tm-tabs-empty';
+    empty.hidden = true;
+    empty.textContent = '表示するツールがありません。右上の ⚙️ 設定から表示するツールを選んでください。';
+    content.appendChild(empty);
+
     // ヘッダー初期値
     if (tabs.length > 0) {
       document.getElementById('tm-header-title').textContent =
         tabs[0].icon + ' ' + tabs[0].label;
-    }
-
-    // タブをアクティブ化する共通処理（クリック・復元の両方から使う）
-    function activateTab(id, persist = true) {
-      const tab = tabs.find(t => t.id === id);
-      if (!tab) return;
-      sidebar.querySelectorAll('.tm-tab').forEach(t =>
-        t.classList.toggle('active', t.dataset.tab === id));
-      content.querySelectorAll('.tm-section').forEach(s =>
-        s.classList.toggle('active', s.id === 'sec-' + id));
-      document.getElementById('tm-header-title').textContent = tab.icon + ' ' + tab.label;
-      if (persist) saveState('activeTab', id);
     }
 
     // タブ切り替え
@@ -170,10 +286,91 @@ const Toolkit = (() => {
     // 各モジュールの init を実行
     tabs.forEach(tab => { if (tab.init) tab.init(); });
 
-    // 前回開いていたタブを復元（保存が無ければ先頭タブのまま）
+    // タブ構成（表示順・非表示）を反映
+    applyTabConfig();
+
+    // 前回開いていたタブを復元（保存が無ければ先頭タブのまま。非表示タブは復元しない）
     loadState('activeTab', id => {
-      if (id && tabs.some(t => t.id === id)) activateTab(id, false);
+      const cfg = getTabConfig();
+      if (id && tabs.some(t => t.id === id) && !cfg.hidden.includes(id)) activateTab(id, false);
     });
+
+    // 設定オーバーレイを構築
+    buildSettings();
+  }
+
+  /** 設定オーバーレイ（ヘッダーの⚙️から開く全画面オーバーレイ）を構築する */
+  function buildSettings() {
+    let overlay = document.getElementById('tm-settings-overlay');
+    if (overlay) overlay.remove(); // registerSetting 後の再構築に対応
+
+    overlay = document.createElement('div');
+    overlay.className = 'tm-modal-overlay';
+    overlay.id = 'tm-settings-overlay';
+    overlay.hidden = true;
+
+    // 左ナビ（セクションが2つ以上のときだけ表示）＋ 右コンテンツ（アクティブのみ表示）
+    const multi = settings.length > 1;
+    const navHtml = multi
+      ? '<div class="tm-settings-nav" id="tm-settings-nav">' +
+          settings.map((s, i) =>
+            `<button type="button" class="tm-settings-nav-item${i === 0 ? ' active' : ''}" data-target="${s.id}">${s.title || s.id}</button>`
+          ).join('') +
+        '</div>'
+      : '';
+    const sectionsHtml = settings.map((s, i) =>
+      `<div class="tm-settings-section${i === 0 ? ' active' : ''}" id="set-${s.id}">` +
+        (s.title ? `<h4 class="tm-settings-title">${s.title}</h4>` : '') + s.html +
+      '</div>'
+    ).join('');
+
+    overlay.innerHTML =
+      '<div class="tm-modal tm-settings-modal">' +
+        '<div class="tm-modal-header"><span>⚙️ 設定</span>' +
+        iconButton('✕', { id: 'tm-settings-close', title: '閉じる' }) +
+        '</div>' +
+        '<div class="tm-settings-layout">' +
+          navHtml +
+          '<div class="tm-modal-body tm-settings-body" id="tm-settings-body">' + sectionsHtml + '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    // ナビでセクションを切り替える
+    const nav = overlay.querySelector('#tm-settings-nav');
+    if (nav) {
+      nav.addEventListener('click', e => {
+        const btn = e.target.closest('.tm-settings-nav-item');
+        if (!btn) return;
+        const id = btn.dataset.target;
+        nav.querySelectorAll('.tm-settings-nav-item').forEach(b => b.classList.toggle('active', b === btn));
+        overlay.querySelectorAll('.tm-settings-section').forEach(sec =>
+          sec.classList.toggle('active', sec.id === 'set-' + id));
+      });
+    }
+
+    // 開閉（⚙️は popup.html の静的要素なので onclick で冪等に結線する）
+    const openBtn = document.getElementById('tm-settings-open');
+    if (openBtn) openBtn.onclick = openSettings;
+    overlay.querySelector('#tm-settings-close').addEventListener('click', closeSettings);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeSettings(); });
+
+    // 各セクションの init を実行（DOM構築後）
+    settings.forEach(s => { if (s.init) s.init(); });
+  }
+
+  /** 設定オーバーレイを開く（開いた瞬間に最新状態へ更新できるようイベントを通知） */
+  function openSettings() {
+    const o = document.getElementById('tm-settings-overlay');
+    if (!o) return;
+    o.hidden = false;
+    document.dispatchEvent(new CustomEvent('tm-settings-open'));
+  }
+
+  /** 設定オーバーレイを閉じる */
+  function closeSettings() {
+    const o = document.getElementById('tm-settings-overlay');
+    if (o) o.hidden = true;
   }
 
   /** コピーボタンの共通クリック処理（イベント委譲なのでDOM再構築後も有効） */
@@ -189,11 +386,41 @@ const Toolkit = (() => {
     });
   });
 
-  /** DOMContentLoaded で一括構築 */
-  document.addEventListener('DOMContentLoaded', () => {
-    initialized = true;
-    buildUI();
+  /** Escape で設定オーバーレイを閉じる（一度だけ登録） */
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const o = document.getElementById('tm-settings-overlay');
+    if (!o || o.hidden) return;
+    // 設定内で別のオーバーレイ（確認ダイアログ等）が開いている場合はそちらを優先
+    if (o.querySelector('.tm-modal-overlay:not([hidden])')) return;
+    closeSettings();
   });
 
-  return { registerTab, copyText, copyButton, iconButton, showToast, ICONS, saveState, loadState };
+  /** UI構築前にコア設定（保持ON/OFF・タブ構成）を読み込む（モジュール init より先に確定させる） */
+  function preloadCoreConfig(done) {
+    if (!_store) { done(); return; }
+    _store.get(
+      [STATE_PREFIX + 'persistEnabled', STATE_PREFIX + 'persistByTool', STATE_PREFIX + 'tabConfig'],
+      data => {
+        const p = data[STATE_PREFIX + 'persistEnabled'];
+        if (typeof p === 'boolean') persistGlobal = p;
+        const bt = data[STATE_PREFIX + 'persistByTool'];
+        if (bt && typeof bt === 'object') Object.assign(persistByTool, bt);
+        const c = data[STATE_PREFIX + 'tabConfig'];
+        if (c && Array.isArray(c.order)) tabConfig = { order: c.order, hidden: c.hidden || [] };
+        done();
+      });
+  }
+
+  /** DOMContentLoaded で一括構築（コア設定を先読みしてから） */
+  document.addEventListener('DOMContentLoaded', () => {
+    initialized = true;
+    preloadCoreConfig(buildUI);
+  });
+
+  return {
+    registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
+    saveState, loadState, isPersistEnabled, getPersistConfig, setPersistEnabled,
+    getTabs, getTabConfig, setTabConfig,
+  };
 })();
