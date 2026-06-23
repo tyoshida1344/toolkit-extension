@@ -1,8 +1,6 @@
 /**
- * sitesearch-bar.js — ページ常駐の検索バー UI（注入用）
- *
- * 検索本体は持たず window.__tmSearchEngine（sitesearch-engine.js）を呼ぶだけ。
- * 呼び出し側(sitesearch.js)が先にエンジンを ensure してから install を注入する。
+ * bar.js — ページ常駐の検索バー UI（MAIN ワールドへ注入）
+ * 検索本体は持たず window.__tmSearchEngine（呼び出し側が先に ensure 済み）を呼ぶだけ。
  * window.SiteSearchBar.install で公開。注入時に直列化されるため外側は参照しない。
  */
 window.SiteSearchBar = (() => {
@@ -16,13 +14,11 @@ window.SiteSearchBar = (() => {
 
     let reOn = regexOn !== false, ciOn = !!caseOn, lastQuery = null;
 
-    const flags = () => 'g' + (ciOn ? '' : 'i') + 'm';
-    const source = () => { const raw = input.value; return reOn ? raw : raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
     const updateCount = res => { countEl.textContent = (res && res.count) ? ((res.current + 1) + ' / ' + res.count) : (lastQuery ? '0 件' : ''); };
     function doSearch() {
       lastQuery = input.value;
       if (!input.value) { engine.clear(); updateCount(null); return; }
-      const res = engine.search(source(), flags(), 2000, 0);
+      const res = engine.search(input.value, { regexMode: reOn, caseSensitive: ciOn, max: 2000 });
       if (res && res.error) { countEl.textContent = '正規表現エラー'; return; }
       updateCount(res);
     }
