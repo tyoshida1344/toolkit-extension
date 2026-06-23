@@ -37,7 +37,6 @@
   transition: background .15s;
 }
 .ss-item:hover { background: var(--tm-bg-sunken); }
-.ss-item.active { background: var(--tm-accent-surface); box-shadow: inset 3px 0 0 var(--tm-accent); }
 /* スニペットは最大2行で折り返し、マッチ部分が必ず見えるようにする */
 .ss-snippet {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
@@ -49,7 +48,7 @@
   border-radius: 2px; padding: 0 2px;
 }
 
-/* 全タブモードのタブ別グループ */
+/* タブ別グループ（結果は常にこの形で描画。現在ページ検索はタブ1つ分） */
 .ss-group + .ss-group { margin-top: 6px; }
 /* タブ見出し（クリックでそのタブへ切替）。favicon＋タイトルでサイトを識別しやすく */
 .ss-group-head {
@@ -76,9 +75,4 @@
   flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--tm-text-muted);
   background: var(--tm-bg); border: 1px solid var(--tm-border);
   border-radius: 10px; padding: 1px 8px;
-}
-
-/* 「ほか N 件」表示 */
-.ss-more {
-  padding: 8px; font-size: 11px; color: var(--tm-text-faint); text-align: center;
 }
