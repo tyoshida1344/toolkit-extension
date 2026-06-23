@@ -21,6 +21,8 @@ node --check modules/<編集したファイル>.js
 
 **スクリプト読み込み順の罠（`popup.html`）**: `popup.js` を必ず先に読み込む。モジュールの `html` テンプレートリテラルが**読み込み時点で** `Toolkit.copyButton` / `iconButton` / `ICONS` を呼ぶため、順序を誤ると未定義で落ちる。また **UI のタブ順 = `popup.html` のスクリプト順**。モジュール追加 = `modules/<name>.js` 作成 ＋（その機能固有のスタイルがあれば `styles/<name>.css` も作成）＋ `popup.html` に `<script>`（と必要なら `<link>`）を追加。
 
+**機能が複数ファイルに分かれる場合はフォルダにまとめる**: 1 ファイルで収まらない機能は `modules/<name>/` に分割してよい（例: `modules/sitesearch/` … `index.js`＝`Toolkit.registerTab` を呼ぶ主ファイル、`engine.js`／`bar.js`＝ページへ注入する補助、`results.js`＝描画専用）。`registerTab` を呼ぶ主ファイルは `index.js` とし、UI のタブ順はその `index.js` の `<script>` 位置で決まる。**タブを登録しない補助モジュール**（注入用・描画専用など）は機能ロジックを持ってよいが、`window.SiteSearchEngine` のような名前空間で公開し主ファイルから呼ぶ（`Toolkit` の「機能ロジックを持たない」原則はあくまで `popup.js` コアの話）。`popup.html` には各 `<script>` を依存順（補助 → 主）に並べる。CSS はフォルダに同梱せず従来どおり `styles/<name>.css` に置く。
+
 **共通 UI ヘルパーを使う**: ボタンやコピーは独自マークアップを書かず `Toolkit.copyButton` / `iconButton` 等を使う。特にコピーは `.tm-copy-btn` への**イベント委譲**で一括処理されるので、モジュール側で独自のコピーハンドラを付けない（対象要素の id を指すボタンを出力するだけ）。コントロールは 34px 高さで統一。
 
 **CSS は `styles/` に 3 層で分割する（1 枚にまとめない）**: スタイルは用途で 3 つに振り分ける。① `styles/base.css` … ほぼ全機能 / `popup.js` コアで使う共通スタイル（レイアウト・フォーム要素・ボタン・`output`・`inline`・`hr`・`icon-btn`・`copy-btn`・`toast` 等）、② component ファイル（例 `styles/modal.css`）… 用途は限られるが**複数ツールで使う部品**をコンポーネント名で切り出す、③ `styles/<module>.css` … **その機能でしか使わない個別スタイル**。判断基準は「何ツールが使うか」: 1 ツール専用なら base に置かず個別ファイルへ、複数ツールで使い回すなら component ファイルへ昇格させる。読み込みは `popup.html` の `<link>` で静的に行い、順序は **base → component → 機能個別**（＝スクリプト順 / タブ順に合わせる）。ビルドが無いので `@import` は使わず `<link>` を並べる。
@@ -30,3 +32,5 @@ node --check modules/<編集したファイル>.js
 ## 外部連携の注意
 
 翻訳 (`modules/translate.js`) は非公式の `translate.googleapis.com` エンドポイントを直接 `fetch` する。ホストを変えるなら `manifest.json` の `host_permissions` も合わせて更新が必要。
+
+サイト内検索 (`modules/sitesearch/`) は `chrome.scripting.executeScript`（`world: 'MAIN'`）でページに検索・ハイライト処理を注入する。注入される関数（`engine.js` の `run`、`bar.js` の `install`）は `func.toString()` で直列化されるため、**外側スコープを参照しない自己完結なコードにする**こと（引数だけで動かす）。`scripting` 権限と http(s) の `host_permissions` が必要で、対象を変えるなら `manifest.json` も更新する。`chrome://`・Web ストア・PDF 等は注入できない。

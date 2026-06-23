@@ -7,7 +7,7 @@ Toolkit.registerTab({
       <input type="text" class="tm-input" id="ss-pattern" list="ss-history-list"
         spellcheck="false" autocomplete="off" autocapitalize="off">
       <button class="tm-btn tm-btn-primary" id="ss-exec">検索</button>
-      ${Toolkit.iconButton('📌', { id: 'ss-openbar', title: 'ページに検索バーを表示（閉じても・タブ切替でも使える）' })}
+      ${Toolkit.iconButton('📌', { id: 'ss-openbar', title: 'ページに検索バーを表示' })}
       <datalist id="ss-history-list"></datalist>
     </div>
     <div class="tm-row ss-controls">
@@ -31,6 +31,7 @@ Toolkit.registerTab({
     const MAX_PAGE_MATCHES = 2000; // 1 ページ / クリックで開いたタブの一致上限
     const MAX_TAB_MATCHES = 300;   // 全タブ集計時の 1 タブあたり上限
     const MAX_LIST_RENDER = 300;   // ポップアップに描画するスニペット上限
+    const View = window.SiteSearchResults; // 結果リストの描画（results.js）
 
     const patternInput = document.getElementById('ss-pattern');
     const execBtn = document.getElementById('ss-exec');
@@ -53,14 +54,14 @@ Toolkit.registerTab({
     let nav = { tabId: null, count: 0, current: -1 }; // 現在の一致位置と対象タブ
     let lastResults = null;    // 開き直し時に復元する直近の結果
 
-    // 検索本体はページ側エンジン(sitesearch-engine.js)を MAIN ワールドで実行する
+    // 検索本体はページ側エンジン(engine.js)を MAIN ワールドで実行する。
+    // pattern/flags の組み立て（正規表現 OFF のエスケープ含む）はエンジン側に集約。
     async function runOnTab(tabId, action, opts = {}) {
       if (!_scripting || !window.SiteSearchEngine) throw new Error('no-engine');
-      const flags = 'g' + (caseSensitive ? '' : 'i') + 'm';
-      const args = [action, opts.pattern || '', flags,
-        (typeof opts.index === 'number') ? opts.index : -1, opts.maxMatches || MAX_PAGE_MATCHES];
+      const o = { regexMode, caseSensitive, max: opts.max || MAX_PAGE_MATCHES,
+        index: (typeof opts.index === 'number') ? opts.index : -1, startIdx: opts.startIdx || 0 };
       const res = await _scripting.executeScript({
-        target: { tabId }, world: 'MAIN', func: window.SiteSearchEngine.run, args,
+        target: { tabId }, world: 'MAIN', func: window.SiteSearchEngine.run, args: [action, opts.query || '', o],
       });
       return res && res[0] ? res[0].result : null;
     }
@@ -72,156 +73,63 @@ Toolkit.registerTab({
       return (list && list[0]) || null;
     }
 
-    function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-    function regexEscape(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-    function buildSource() { return regexMode ? patternInput.value : regexEscape(patternInput.value); } // 正規表現 OFF はエスケープ
+    const blankNav = () => ({ tabId: null, count: 0, current: -1 });
+    function clearResults() { resultsEl.innerHTML = ''; countEl.textContent = ''; }
     function setStatus(msg, isError) { statusEl.textContent = msg || ''; statusEl.classList.toggle('ss-status-error', !!isError); }
     function setCountDisplay() {
       if (nav.count > 0) countEl.textContent = `${nav.current + 1} / ${nav.count}`;
       else if (scope === 'page') countEl.textContent = '';
     }
 
-    // ── 結果リストの描画 ──
-    function snippetHtml(sn) { return escapeHtml(sn.before) + '<mark>' + escapeHtml(sn.match) + '</mark>' + escapeHtml(sn.after); }
-    function hostOf(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
-
-    function fallbackIconNode() {
-      const span = document.createElement('span');
-      span.className = 'ss-group-fav ss-group-fav-fallback';
-      span.textContent = '🌐';
-      return span;
-    }
-    function tabIconNode(favUrl) { // ファビコン。取得不可・読み込み失敗時は 🌐
-      if (favUrl && /^(https?:|data:)/.test(favUrl)) {
-        const img = document.createElement('img');
-        img.className = 'ss-group-fav'; img.alt = ''; img.src = favUrl;
-        img.addEventListener('error', () => img.replaceWith(fallbackIconNode()));
-        return img;
-      }
-      return fallbackIconNode();
-    }
-
-    function renderPageResults(res) {
-      resultsEl.innerHTML = '';
-      const list = (res.snippets || []).slice(0, MAX_LIST_RENDER);
-      if (!list.length) return;
-      const frag = document.createDocumentFragment();
-      list.forEach((sn, i) => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'ss-item' + (i === 0 ? ' active' : '');
-        item.dataset.index = String(i);
-        item.innerHTML = '<span class="ss-snippet">' + snippetHtml(sn) + '</span>';
-        frag.appendChild(item);
-      });
-      resultsEl.appendChild(frag);
-      if (res.count > list.length) {
-        const more = document.createElement('div');
-        more.className = 'ss-more';
-        more.textContent = `ほか ${res.count - list.length} 件（先頭 ${list.length} 件を表示）`;
-        resultsEl.appendChild(more);
-      }
-      lastResults = { mode: 'page', snippets: list, count: res.count, truncated: !!res.truncated };
-    }
-
-    function renderAllResults(groups, totalCount, totalTabs) {
-      resultsEl.innerHTML = '';
-      countEl.textContent = totalTabs ? `合計 ${totalCount} 件 / ${totalTabs} タブ` : '';
-      if (!groups.length) return;
-      const frag = document.createDocumentFragment();
-      groups.forEach(g => {
-        const grp = document.createElement('div');
-        grp.className = 'ss-group';
-        // タブ見出し（クリックでそのタブへ切替）。favicon＋タイトルでサイトを識別
-        const head = document.createElement('button');
-        head.type = 'button';
-        head.className = 'ss-group-head';
-        head.dataset.tabid = String(g.tabId);
-        head.dataset.index = '0';
-        const titleEl = document.createElement('span');
-        titleEl.className = 'ss-group-title';
-        titleEl.textContent = g.title || hostOf(g.url) || '(無題)';
-        const countBadge = document.createElement('span');
-        countBadge.className = 'ss-group-count';
-        countBadge.textContent = g.count + (g.truncated ? '+' : '') + ' 件';
-        head.append(tabIconNode(g.favIconUrl), titleEl, countBadge);
-        grp.appendChild(head);
-        (g.snippets || []).slice(0, MAX_LIST_RENDER).forEach((sn, i) => {
-          const item = document.createElement('button');
-          item.type = 'button';
-          item.className = 'ss-item';
-          item.dataset.tabid = String(g.tabId);
-          item.dataset.index = String(i);
-          item.innerHTML = '<span class="ss-snippet">' + snippetHtml(sn) + '</span>';
-          grp.appendChild(item);
-        });
-        frag.appendChild(grp);
-      });
-      resultsEl.appendChild(frag);
-      // 永続化用のスニペットはタブごと 50 件までに絞る
-      lastResults = {
-        mode: 'all', total: totalCount, tabs: totalTabs,
-        groups: groups.map(g => ({
-          tabId: g.tabId, title: g.title, url: g.url, favIconUrl: g.favIconUrl,
-          count: g.count, truncated: g.truncated, snippets: (g.snippets || []).slice(0, 50),
-        })),
-      };
-    }
-
-    function markActive(idx) {
-      resultsEl.querySelectorAll('.ss-item.active').forEach(el => el.classList.remove('active'));
-      const el = resultsEl.querySelector(`.ss-item[data-index="${idx}"]:not([data-tabid])`);
-      if (el) { el.classList.add('active'); el.scrollIntoView({ block: 'nearest' }); }
-    }
-
     // ── 検索実行（Enter / ボタン） ──
     async function doSearch() {
-      const pattern = patternInput.value;
-      if (!pattern) { // 空検索：結果とハイライトをクリア
-        resultsEl.innerHTML = ''; countEl.textContent = ''; setStatus('');
-        nav = { tabId: null, count: 0, current: -1 }; lastResults = null; save();
+      const query = patternInput.value;
+      if (!query) { // 空検索：結果とハイライトをクリア
+        clearResults(); setStatus(''); nav = blankNav(); lastResults = null; save();
         const t = await getActiveTab().catch(() => null);
         if (t && INJECTABLE.test(t.url || '')) runOnTab(t.id, 'clear').catch(() => {});
         return;
       }
-      const source = buildSource();
-      try { new RegExp(source, 'g'); }
-      catch (e) { setStatus('⚠ 不正な正規表現: ' + e.message, true); resultsEl.innerHTML = ''; countEl.textContent = ''; return; }
-      addHistory(pattern); // 履歴は入力そのもの（生の文字列）
+      // 正規表現モードのときだけ事前検証（OFF はエスケープされるので常に有効）
+      if (regexMode) {
+        try { new RegExp(query, 'g'); }
+        catch (e) { setStatus('⚠ 不正な正規表現: ' + e.message, true); clearResults(); return; }
+      }
+      addHistory(query);
       setStatus('検索中...');
-      if (scope === 'page') await searchPage(source);
-      else await searchAllTabs(source);
+      if (scope === 'page') await searchPage(query);
+      else await searchAllTabs(query);
       save();
     }
 
-    async function searchPage(source) {
+    async function searchPage(query) {
       lastResults = null;
       const tab = await getActiveTab().catch(() => null);
       if (!tab || !INJECTABLE.test(tab.url || '')) {
         setStatus('このページでは検索できません（chrome:// や拡張機能ページ・PDF などは対象外）', true);
-        resultsEl.innerHTML = ''; countEl.textContent = ''; return;
+        clearResults(); return;
       }
       let res;
-      try { res = await runOnTab(tab.id, 'search', { pattern: source, maxMatches: MAX_PAGE_MATCHES }); }
-      catch (e) { setStatus('このページでは検索できません（' + (e.message || e) + '）', true); resultsEl.innerHTML = ''; countEl.textContent = ''; return; }
+      try { res = await runOnTab(tab.id, 'search', { query, max: MAX_PAGE_MATCHES }); }
+      catch (e) { setStatus('このページでは検索できません（' + (e.message || e) + '）', true); clearResults(); return; }
       if (!res || !res.ok) { setStatus('検索に失敗しました', true); return; }
       nav = { tabId: tab.id, count: res.count, current: res.current };
-      if (!res.count) { setStatus('一致なし'); resultsEl.innerHTML = ''; countEl.textContent = '0 件'; return; }
+      if (!res.count) { setStatus('一致なし'); clearResults(); countEl.textContent = '0 件'; return; }
       const notes = [];
       if (res.truncated) notes.push(`上限（${MAX_PAGE_MATCHES} 件）に達したため打ち切り`);
       if (res.unsupported) notes.push('全件ハイライト非対応のため現在位置のみ枠表示');
       setStatus(notes.join(' / '));
-      renderPageResults(res);
+      lastResults = View.renderPage(resultsEl, res, MAX_LIST_RENDER);
       setCountDisplay();
     }
 
-    async function searchAllTabs(source) {
+    async function searchAllTabs(query) {
       lastResults = null;
       if (!_tabs) { setStatus('全タブ検索を利用できません', true); return; }
       const tabs = (await _tabs.query({}).catch(() => [])).filter(t => INJECTABLE.test(t.url || ''));
-      if (!tabs.length) { setStatus('検索できるタブがありません', true); resultsEl.innerHTML = ''; countEl.textContent = ''; return; }
+      if (!tabs.length) { setStatus('検索できるタブがありません', true); clearResults(); return; }
       const settled = await Promise.allSettled(
-        tabs.map(t => runOnTab(t.id, 'count', { pattern: source, maxMatches: MAX_TAB_MATCHES }).then(res => ({ tab: t, res })))
+        tabs.map(t => runOnTab(t.id, 'count', { query, max: MAX_TAB_MATCHES }).then(res => ({ tab: t, res })))
       );
       const groups = []; let total = 0;
       settled.forEach(s => { // 注入不可タブ等はスキップ
@@ -231,10 +139,10 @@ Toolkit.registerTab({
         groups.push({ tabId: tab.id, title: tab.title, url: tab.url, favIconUrl: tab.favIconUrl, count: res.count, truncated: res.truncated, snippets: res.snippets });
       });
       groups.sort((a, b) => b.count - a.count);
-      nav = { tabId: null, count: 0, current: -1 };
-      if (!groups.length) { setStatus('一致なし'); resultsEl.innerHTML = ''; countEl.textContent = '0 件'; return; }
+      nav = blankNav();
+      if (!groups.length) { setStatus('一致なし'); clearResults(); countEl.textContent = '0 件'; return; }
       setStatus('項目をクリックするとそのタブを開いてハイライトします');
-      renderAllResults(groups, total, groups.length);
+      lastResults = View.renderAll(resultsEl, countEl, groups, total, groups.length, MAX_LIST_RENDER);
     }
 
     // ── 結果クリックでジャンプ ──
@@ -244,12 +152,12 @@ Toolkit.registerTab({
       try { res = await runOnTab(nav.tabId, 'goto', { index: idx }); } catch (e) { return; }
       if (!res || res.current < 0) return;
       nav.current = res.current; nav.count = res.count;
-      setCountDisplay(); markActive(nav.current);
+      setCountDisplay(); View.markActive(resultsEl, nav.current);
     }
 
     async function gotoAllTab(tabId, idx) {
       let res;
-      try { res = await runOnTab(tabId, 'search', { pattern: buildSource(), index: idx, maxMatches: MAX_PAGE_MATCHES }); }
+      try { res = await runOnTab(tabId, 'search', { query: patternInput.value, startIdx: idx, max: MAX_PAGE_MATCHES }); }
       catch (e) { setStatus('このタブを開けませんでした', true); return; }
       if (!res || !res.ok) return;
       nav = { tabId, count: res.count, current: res.current };
@@ -260,7 +168,7 @@ Toolkit.registerTab({
       } catch (e) { /* 切替失敗でもハイライトは適用済み */ }
     }
 
-    // ── ページ常駐バーを表示（UI は sitesearch-bar.js、検索本体はエンジン共有） ──
+    // ── ページ常駐バーを表示（UI は bar.js、検索本体はエンジン共有） ──
     async function openBar() {
       const engine = window.SiteSearchEngine && window.SiteSearchEngine.run;
       const bar = window.SiteSearchBar && window.SiteSearchBar.install;
@@ -296,8 +204,8 @@ Toolkit.registerTab({
     function setScope(next) {
       scope = next;
       scopeAllChk.checked = (scope === 'all');
-      resultsEl.innerHTML = ''; countEl.textContent = ''; setStatus('');
-      nav = { tabId: null, count: 0, current: -1 }; lastResults = null; save();
+      clearResults(); setStatus('');
+      nav = blankNav(); lastResults = null; save();
     }
 
     // ── イベント ──
@@ -328,11 +236,11 @@ Toolkit.registerTab({
         nav = { tabId: (s.nav.tabId != null) ? s.nav.tabId : null, count: s.nav.count || 0, current: (typeof s.nav.current === 'number') ? s.nav.current : -1 };
       }
       if (s.results && s.results.mode === 'page') {
-        renderPageResults({ snippets: s.results.snippets || [], count: s.results.count || 0, truncated: !!s.results.truncated });
+        lastResults = View.renderPage(resultsEl, { snippets: s.results.snippets || [], count: s.results.count || 0, truncated: !!s.results.truncated }, MAX_LIST_RENDER);
         setCountDisplay();
-        if (nav.count > 0 && nav.current >= 0) markActive(nav.current);
+        if (nav.count > 0 && nav.current >= 0) View.markActive(resultsEl, nav.current);
       } else if (s.results && s.results.mode === 'all') {
-        renderAllResults(s.results.groups || [], s.results.total || 0, s.results.tabs || 0);
+        lastResults = View.renderAll(resultsEl, countEl, s.results.groups || [], s.results.total || 0, s.results.tabs || 0, MAX_LIST_RENDER);
         setCountDisplay();
       }
     });
