@@ -33,15 +33,10 @@ Toolkit.registerTab({
     const MAX_LIST_RENDER = 300;   // ポップアップに描画するスニペット上限
     const View = window.SiteSearchResults; // 結果リストの描画（results.js）
 
-    const patternInput = document.getElementById('ss-pattern');
-    const execBtn = document.getElementById('ss-exec');
-    const scopeAllChk = document.getElementById('ss-scope-all');
-    const regexChk = document.getElementById('ss-regex');
-    const caseChk = document.getElementById('ss-case');
-    const countEl = document.getElementById('ss-count');
-    const statusEl = document.getElementById('ss-status');
-    const resultsEl = document.getElementById('ss-results');
-    const historyEl = document.getElementById('ss-history-list');
+    const $ = id => document.getElementById(id);
+    const patternInput = $('ss-pattern'), execBtn = $('ss-exec'), scopeAllChk = $('ss-scope-all');
+    const regexChk = $('ss-regex'), caseChk = $('ss-case'), countEl = $('ss-count');
+    const statusEl = $('ss-status'), resultsEl = $('ss-results'), historyEl = $('ss-history-list');
 
     const _scripting = (typeof chrome !== 'undefined' && chrome.scripting) || null;
     const _tabs = (typeof chrome !== 'undefined' && chrome.tabs) || null;
@@ -54,8 +49,7 @@ Toolkit.registerTab({
     let nav = { tabId: null, count: 0, current: -1 }; // 現在の一致位置と対象タブ
     let lastResults = null;    // 開き直し時に復元する直近の結果
 
-    // 検索本体はページ側エンジン(engine.js)を MAIN ワールドで実行する。
-    // pattern/flags の組み立て（正規表現 OFF のエスケープ含む）はエンジン側に集約。
+    // 検索本体はページ側エンジン(engine.js)を MAIN ワールドで実行（pattern/flags の組み立てもエンジン側）
     async function runOnTab(tabId, action, opts = {}) {
       if (!_scripting || !window.SiteSearchEngine) throw new Error('no-engine');
       const o = { regexMode, caseSensitive, max: opts.max || MAX_PAGE_MATCHES,
@@ -71,6 +65,13 @@ Toolkit.registerTab({
       let list = await _tabs.query({ active: true, currentWindow: true });
       if (!list || !list.length) list = await _tabs.query({ active: true, lastFocusedWindow: true });
       return (list && list[0]) || null;
+    }
+    // アクティブな http(s) タブを返す。注入できないページなら状態にエラーを出して null
+    async function activeInjectableTab() {
+      const tab = await getActiveTab().catch(() => null);
+      if (tab && INJECTABLE.test(tab.url || '')) return tab;
+      setStatus('このページでは実行できません（chrome:// や拡張機能ページ・PDF などは対象外）', true);
+      return null;
     }
 
     const blankNav = () => ({ tabId: null, count: 0, current: -1 });
@@ -104,11 +105,8 @@ Toolkit.registerTab({
 
     async function searchPage(query) {
       lastResults = null;
-      const tab = await getActiveTab().catch(() => null);
-      if (!tab || !INJECTABLE.test(tab.url || '')) {
-        setStatus('このページでは検索できません（chrome:// や拡張機能ページ・PDF などは対象外）', true);
-        clearResults(); return;
-      }
+      const tab = await activeInjectableTab();
+      if (!tab) { clearResults(); return; }
       let res;
       try { res = await runOnTab(tab.id, 'search', { query, max: MAX_PAGE_MATCHES }); }
       catch (e) { setStatus('このページでは検索できません（' + (e.message || e) + '）', true); clearResults(); return; }
@@ -117,7 +115,7 @@ Toolkit.registerTab({
       if (!res.count) { setStatus('一致なし'); clearResults(); countEl.textContent = '0 件'; return; }
       const notes = [];
       if (res.truncated) notes.push(`上限（${MAX_PAGE_MATCHES} 件）に達したため打ち切り`);
-      if (res.unsupported) notes.push('全件ハイライト非対応のため現在位置のみ枠表示');
+      if (res.unsupported) notes.push('この環境はハイライト非対応（一覧・移動は可）');
       setStatus(notes.join(' / '));
       lastResults = View.renderPage(resultsEl, res, MAX_LIST_RENDER);
       setCountDisplay();
@@ -173,10 +171,8 @@ Toolkit.registerTab({
       const engine = window.SiteSearchEngine && window.SiteSearchEngine.run;
       const bar = window.SiteSearchBar && window.SiteSearchBar.install;
       if (!_scripting || !engine || !bar) { setStatus('検索バーを表示できません', true); return; }
-      const tab = await getActiveTab().catch(() => null);
-      if (!tab || !INJECTABLE.test(tab.url || '')) {
-        setStatus('このページには検索バーを表示できません（chrome:// や拡張機能ページ・PDF などは対象外）', true); return;
-      }
+      const tab = await activeInjectableTab();
+      if (!tab) return;
       try {
         await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: engine, args: ['ensure'] });
         await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: bar, args: [patternInput.value || '', regexMode, caseSensitive] });
@@ -215,7 +211,7 @@ Toolkit.registerTab({
     regexChk.addEventListener('change', () => { regexMode = regexChk.checked; save(); });
     caseChk.addEventListener('change', () => { caseSensitive = caseChk.checked; save(); });
     scopeAllChk.addEventListener('change', () => setScope(scopeAllChk.checked ? 'all' : 'page'));
-    document.getElementById('ss-openbar').addEventListener('click', openBar);
+    $('ss-openbar').addEventListener('click', openBar);
     resultsEl.addEventListener('click', e => {
       const item = e.target.closest('.ss-item, .ss-group-head');
       if (!item) return;
@@ -232,9 +228,7 @@ Toolkit.registerTab({
       if (typeof s.regexMode === 'boolean') { regexMode = s.regexMode; regexChk.checked = regexMode; }
       if (typeof s.caseSensitive === 'boolean') { caseSensitive = s.caseSensitive; caseChk.checked = caseSensitive; }
       if (Array.isArray(s.history)) { history.push(...s.history.slice(0, 20)); renderHistory(); }
-      if (s.nav && typeof s.nav === 'object') {
-        nav = { tabId: (s.nav.tabId != null) ? s.nav.tabId : null, count: s.nav.count || 0, current: (typeof s.nav.current === 'number') ? s.nav.current : -1 };
-      }
+      if (s.nav && typeof s.nav === 'object') nav = s.nav; // 保存形は自前なのでそのまま復元
       if (s.results && s.results.mode === 'page') {
         lastResults = View.renderPage(resultsEl, { snippets: s.results.snippets || [], count: s.results.count || 0, truncated: !!s.results.truncated }, MAX_LIST_RENDER);
         setCountDisplay();
