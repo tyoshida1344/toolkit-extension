@@ -1,10 +1,10 @@
 /**
  * engine.js — ページ内検索エンジン（MAIN ワールドへ注入・共有）
- * 検索・ハイライト（CSS Custom Highlight API）・枠・スクロール・前後移動を担う唯一の実装で、
+ * 検索・ハイライト（CSS Custom Highlight API）・スクロール・前後移動を担う唯一の実装で、
  * ポップアップ(index.js)とバー(bar.js)が共有。注入時に直列化されるため外側は参照しない。
  */
 window.SiteSearchEngine = (() => {
-  // query＋オプションから RegExp 用の pattern/flags を作る（正規表現 OFF はエスケープ）
+  // pattern/flags を組み立てる（正規表現 OFF は入力をエスケープ）
   function build(query, o) {
     return {
       pattern: o.regexMode === false ? query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : query,
@@ -14,7 +14,7 @@ window.SiteSearchEngine = (() => {
 
   function create() {
     const HL = 'tm-site-search', HL_CUR = 'tm-site-search-current';
-    const STYLE_ID = '__tm_search_style', BOX_ID = '__tm_search_box';
+    const STYLE_ID = '__tm_search_style';
     const supported = !!(window.CSS && CSS.highlights && typeof Highlight !== 'undefined');
     let ranges = [], current = -1;
 
@@ -26,60 +26,24 @@ window.SiteSearchEngine = (() => {
         + '::highlight(' + HL_CUR + '){background:#ff9800;color:#000;}';
       (document.head || document.documentElement).appendChild(st);
     }
-    function boxEl() {
-      let b = document.getElementById(BOX_ID);
-      if (!b) {
-        b = document.createElement('div');
-        b.id = BOX_ID;
-        b.style.cssText = 'position:absolute;z-index:2147483646;pointer-events:none;'
-          + 'background:rgba(255,152,0,.30);outline:2px solid #ff9800;border-radius:2px;';
-        (document.body || document.documentElement).appendChild(b);
-      }
-      return b;
-    }
-    function placeBox(r) {
-      if (!r) return;
-      const rc = r.getBoundingClientRect(), b = boxEl();
-      b.style.top = (rc.top + (window.scrollY || 0)) + 'px';
-      b.style.left = (rc.left + (window.scrollX || 0)) + 'px';
-      b.style.width = rc.width + 'px';
-      b.style.height = rc.height + 'px';
-      b.style.display = (rc.width || rc.height) ? 'block' : 'none';
-    }
     function scrollToRange(r) {
       const rc = r.getBoundingClientRect();
       const top = rc.top + (window.scrollY || 0) - ((window.innerHeight || 600) / 2);
       try { window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
       catch (e) { window.scrollTo(0, Math.max(0, top)); }
     }
-    function bindReflow() { // 枠をリサイズ・スクロールに追従（一度だけ・rAF で間引く）
-      if (window.__tmSearchReflow) return;
-      let ticking = false;
-      window.__tmSearchReflow = () => {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(() => { ticking = false; if (ranges[current]) placeBox(ranges[current]); });
-      };
-      window.addEventListener('resize', window.__tmSearchReflow);
-      window.addEventListener('scroll', window.__tmSearchReflow, true);
-    }
     function setCurrent(i) {
       if (!ranges.length) { current = -1; return; }
       const n = ranges.length;
       current = ((i % n) + n) % n;
       const r = ranges[current];
+      // 現在の一致を HL_CUR で示し画面内へスクロール
       if (supported) CSS.highlights.set(HL_CUR, new Highlight(r));
-      scrollToRange(r); placeBox(r); bindReflow();
+      scrollToRange(r);
     }
     function clear() {
       if (window.CSS && CSS.highlights) { CSS.highlights.delete(HL); CSS.highlights.delete(HL_CUR); }
       const st = document.getElementById(STYLE_ID); if (st) st.remove();
-      const b = document.getElementById(BOX_ID); if (b) b.remove();
-      if (window.__tmSearchReflow) {
-        window.removeEventListener('resize', window.__tmSearchReflow);
-        window.removeEventListener('scroll', window.__tmSearchReflow, true);
-        window.__tmSearchReflow = null;
-      }
       ranges = []; current = -1;
     }
     // テキストノードを連結して正規表現で走査し、一致 Range とスニペットを返す
