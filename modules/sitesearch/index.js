@@ -52,8 +52,7 @@ Toolkit.registerTab({
     // 検索本体はページ側エンジン(engine.js)を MAIN ワールドで実行（pattern/flags の組み立てもエンジン側）
     async function runOnTab(tabId, action, opts = {}) {
       if (!_scripting || !window.SiteSearchEngine) throw new Error('no-engine');
-      const o = { regexMode, caseSensitive, max: opts.max || MAX_PAGE_MATCHES,
-        index: (typeof opts.index === 'number') ? opts.index : -1, startIdx: opts.startIdx || 0 };
+      const o = { regexMode, caseSensitive, max: opts.max || MAX_PAGE_MATCHES, startIdx: opts.startIdx || 0 };
       const res = await _scripting.executeScript({
         target: { tabId }, world: 'MAIN', func: window.SiteSearchEngine.run, args: [action, opts.query || '', o],
       });
@@ -97,7 +96,7 @@ Toolkit.registerTab({
         catch (e) { setStatus('⚠ 不正な正規表現: ' + e.message, true); clearResults(); return; }
       }
       addHistory(query);
-      setStatus('検索中...');
+      setStatus('');
       if (scope === 'page') await searchPage(query);
       else await searchAllTabs(query);
       save();
@@ -117,8 +116,9 @@ Toolkit.registerTab({
       if (res.truncated) notes.push(`上限（${MAX_PAGE_MATCHES} 件）に達したため打ち切り`);
       if (res.unsupported) notes.push('この環境はハイライト非対応（一覧・移動は可）');
       setStatus(notes.join(' / '));
-      lastResults = View.renderPage(resultsEl, res, MAX_LIST_RENDER);
-      setCountDisplay();
+      // 描画はタブ別グループ単位。ページの結果はタブ1つ分のグループに包んで渡す
+      const groups = [{ tabId: tab.id, title: tab.title, url: tab.url, favIconUrl: tab.favIconUrl, count: res.count, truncated: res.truncated, snippets: res.snippets }];
+      lastResults = View.render(resultsEl, countEl, groups, res.count, MAX_LIST_RENDER);
     }
 
     async function searchAllTabs(query) {
@@ -139,28 +139,19 @@ Toolkit.registerTab({
       groups.sort((a, b) => b.count - a.count);
       nav = blankNav();
       if (!groups.length) { setStatus('一致なし'); clearResults(); countEl.textContent = '0 件'; return; }
-      setStatus('項目をクリックするとそのタブを開いてハイライトします');
-      lastResults = View.renderAll(resultsEl, countEl, groups, total, groups.length, MAX_LIST_RENDER);
+      lastResults = View.render(resultsEl, countEl, groups, total, MAX_LIST_RENDER);
     }
 
-    // ── 結果クリックでジャンプ ──
-    async function gotoPage(idx) {
-      if (!nav.tabId) return;
-      let res;
-      try { res = await runOnTab(nav.tabId, 'goto', { index: idx }); } catch (e) { return; }
-      if (!res || res.current < 0) return;
-      nav.current = res.current; nav.count = res.count;
-      setCountDisplay(); View.markActive(resultsEl, nav.current);
-    }
-
-    async function gotoAllTab(tabId, idx) {
+    // ── 結果クリック: 対象タブの該当位置へジャンプ（別タブなら前面に切替） ──
+    async function gotoTab(tabId, idx) {
       let res;
       try { res = await runOnTab(tabId, 'search', { query: patternInput.value, startIdx: idx, max: MAX_PAGE_MATCHES }); }
       catch (e) { setStatus('このタブを開けませんでした', true); return; }
       if (!res || !res.ok) return;
       nav = { tabId, count: res.count, current: res.current };
       setCountDisplay();
-      try { // 対象タブを前面に（別ウィンドウだとポップアップは閉じるがハイライトは残る）
+      if (scope !== 'all') return; // 現在ページ検索ならタブ切替は不要
+      try { // 別タブを前面に（別ウィンドウだとポップアップは閉じるがハイライトは残る）
         const t = await _tabs.update(tabId, { active: true });
         if (t && t.windowId != null && chrome.windows) chrome.windows.update(t.windowId, { focused: true });
       } catch (e) { /* 切替失敗でもハイライトは適用済み */ }
@@ -215,9 +206,7 @@ Toolkit.registerTab({
     resultsEl.addEventListener('click', e => {
       const item = e.target.closest('.ss-item, .ss-group-head');
       if (!item) return;
-      const idx = parseInt(item.dataset.index, 10) || 0;
-      if (item.dataset.tabid) gotoAllTab(parseInt(item.dataset.tabid, 10), idx);
-      else gotoPage(idx);
+      gotoTab(parseInt(item.dataset.tabid, 10), parseInt(item.dataset.index, 10) || 0);
     });
 
     // ── 復元（非同期。自動検索はしない。ページ側の状態が残っていればクリックも動く） ──
@@ -229,13 +218,8 @@ Toolkit.registerTab({
       if (typeof s.caseSensitive === 'boolean') { caseSensitive = s.caseSensitive; caseChk.checked = caseSensitive; }
       if (Array.isArray(s.history)) { history.push(...s.history.slice(0, 20)); renderHistory(); }
       if (s.nav && typeof s.nav === 'object') nav = s.nav; // 保存形は自前なのでそのまま復元
-      if (s.results && s.results.mode === 'page') {
-        lastResults = View.renderPage(resultsEl, { snippets: s.results.snippets || [], count: s.results.count || 0, truncated: !!s.results.truncated }, MAX_LIST_RENDER);
-        setCountDisplay();
-        if (nav.count > 0 && nav.current >= 0) View.markActive(resultsEl, nav.current);
-      } else if (s.results && s.results.mode === 'all') {
-        lastResults = View.renderAll(resultsEl, countEl, s.results.groups || [], s.results.total || 0, s.results.tabs || 0, MAX_LIST_RENDER);
-        setCountDisplay();
+      if (s.results && Array.isArray(s.results.groups)) {
+        lastResults = View.render(resultsEl, countEl, s.results.groups, s.results.total || 0, MAX_LIST_RENDER);
       }
     });
   },

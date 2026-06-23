@@ -120,7 +120,6 @@ window.SiteSearchEngine = (() => {
           if (r.error) return { ok: false, error: r.error, message: r.message };
           return { ok: true, count: r.ranges.length, snippets: r.snippets, truncated: r.truncated };
         },
-        goto: i => step(i),
         next: () => step(current + 1),
         prev: () => step(current - 1),
         clear: () => { clear(); return { ok: true, count: 0, current: -1 }; },
@@ -131,7 +130,6 @@ window.SiteSearchEngine = (() => {
     const eng = window.__tmSearchEngine;
     if (action === 'search') return eng.search(query, o);
     if (action === 'count') return eng.count(query, o);
-    if (action === 'goto') return eng.goto(o.index);
     if (action === 'clear') return eng.clear();
     return { ok: true }; // 'ensure'（生成だけ）
   }

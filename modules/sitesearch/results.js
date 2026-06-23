@@ -1,7 +1,5 @@
 /**
  * results.js — サイト内検索の結果リスト描画（ポップアップ専用・非注入）
- * resultsEl への描画と、永続化用ペイロード（index.js が保存する形）の生成だけを担う。
- * 描画系をここに分離して index.js（制御）を薄く保つ。window.SiteSearchResults で公開。
  */
 window.SiteSearchResults = (() => {
   function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -23,39 +21,21 @@ window.SiteSearchResults = (() => {
     }
     return fallbackIcon();
   }
-  // 結果1件のボタン。tabId 指定で全タブ用（クリックでそのタブへ）、null でページ用（先頭を active）
-  function item(sn, i, tabId) {
+  function item(sn, i, tabId) { // 結果1件のボタン。クリックでそのタブへジャンプ
     const el = document.createElement('button');
     el.type = 'button';
-    el.className = 'ss-item' + (tabId == null && i === 0 ? ' active' : '');
+    el.className = 'ss-item';
     el.dataset.index = String(i);
-    if (tabId != null) el.dataset.tabid = String(tabId);
+    el.dataset.tabid = String(tabId);
     el.innerHTML = '<span class="ss-snippet">' + snippetHtml(sn) + '</span>';
     return el;
   }
 
-  // 現在ページの結果を描画し、永続化用ペイロードを返す（空なら null）
-  function renderPage(container, res, maxRender) {
+  function render(container, countEl, groups, total, maxRender) {
     container.innerHTML = '';
-    const list = (res.snippets || []).slice(0, maxRender);
-    if (!list.length) return null;
-    const frag = document.createDocumentFragment();
-    list.forEach((sn, i) => frag.appendChild(item(sn, i, null)));
-    container.appendChild(frag);
-    if (res.count > list.length) {
-      const more = document.createElement('div');
-      more.className = 'ss-more';
-      more.textContent = `ほか ${res.count - list.length} 件（先頭 ${list.length} 件を表示）`;
-      container.appendChild(more);
-    }
-    return { mode: 'page', snippets: list, count: res.count, truncated: !!res.truncated };
-  }
-
-  // 全タブの結果をタブ別に描画し、永続化用ペイロードを返す（空なら null）。件数表示も更新する
-  function renderAll(container, countEl, groups, total, tabs, maxRender) {
-    container.innerHTML = '';
-    countEl.textContent = tabs ? `合計 ${total} 件 / ${tabs} タブ` : '';
-    if (!groups.length) return null;
+    const tabs = groups.length;
+    countEl.textContent = !tabs ? '' : tabs === 1 ? `${total} 件` : `合計 ${total} 件 / ${tabs} タブ`;
+    if (!tabs) return null;
     const frag = document.createDocumentFragment();
     groups.forEach(g => {
       const grp = document.createElement('div');
@@ -80,7 +60,7 @@ window.SiteSearchResults = (() => {
     container.appendChild(frag);
     // 永続化用のスニペットはタブごと 50 件までに絞る
     return {
-      mode: 'all', total, tabs,
+      total,
       groups: groups.map(g => ({
         tabId: g.tabId, title: g.title, url: g.url, favIconUrl: g.favIconUrl,
         count: g.count, truncated: g.truncated, snippets: (g.snippets || []).slice(0, 50),
@@ -88,11 +68,5 @@ window.SiteSearchResults = (() => {
     };
   }
 
-  function markActive(container, idx) {
-    container.querySelectorAll('.ss-item.active').forEach(el => el.classList.remove('active'));
-    const el = container.querySelector(`.ss-item[data-index="${idx}"]:not([data-tabid])`);
-    if (el) { el.classList.add('active'); el.scrollIntoView({ block: 'nearest' }); }
-  }
-
-  return { renderPage, renderAll, markActive };
+  return { render };
 })();
