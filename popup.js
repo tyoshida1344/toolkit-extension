@@ -12,14 +12,15 @@ const Toolkit = (() => {
   /**
    * タブを登録する
    * @param {object} opts
-   * @param {string} opts.id       - タブの一意ID (例: "strgen")
-   * @param {string} opts.icon     - 絵文字アイコン (例: "✏️")
-   * @param {string} opts.label    - 表示名 (例: "文字列生成")
-   * @param {string} opts.html     - タブ内のHTML文字列
-   * @param {function} opts.init   - DOM構築後に呼ばれる初期化関数
+   * @param {string} opts.id            - タブの一意ID (例: "strgen")
+   * @param {string} opts.icon          - 絵文字アイコン (例: "✏️")
+   * @param {string} opts.label         - 表示名 (例: "文字列生成")
+   * @param {string} opts.html          - タブ内のHTML文字列
+   * @param {function} opts.init        - DOM構築後に呼ばれる初期化関数
+   * @param {string} [opts.storageKey]  - 保存先キー（省略時は既定の `tm_state_<id>`）。ストレージ画面がこれを参照する。
    */
-  function registerTab({ id, icon, label, html, init }) {
-    tabs.push({ id, icon, label, html, init });
+  function registerTab({ id, icon, label, html, init, storageKey }) {
+    tabs.push({ id, icon, label, html, init, storageKey });
     if (initialized) buildUI();
   }
 
@@ -196,8 +197,13 @@ const Toolkit = (() => {
     if (persist) saveState('activeTab', id);
   }
 
-  /** 登録済みタブの一覧（設定UIが表示順・名称を読むため） */
-  function getTabs() { return tabs.map(t => ({ id: t.id, icon: t.icon, label: t.label })); }
+  /** 登録済みタブの一覧（設定UIが表示順・名称・ストレージキーを読む）。storageKey 省略時は既定の `tm_state_<id>`。 */
+  function getTabs() {
+    return tabs.map(t => ({
+      id: t.id, icon: t.icon, label: t.label,
+      storageKey: t.storageKey || (STATE_PREFIX + t.id),
+    }));
+  }
 
   /** 正規化済みのタブ構成を返す（未登録IDを除き、登録済みで未掲載のIDは末尾に補う） */
   function getTabConfig() {

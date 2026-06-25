@@ -2,6 +2,7 @@ Toolkit.registerTab({
   id: 'memo',
   icon: '📝',
   label: 'メモ帳',
+  storageKey: 'tm_toolkit_memo', // 共通規約（tm_state_<id>）より前からの独自キー。変えると保存済みメモが読めなくなるので維持する。
   html: `
     <textarea class="tm-notepad-area" id="memo-area"
       placeholder="ここにメモを入力...\nどのサイトでも内容が保存されます。"></textarea>
