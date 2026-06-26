@@ -39,17 +39,15 @@ Toolkit.registerSetting({
     </div>
   `,
   init() {
-    // 各ツールが保存に使うストレージキー（メモ帳だけ歴史的経緯で独自キー）。
-    // アプリ全体の「最後に開いたタブ」(tm_state_activeTab) はクリア対象外。
-    const TOOLS = [
-      { key: 'tm_state_strgen',    icon: '✏️', label: '文字列生成' },
-      { key: 'tm_state_epoch',     icon: '⏱️', label: 'エポック変換' },
-      { key: 'tm_state_color',     icon: '🎨', label: 'カラー変換' },
-      { key: 'tm_state_translate', icon: '🌐', label: '翻訳' },
-      { key: 'tm_state_regex',     icon: '🔤', label: '正規表現' },
-      { key: 'tm_state_calc',      icon: '🔢', label: '電卓' },
-      { key: 'tm_toolkit_memo',    icon: '📝', label: 'メモ帳' },
-    ];
+    // ツール一覧は登録済みタブから動的に作る。並び順はタブ構成に従う。
+    function getTools() {
+      const byId = {};
+      Toolkit.getTabs().forEach(t => { byId[t.id] = t; });
+      return Toolkit.getTabConfig().order
+        .map(id => byId[id])
+        .filter(Boolean)
+        .map(t => ({ key: t.storageKey, icon: t.icon, label: t.label }));
+    }
 
     const store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
     const QUOTA = (store && store.QUOTA_BYTES) || 10485760; // 既定 10MB
@@ -72,8 +70,8 @@ Toolkit.registerSetting({
     }
 
     // ── 描画 ──
-    function renderRows() {
-      listEl.innerHTML = TOOLS.map(t =>
+    function renderRows(tools) {
+      listEl.innerHTML = tools.map(t =>
         `<div class="tm-storage-item" id="storage-item-${t.key}">
           <span class="tm-storage-item-icon">${t.icon}</span>
           <span class="tm-storage-item-label">${t.label}</span>
@@ -85,7 +83,7 @@ Toolkit.registerSetting({
     }
 
     /** 合計・ツール別の使用量を取得して反映する */
-    function refresh() {
+    function refresh(tools) {
       if (!store) {
         totalEl.textContent = '利用不可';
         return;
@@ -98,7 +96,7 @@ Toolkit.registerSetting({
         barEl.style.width = Math.min(100, pct) + '%';
       });
       // ツール別の内訳。データの無いツールは淡色＋クリア無効。
-      TOOLS.forEach(t => {
+      tools.forEach(t => {
         store.getBytesInUse(t.key, bytes => {
           const sizeEl = document.getElementById('storage-size-' + t.key);
           const rowEl = document.getElementById('storage-item-' + t.key);
@@ -110,6 +108,13 @@ Toolkit.registerSetting({
           }
         });
       });
+    }
+
+    /** 最新のタブ構成で行を組み直し、使用量を反映する（並び替えにも追従） */
+    function rerender() {
+      const tools = getTools();
+      renderRows(tools);
+      refresh(tools);
     }
 
     // ── 確認ダイアログ ──
@@ -138,7 +143,7 @@ Toolkit.registerSetting({
     });
 
     clearAllBtn.addEventListener('click', () => {
-      askConfirm('すべてのツールの保存データを消去します。よろしいですか？', TOOLS.map(t => t.key));
+      askConfirm('すべてのツールの保存データを消去します。よろしいですか？', getTools().map(t => t.key));
     });
 
     confirmCancelBtn.addEventListener('click', closeConfirm);
@@ -155,18 +160,17 @@ Toolkit.registerSetting({
     });
 
     // ── 更新トリガ ──
-    // 設定を開いたとき／（設定表示中に）ストレージが変化したときに再描画する。
-    // 設定が閉じている間の変化では再描画しない（無駄な getBytesInUse を避ける）。
+    // 設定を開いたとき／（設定表示中に）ストレージが変化したときに再描画する。タブ並び替えも再描画する。
+    // 設定が閉じている間は再描画しない（無駄な取得を避ける）。
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
         const overlay = document.getElementById('tm-settings-overlay');
-        if (area === 'local' && overlay && !overlay.hidden) refresh();
+        if (area === 'local' && overlay && !overlay.hidden) rerender();
       });
     }
-    document.addEventListener('tm-settings-open', refresh);
+    document.addEventListener('tm-settings-open', rerender);
 
     // ── 初期描画 ──
-    renderRows();
-    refresh();
+    rerender();
   },
 });
