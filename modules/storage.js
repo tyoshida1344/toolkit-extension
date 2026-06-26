@@ -169,6 +169,7 @@ Toolkit.registerSetting({
       });
     }
     document.addEventListener('tm-settings-open', rerender);
+    document.addEventListener('tm-tabconfig-change', rerender); // 並び替え・表示切替を即時反映（保持セクションと同期）
 
     // ── 初期描画 ──
     rerender();

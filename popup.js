@@ -276,6 +276,9 @@ const Toolkit = (() => {
     tabConfig = { order: (cfg && cfg.order) || [], hidden: (cfg && cfg.hidden) || [] };
     applyTabConfig();
     saveState('tabConfig', tabConfig);
+    // タブ構成に依存する設定セクション（保持・ストレージ）へ即時再描画を促す。
+    // ストレージの保存（saveState）は非同期＆デバウンスなので、表示同期はこのイベントで揃える。
+    document.dispatchEvent(new CustomEvent('tm-tabconfig-change'));
   }
 
   /** UI構築 */

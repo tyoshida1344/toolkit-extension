@@ -151,6 +151,7 @@ Toolkit.registerSetting({
     });
 
     document.addEventListener('tm-settings-open', render);
+    document.addEventListener('tm-tabconfig-change', render); // 並び替え・表示切替を即時反映
     render();
   },
 });
