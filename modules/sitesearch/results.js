@@ -2,8 +2,7 @@
  * results.js — サイト内検索の結果リスト描画（ポップアップ専用・非注入）
  */
 window.SiteSearchResults = (() => {
-  function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function snippetHtml(sn) { return escapeHtml(sn.before) + '<mark>' + escapeHtml(sn.match) + '</mark>' + escapeHtml(sn.after); }
+  function snippetHtml(sn) { const esc = Toolkit.escapeHtml; return esc(sn.before) + '<mark>' + esc(sn.match) + '</mark>' + esc(sn.after); }
   function hostOf(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
 
   function fallbackIcon() {

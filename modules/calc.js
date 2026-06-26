@@ -62,9 +62,9 @@ Toolkit.registerTab({
     const MSG_DIV0 = 'Cannot divide by 0'; // 0 除算
     const MSG_OVERFLOW = 'Overflow';       // 上限/下限超過・非有限
 
-    const displayEl = document.getElementById('calc-display');
-    const exprEl = document.getElementById('calc-expr');
-    const histEl = document.getElementById('calc-hist');
+    const displayEl = Toolkit.$('calc-display');
+    const exprEl = Toolkit.$('calc-expr');
+    const histEl = Toolkit.$('calc-hist');
 
     // 逐次計算の状態（数値はすべて文字列で保持し、整数は BigInt で正確に計算する）
     let display = '0';        // 表示中の数値（入力中は生の文字列）
@@ -328,7 +328,7 @@ Toolkit.registerTab({
     }
 
     // ── イベント結線 ──
-    document.getElementById('calc-keys').addEventListener('click', (e) => {
+    Toolkit.$('calc-keys').addEventListener('click', (e) => {
       const btn = e.target.closest('.tm-calc-key');
       if (!btn) return;
       press(btn.dataset.key);
@@ -340,44 +340,35 @@ Toolkit.registerTab({
       reuse(item.dataset.result);
     });
 
-    document.getElementById('calc-hist-clear').addEventListener('click', () => {
+    Toolkit.$('calc-hist-clear').addEventListener('click', () => {
       history.length = 0;
       renderHistory();
       save();
     });
 
-    // キーボード入力（電卓タブがアクティブな時のみ反応）
-    document.addEventListener('keydown', (e) => {
-      const sec = document.getElementById('sec-calc');
-      if (!sec || !sec.classList.contains('active')) return;
-      if (document.querySelector('.tm-modal-overlay:not([hidden])')) return; // モーダル表示中は無視
-      const tag = (e.target.tagName || '').toUpperCase();
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // キーボード／ペースト入力（電卓タブがアクティブで入力欄・モーダル外のときだけ反応。共通ガード経由）
+    Toolkit.onTabShortcut('calc', {
+      keydown(e) {
+        if (e.ctrlKey || e.metaKey || e.altKey) return; // Ctrl+C 等のショートカットは横取りしない
 
-      let key = null;
-      if (e.key >= '0' && e.key <= '9') key = e.key;
-      else if (e.key === '.') key = '.';
-      else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '%') key = e.key;
-      else if (e.key === 'Enter' || e.key === '=') key = '=';
-      else if (e.key === 'Backspace') key = 'back';
-      else if (e.key === 'Escape') key = 'C';
-      else if (e.key === 'Delete') key = 'CE';
+        let key = null;
+        if (e.key >= '0' && e.key <= '9') key = e.key;
+        else if (e.key === '.') key = '.';
+        else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '%') key = e.key;
+        else if (e.key === 'Enter' || e.key === '=') key = '=';
+        else if (e.key === 'Backspace') key = 'back';
+        else if (e.key === 'Escape') key = 'C';
+        else if (e.key === 'Delete') key = 'CE';
 
-      if (key != null) { e.preventDefault(); press(key); }
-    });
-
-    // 数値のペースト（電卓タブがアクティブな時のみ。数値以外は無視）
-    document.addEventListener('paste', (e) => {
-      const sec = document.getElementById('sec-calc');
-      if (!sec || !sec.classList.contains('active')) return;
-      if (document.querySelector('.tm-modal-overlay:not([hidden])')) return; // モーダル表示中は無視
-      const tag = (e.target.tagName || '').toUpperCase();
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
-      const cb = e.clipboardData || window.clipboardData;
-      if (!cb) return;
-      e.preventDefault();
-      pasteNumber(cb.getData('text'));
+        if (key != null) { e.preventDefault(); press(key); }
+      },
+      // 数値のペースト（数値以外は無視）
+      paste(e) {
+        const cb = e.clipboardData || window.clipboardData;
+        if (!cb) return;
+        e.preventDefault();
+        pasteNumber(cb.getData('text'));
+      },
     });
 
     // ── 復元 ──

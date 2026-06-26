@@ -46,9 +46,9 @@ Toolkit.registerTab({
       'sg-hkata': 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ',
     };
     const CHECK_IDS = Object.keys(CHAR_SETS);
-    const out = document.getElementById('sg-output');
-    const lenInput = document.getElementById('sg-len');
-    const countInput = document.getElementById('sg-count-input');
+    const out = Toolkit.$('sg-output');
+    const lenInput = Toolkit.$('sg-len');
+    const countInput = Toolkit.$('sg-count-input');
 
     // 文字数カウント
     function utf8ByteLen(str) {
@@ -65,25 +65,25 @@ Toolkit.registerTab({
 
     function updateCount() {
       const v = countInput.value;
-      document.getElementById('sg-c-char').textContent = [...v].length;
-      document.getElementById('sg-c-byte').textContent = utf8ByteLen(v);
-      document.getElementById('sg-c-line').textContent = v ? v.split('\n').length : 0;
+      Toolkit.$('sg-c-char').textContent = [...v].length;
+      Toolkit.$('sg-c-byte').textContent = utf8ByteLen(v);
+      Toolkit.$('sg-c-line').textContent = v ? v.split('\n').length : 0;
     }
 
     // 状態の永続化（チェック・文字数・生成結果・カウント入力）
     function save() {
       Toolkit.saveState('strgen', {
-        checks: CHECK_IDS.reduce((o, id) => (o[id] = document.getElementById(id).checked, o), {}),
+        checks: CHECK_IDS.reduce((o, id) => (o[id] = Toolkit.$(id).checked, o), {}),
         len: lenInput.value,
         output: out.textContent,
         count: countInput.value,
       });
     }
 
-    document.getElementById('sg-exec').addEventListener('click', () => {
+    Toolkit.$('sg-exec').addEventListener('click', () => {
       let pool = '';
       for (const [id, chars] of Object.entries(CHAR_SETS)) {
-        if (document.getElementById(id).checked) pool += chars;
+        if (Toolkit.$(id).checked) pool += chars;
       }
       if (!pool) {
         out.textContent = '⚠ 文字種を1つ以上選択してください';
@@ -96,7 +96,7 @@ Toolkit.registerTab({
       save();
     });
 
-    CHECK_IDS.forEach(id => document.getElementById(id).addEventListener('change', save));
+    CHECK_IDS.forEach(id => Toolkit.$(id).addEventListener('change', save));
     lenInput.addEventListener('input', save);
 
     countInput.addEventListener('input', () => { updateCount(); save(); });
@@ -105,7 +105,7 @@ Toolkit.registerTab({
     Toolkit.loadState('strgen', s => {
       if (!s) return;
       if (s.checks) CHECK_IDS.forEach(id => {
-        if (id in s.checks) document.getElementById(id).checked = s.checks[id];
+        if (id in s.checks) Toolkit.$(id).checked = s.checks[id];
       });
       if (s.len != null && s.len !== '') lenInput.value = s.len;
       if (s.output) out.textContent = s.output;

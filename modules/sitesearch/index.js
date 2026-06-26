@@ -33,10 +33,9 @@ Toolkit.registerTab({
     const MAX_LIST_RENDER = 300;   // ポップアップに描画するスニペット上限
     const View = window.SiteSearchResults; // 結果リストの描画（results.js）
 
-    const $ = id => document.getElementById(id);
-    const patternInput = $('ss-pattern'), execBtn = $('ss-exec'), scopeAllChk = $('ss-scope-all');
-    const regexChk = $('ss-regex'), caseChk = $('ss-case'), countEl = $('ss-count');
-    const statusEl = $('ss-status'), resultsEl = $('ss-results'), historyEl = $('ss-history-list');
+    const patternInput = Toolkit.$('ss-pattern'), execBtn = Toolkit.$('ss-exec'), scopeAllChk = Toolkit.$('ss-scope-all');
+    const regexChk = Toolkit.$('ss-regex'), caseChk = Toolkit.$('ss-case'), countEl = Toolkit.$('ss-count');
+    const statusEl = Toolkit.$('ss-status'), resultsEl = Toolkit.$('ss-results'), historyEl = Toolkit.$('ss-history-list');
 
     const _scripting = (typeof chrome !== 'undefined' && chrome.scripting) || null;
     const _tabs = (typeof chrome !== 'undefined' && chrome.tabs) || null;
@@ -202,7 +201,7 @@ Toolkit.registerTab({
     regexChk.addEventListener('change', () => { regexMode = regexChk.checked; save(); });
     caseChk.addEventListener('change', () => { caseSensitive = caseChk.checked; save(); });
     scopeAllChk.addEventListener('change', () => setScope(scopeAllChk.checked ? 'all' : 'page'));
-    $('ss-openbar').addEventListener('click', openBar);
+    Toolkit.$('ss-openbar').addEventListener('click', openBar);
     resultsEl.addEventListener('click', e => {
       const item = e.target.closest('.ss-item, .ss-group-head');
       if (!item) return;

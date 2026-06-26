@@ -16,7 +16,7 @@ Toolkit.registerSetting({
     <div class="tm-tabcfg-list" id="tabcfg-list"></div>
   `,
   init() {
-    const listEl = document.getElementById('tabcfg-list');
+    const listEl = Toolkit.$('tabcfg-list');
     let dragEl = null;
 
     /** 現在のタブ構成を一覧へ描画する */
@@ -42,7 +42,7 @@ Toolkit.registerSetting({
 
     /** 一覧のDOM順・チェック状態から構成を組み立てる */
     function readConfig() {
-      const items = [...listEl.querySelectorAll('.tm-tabcfg-item')];
+      const items = Toolkit.qsa('.tm-tabcfg-item', listEl);
       return {
         order: items.map(i => i.dataset.id),
         hidden: items.filter(i => !i.querySelector('.tm-tabcfg-toggle').checked).map(i => i.dataset.id),
@@ -81,7 +81,7 @@ Toolkit.registerSetting({
 
     /** ポインタのY座標から、ドラッグ要素を差し込む直後の要素を求める */
     function getAfterEl(y) {
-      const els = [...listEl.querySelectorAll('.tm-tabcfg-item:not(.dragging)')];
+      const els = Toolkit.qsa('.tm-tabcfg-item:not(.dragging)', listEl);
       let closest = { offset: -Infinity, el: null };
       for (const el of els) {
         const box = el.getBoundingClientRect();
@@ -112,8 +112,8 @@ Toolkit.registerSetting({
     <div class="tm-persist-list" id="persist-list"></div>
   `,
   init() {
-    const globalToggle = document.getElementById('persist-global');
-    const listEl = document.getElementById('persist-list');
+    const globalToggle = Toolkit.$('persist-global');
+    const listEl = Toolkit.$('persist-list');
 
     /** 全体トグルとツールごとの一覧を現在値で描画する（並びはタブの表示順に合わせる） */
     function render() {

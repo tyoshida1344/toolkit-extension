@@ -76,26 +76,26 @@ Toolkit.registerTab({
       const { r, g, b } = hexToRgb(hex);
       const { h, s, l } = rgbToHsl(r, g, b);
       const full = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-      document.getElementById('cl-picker').value = full;
-      document.getElementById('cl-hex').value = full;
-      document.getElementById('cl-preview').style.background = full;
-      document.getElementById('cl-hex-out').textContent = full;
-      document.getElementById('cl-rgb-out').textContent = `rgb(${r}, ${g}, ${b})`;
-      document.getElementById('cl-hsl-out').textContent = `hsl(${h}, ${s}%, ${l}%)`;
-      document.getElementById('cl-dec-out').textContent = `${r}, ${g}, ${b}`;
+      Toolkit.$('cl-picker').value = full;
+      Toolkit.$('cl-hex').value = full;
+      Toolkit.$('cl-preview').style.background = full;
+      Toolkit.$('cl-hex-out').textContent = full;
+      Toolkit.$('cl-rgb-out').textContent = `rgb(${r}, ${g}, ${b})`;
+      Toolkit.$('cl-hsl-out').textContent = `hsl(${h}, ${s}%, ${l}%)`;
+      Toolkit.$('cl-dec-out').textContent = `${r}, ${g}, ${b}`;
       // 現在色を永続化（updateColor が色変更の唯一の入口）
       Toolkit.saveState('color', { hex: full });
     }
 
-    document.getElementById('cl-picker').addEventListener('input', e => updateColor(e.target.value));
-    document.getElementById('cl-apply').addEventListener('click', () =>
-      updateColor(document.getElementById('cl-hex').value.trim()));
-    document.getElementById('cl-hex').addEventListener('keydown', e => {
+    Toolkit.$('cl-picker').addEventListener('input', e => updateColor(e.target.value));
+    Toolkit.$('cl-apply').addEventListener('click', () =>
+      updateColor(Toolkit.$('cl-hex').value.trim()));
+    Toolkit.$('cl-hex').addEventListener('keydown', e => {
       if (e.key === 'Enter') updateColor(e.target.value.trim());
     });
 
     // スポイト（EyeDropper API）
-    document.getElementById('cl-eyedrop').addEventListener('click', async () => {
+    Toolkit.$('cl-eyedrop').addEventListener('click', async () => {
       if (!('EyeDropper' in window)) {
         alert('このブラウザはスポイト機能（EyeDropper API）に対応していません。\nChrome / Edge をお使いください。');
         return;

@@ -52,15 +52,15 @@ Toolkit.registerSetting({
     const store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
     const QUOTA = (store && store.QUOTA_BYTES) || 10485760; // 既定 10MB
 
-    const totalEl = document.getElementById('storage-total');
-    const percentEl = document.getElementById('storage-percent');
-    const barEl = document.getElementById('storage-bar');
-    const listEl = document.getElementById('storage-list');
-    const clearAllBtn = document.getElementById('storage-clear-all');
-    const confirmEl = document.getElementById('storage-confirm');
-    const confirmMsgEl = document.getElementById('storage-confirm-msg');
-    const confirmCancelBtn = document.getElementById('storage-confirm-cancel');
-    const confirmOkBtn = document.getElementById('storage-confirm-ok');
+    const totalEl = Toolkit.$('storage-total');
+    const percentEl = Toolkit.$('storage-percent');
+    const barEl = Toolkit.$('storage-bar');
+    const listEl = Toolkit.$('storage-list');
+    const clearAllBtn = Toolkit.$('storage-clear-all');
+    const confirmEl = Toolkit.$('storage-confirm');
+    const confirmMsgEl = Toolkit.$('storage-confirm-msg');
+    const confirmCancelBtn = Toolkit.$('storage-confirm-cancel');
+    const confirmOkBtn = Toolkit.$('storage-confirm-ok');
 
     /** バイト数を読みやすい単位へ */
     function fmtBytes(n) {
@@ -98,8 +98,8 @@ Toolkit.registerSetting({
       // ツール別の内訳。データの無いツールは淡色＋クリア無効。
       tools.forEach(t => {
         store.getBytesInUse(t.key, bytes => {
-          const sizeEl = document.getElementById('storage-size-' + t.key);
-          const rowEl = document.getElementById('storage-item-' + t.key);
+          const sizeEl = Toolkit.$('storage-size-' + t.key);
+          const rowEl = Toolkit.$('storage-item-' + t.key);
           if (sizeEl) sizeEl.textContent = fmtBytes(bytes);
           if (rowEl) {
             rowEl.classList.toggle('is-empty', bytes === 0);
@@ -164,7 +164,7 @@ Toolkit.registerSetting({
     // 設定が閉じている間は再描画しない（無駄な取得を避ける）。
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
-        const overlay = document.getElementById('tm-settings-overlay');
+        const overlay = Toolkit.$('tm-settings-overlay');
         if (area === 'local' && overlay && !overlay.hidden) rerender();
       });
     }
