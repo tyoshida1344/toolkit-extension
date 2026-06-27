@@ -104,6 +104,38 @@ const Toolkit = (() => {
     return (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? el.value : el.textContent;
   }
 
+  /** 共通ヘルパー: HTML エスケープ（& < > のみ。表示・ハイライトの危険文字を無害化） */
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /** 共通ヘルパー: DOM 取得ショートハンド（id 取得 / セレクタ一括取得は配列で返す） */
+  const $ = id => document.getElementById(id);
+  const qsa = (sel, root = document) => Array.from((root || document).querySelectorAll(sel));
+
+  /**
+   * タブ別ショートカット共通ガード。指定タブのセクション(#sec-<tabId>)がアクティブで、
+   * イベント対象が INPUT/TEXTAREA/contentEditable でなく、モーダル(.tm-modal-overlay)が
+   * 開いていないときだけ、対応するハンドラ（keydown / paste）へイベントを渡す。
+   * 修飾キーの扱いや preventDefault など機能固有の判断はハンドラ側で行う。
+   * @param {string} tabId - 対象タブID
+   * @param {object} handlers
+   * @param {function} [handlers.keydown] - ガード通過時に呼ばれる keydown ハンドラ
+   * @param {function} [handlers.paste]   - ガード通過時に呼ばれる paste ハンドラ
+   */
+  function onTabShortcut(tabId, { keydown, paste } = {}) {
+    const passes = (e) => {
+      const sec = document.getElementById('sec-' + tabId);
+      if (!sec || !sec.classList.contains('active')) return false;
+      if (document.querySelector('.tm-modal-overlay:not([hidden])')) return false; // モーダル表示中は無視
+      const tag = (e.target.tagName || '').toUpperCase();
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return false;
+      return true;
+    };
+    if (keydown) document.addEventListener('keydown', e => { if (passes(e)) keydown(e); });
+    if (paste) document.addEventListener('paste', e => { if (passes(e)) paste(e); });
+  }
+
   /** 共通ヘルパー: クリップボードコピー (成功時 true を resolve) */
   function copyText(text) {
     text = (text || '').trim();
@@ -244,6 +276,9 @@ const Toolkit = (() => {
     tabConfig = { order: (cfg && cfg.order) || [], hidden: (cfg && cfg.hidden) || [] };
     applyTabConfig();
     saveState('tabConfig', tabConfig);
+    // タブ構成に依存する設定セクション（保持・ストレージ）へ即時再描画を促す。
+    // ストレージの保存（saveState）は非同期＆デバウンスなので、表示同期はこのイベントで揃える。
+    document.dispatchEvent(new CustomEvent('tm-tabconfig-change'));
   }
 
   /** UI構築 */
@@ -426,6 +461,7 @@ const Toolkit = (() => {
 
   return {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
+    escapeHtml, $, qsa, onTabShortcut,
     saveState, loadState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabConfig, setTabConfig,
   };

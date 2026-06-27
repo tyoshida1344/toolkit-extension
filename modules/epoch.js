@@ -41,16 +41,16 @@ Toolkit.registerTab({
         `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
     }
 
-    const refresh = () => { document.getElementById('ep-now').textContent = Date.now(); };
+    const refresh = () => { Toolkit.$('ep-now').textContent = Date.now(); };
     refresh();
 
-    document.getElementById('ep-refresh').addEventListener('click', refresh);
+    Toolkit.$('ep-refresh').addEventListener('click', refresh);
 
-    const msInput = document.getElementById('ep-ms-input');
-    const msResult = document.getElementById('ep-ms-result');
-    const dateInput = document.getElementById('ep-date-input');
-    const dateResult = document.getElementById('ep-date-result');
-    const dateUnit = document.getElementById('ep-date-unit');
+    const msInput = Toolkit.$('ep-ms-input');
+    const msResult = Toolkit.$('ep-ms-result');
+    const dateInput = Toolkit.$('ep-date-input');
+    const dateResult = Toolkit.$('ep-date-result');
+    const dateUnit = Toolkit.$('ep-date-unit');
 
     // 状態の永続化（各入力値と変換結果。現在時刻はライブなので保存しない）
     function save() {
@@ -65,7 +65,7 @@ Toolkit.registerTab({
 
     msInput.addEventListener('input', save);
 
-    document.getElementById('ep-ms2date').addEventListener('click', () => {
+    Toolkit.$('ep-ms2date').addEventListener('click', () => {
       const v = msInput.value.trim();
       const ms = Number(v);
       if (!v || isNaN(ms)) {
@@ -84,7 +84,7 @@ Toolkit.registerTab({
     dateInput.addEventListener('focus', openPicker);
     dateInput.addEventListener('change', save);
 
-    document.getElementById('ep-date2ms').addEventListener('click', () => {
+    Toolkit.$('ep-date2ms').addEventListener('click', () => {
       const v = dateInput.value;
       if (!v) {
         dateResult.textContent = '⚠ 日時を入力してください';

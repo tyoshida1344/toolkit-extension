@@ -9,8 +9,8 @@ Toolkit.registerTab({
     <div class="tm-note-status" id="memo-status">読み込み中...</div>
   `,
   init() {
-    const area = document.getElementById('memo-area');
-    const status = document.getElementById('memo-status');
+    const area = Toolkit.$('memo-area');
+    const status = Toolkit.$('memo-status');
     let saveTimer = null;
 
     // 読み込み（入力状態の保持がオフのときは復元しない）

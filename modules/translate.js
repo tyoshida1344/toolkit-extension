@@ -32,8 +32,8 @@ Toolkit.registerTab({
       return data[0].map(s => s[0]).join('');
     }
 
-    const input = document.getElementById('tr-input');
-    const result = document.getElementById('tr-result');
+    const input = Toolkit.$('tr-input');
+    const result = Toolkit.$('tr-result');
 
     // 状態の永続化（言語の向き・入力テキスト・翻訳結果）
     function save() {
@@ -46,10 +46,10 @@ Toolkit.registerTab({
 
     input.addEventListener('input', save);
 
-    document.getElementById('tr-swap').addEventListener('click', () => {
+    Toolkit.$('tr-swap').addEventListener('click', () => {
       [src, tgt] = [tgt, src];
-      document.getElementById('tr-src-label').textContent = LABELS[src];
-      document.getElementById('tr-tgt-label').textContent = LABELS[tgt];
+      Toolkit.$('tr-src-label').textContent = LABELS[src];
+      Toolkit.$('tr-tgt-label').textContent = LABELS[tgt];
       const resultText = result.textContent;
       if (resultText) {
         input.value = resultText;
@@ -58,10 +58,10 @@ Toolkit.registerTab({
       save();
     });
 
-    document.getElementById('tr-exec').addEventListener('click', async () => {
+    Toolkit.$('tr-exec').addEventListener('click', async () => {
       const text = input.value.trim();
       if (!text) return;
-      const status = document.getElementById('tr-status');
+      const status = Toolkit.$('tr-status');
       status.textContent = '翻訳中...';
       result.textContent = '';
       try {
@@ -79,8 +79,8 @@ Toolkit.registerTab({
       if (!s) return;
       if (s.src && s.tgt && LABELS[s.src] && LABELS[s.tgt]) {
         src = s.src; tgt = s.tgt;
-        document.getElementById('tr-src-label').textContent = LABELS[src];
-        document.getElementById('tr-tgt-label').textContent = LABELS[tgt];
+        Toolkit.$('tr-src-label').textContent = LABELS[src];
+        Toolkit.$('tr-tgt-label').textContent = LABELS[tgt];
       }
       if (s.input) input.value = s.input;
       if (s.result) result.textContent = s.result;

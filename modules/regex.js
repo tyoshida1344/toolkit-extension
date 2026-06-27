@@ -78,15 +78,11 @@ Toolkit.registerTab({
   `,
   init() {
     const FLAGS = 'gim'; // 常に global / ignoreCase / multiline で判定する
-    const patternInput = document.getElementById('re-pattern');
-    const testInput = document.getElementById('re-test');
-    const output = document.getElementById('re-output');
-    const status = document.getElementById('re-status');
-    const modal = document.getElementById('re-modal');
-
-    function escapeHtml(s) {
-      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
+    const patternInput = Toolkit.$('re-pattern');
+    const testInput = Toolkit.$('re-test');
+    const output = Toolkit.$('re-output');
+    const status = Toolkit.$('re-status');
+    const modal = Toolkit.$('re-modal');
 
     // 一致範囲を収集する（常に global なので全件）
     function findMatches(re, text) {
@@ -104,11 +100,11 @@ Toolkit.registerTab({
     function renderHighlight(text, matches) {
       let html = '', last = 0;
       for (const { start, end } of matches) {
-        html += escapeHtml(text.slice(last, start));
-        html += '<mark class="tm-re-hit">' + escapeHtml(text.slice(start, end)) + '</mark>';
+        html += Toolkit.escapeHtml(text.slice(last, start));
+        html += '<mark class="tm-re-hit">' + Toolkit.escapeHtml(text.slice(start, end)) + '</mark>';
         last = end;
       }
-      html += escapeHtml(text.slice(last));
+      html += Toolkit.escapeHtml(text.slice(last));
       return html;
     }
 
@@ -140,8 +136,8 @@ Toolkit.registerTab({
     testInput.addEventListener('input', () => { update(); save(); });
 
     // チートシート モーダルの開閉
-    document.getElementById('re-help').addEventListener('click', () => { modal.hidden = false; });
-    document.getElementById('re-modal-close').addEventListener('click', () => { modal.hidden = true; });
+    Toolkit.$('re-help').addEventListener('click', () => { modal.hidden = false; });
+    Toolkit.$('re-modal-close').addEventListener('click', () => { modal.hidden = true; });
     modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && !modal.hidden) modal.hidden = true;
