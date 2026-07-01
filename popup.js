@@ -21,7 +21,7 @@ const Toolkit = (() => {
    */
   function registerTab({ id, icon, label, html, init, storageKey }) {
     tabs.push({ id, icon, label, html, init, storageKey });
-    if (initialized) buildUI();
+    if (initialized && loading === 0) buildUI();
   }
 
   /**
@@ -35,7 +35,7 @@ const Toolkit = (() => {
    */
   function registerSetting({ id, title = '', html, init }) {
     settings.push({ id, title, html, init });
-    if (initialized) buildSettings();
+    if (initialized && loading === 0) buildSettings();
   }
 
   /** 共通ヘルパー: コピー完了トースト */
@@ -208,12 +208,12 @@ const Toolkit = (() => {
 
   /** タブをアクティブ化する共通処理（クリック・復元・設定変更から使う） */
   function activateTab(id, persist = true) {
-    const tab = tabs.find(t => t.id === id);
+    const m = TAB_MANIFEST.find(t => t.id === id);
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     const empty = document.getElementById('tm-tabs-empty');
     if (!sidebar || !content) return;
-    if (!tab) { // 表示タブが無い等：すべて非アクティブにして空状態を表示
+    if (!m) {
       sidebar.querySelectorAll('.tm-tab').forEach(t => t.classList.remove('active'));
       content.querySelectorAll('.tm-section').forEach(s => s.classList.remove('active'));
       document.getElementById('tm-header-title').textContent = '便利ツール';
@@ -224,22 +224,22 @@ const Toolkit = (() => {
       t.classList.toggle('active', t.dataset.tab === id));
     content.querySelectorAll('.tm-section').forEach(s =>
       s.classList.toggle('active', s.id === 'sec-' + id));
-    document.getElementById('tm-header-title').textContent = tab.icon + ' ' + tab.label;
+    document.getElementById('tm-header-title').textContent = m.icon + ' ' + m.label;
     if (empty) empty.hidden = true;
     if (persist) saveState('activeTab', id);
   }
 
   /** 登録済みタブの一覧（設定UIが表示順・名称・ストレージキーを読む）。storageKey 省略時は既定の `tm_state_<id>`。 */
   function getTabs() {
-    return tabs.map(t => ({
-      id: t.id, icon: t.icon, label: t.label,
-      storageKey: t.storageKey || (STATE_PREFIX + t.id),
+    return TAB_MANIFEST.map(m => ({
+      id: m.id, icon: m.icon, label: m.label,
+      storageKey: m.storageKey || (STATE_PREFIX + m.id),
     }));
   }
 
   /** 正規化済みのタブ構成を返す（未登録IDを除き、登録済みで未掲載のIDは末尾に補う） */
   function getTabConfig() {
-    const ids = tabs.map(t => t.id);
+    const ids = TAB_MANIFEST.map(m => m.id);
     const order = (tabConfig.order || []).filter(id => ids.includes(id));
     ids.forEach(id => { if (!order.includes(id)) order.push(id); });
     const hidden = (tabConfig.hidden || []).filter(id => ids.includes(id));
@@ -267,7 +267,9 @@ const Toolkit = (() => {
     const activeBtn = sidebar.querySelector('.tm-tab.active');
     const activeId = activeBtn ? activeBtn.dataset.tab : null;
     if (!activeId || cfg.hidden.includes(activeId)) {
-      activateTab(visible.length ? visible[0] : null, false);
+      const next = visible.length ? visible[0] : null;
+      activateTab(next, false);
+      if (next) lazyLoad(next);
     }
   }
 
@@ -281,27 +283,26 @@ const Toolkit = (() => {
     document.dispatchEvent(new CustomEvent('tm-tabconfig-change'));
   }
 
-  /** UI構築 */
+  /** UI構築（マニフェストからシェルだけ構築。コンテンツは遅延ロード） */
   function buildUI() {
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     sidebar.innerHTML = '';
     content.innerHTML = '';
 
-    tabs.forEach((tab, i) => {
+    TAB_MANIFEST.forEach((m, i) => {
       // サイドバーボタン
       const btn = document.createElement('button');
       btn.className = 'tm-tab' + (i === 0 ? ' active' : '');
-      btn.dataset.tab = tab.id;
-      btn.dataset.tip = tab.label;
-      btn.textContent = tab.icon;
+      btn.dataset.tab = m.id;
+      btn.dataset.tip = m.label;
+      btn.textContent = m.icon;
       sidebar.appendChild(btn);
 
-      // セクション
+      // セクション（中身は空。遅延ロード時に埋まる）
       const sec = document.createElement('div');
       sec.className = 'tm-section' + (i === 0 ? ' active' : '');
-      sec.id = 'sec-' + tab.id;
-      sec.innerHTML = tab.html;
+      sec.id = 'sec-' + m.id;
       content.appendChild(sec);
     });
 
@@ -314,30 +315,40 @@ const Toolkit = (() => {
     content.appendChild(empty);
 
     // ヘッダー初期値
-    if (tabs.length > 0) {
+    if (TAB_MANIFEST.length > 0) {
       document.getElementById('tm-header-title').textContent =
-        tabs[0].icon + ' ' + tabs[0].label;
+        TAB_MANIFEST[0].icon + ' ' + TAB_MANIFEST[0].label;
     }
 
-    // タブ切り替え
-    sidebar.querySelectorAll('.tm-tab').forEach(btn => {
-      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    // タブ切り替え（遅延ロードを兼ねる）
+    sidebar.addEventListener('click', e => {
+      const btn = e.target.closest('.tm-tab');
+      if (!btn) return;
+      const id = btn.dataset.tab;
+      activateTab(id);
+      lazyLoad(id);
     });
-
-    // 各モジュールの init を実行
-    tabs.forEach(tab => { if (tab.init) tab.init(); });
 
     // タブ構成（表示順・非表示）を反映
     applyTabConfig();
 
-    // 前回開いていたタブを復元（保存が無ければ先頭タブのまま。非表示タブは復元しない）
+    // 前回開いていたタブを復元し遅延ロード（保存が無ければ先頭タブ）
     loadState('activeTab', id => {
       const cfg = getTabConfig();
-      if (id && tabs.some(t => t.id === id) && !cfg.hidden.includes(id)) activateTab(id, false);
+      if (id && TAB_MANIFEST.some(m => m.id === id) && !cfg.hidden.includes(id)) {
+        activateTab(id, false);
+        lazyLoad(id);
+      } else {
+        const visible = cfg.order.filter(i => !cfg.hidden.includes(i));
+        lazyLoad(visible[0] || TAB_MANIFEST[0].id);
+      }
     });
 
-    // 設定オーバーレイを構築
+    // 設定オーバーレイを構築（中身のモジュールは設定を開くときに遅延ロード）
     buildSettings();
+
+    // FOUC 防止: <html> の display:none を解除して描画開始
+    document.documentElement.style.display = 'block';
   }
 
   /** 設定オーバーレイ（ヘッダーの⚙️から開く全画面オーバーレイ）を構築する */
@@ -400,12 +411,25 @@ const Toolkit = (() => {
     settings.forEach(s => { if (s.init) s.init(); });
   }
 
-  /** 設定オーバーレイを開く（開いた瞬間に最新状態へ更新できるようイベントを通知） */
+  /** 設定オーバーレイを開く（初回は設定モジュールを遅延ロード） */
+  let settingsLoaded = false;
   function openSettings() {
-    const o = document.getElementById('tm-settings-overlay');
-    if (!o) return;
-    o.hidden = false;
-    document.dispatchEvent(new CustomEvent('tm-settings-open'));
+    if (!settingsLoaded) {
+      settingsLoaded = true;
+      loading++;
+      loadScripts(SETTING_SCRIPTS, () => {
+        loading--;
+        buildSettings();
+        const o = document.getElementById('tm-settings-overlay');
+        if (o) { o.hidden = false; }
+        document.dispatchEvent(new CustomEvent('tm-settings-open'));
+      });
+    } else {
+      const o = document.getElementById('tm-settings-overlay');
+      if (!o) return;
+      o.hidden = false;
+      document.dispatchEvent(new CustomEvent('tm-settings-open'));
+    }
   }
 
   /** 設定オーバーレイを閉じる */
@@ -453,10 +477,71 @@ const Toolkit = (() => {
       });
   }
 
-  /** DOMContentLoaded で一括構築（コア設定を先読みしてから） */
+  /** タブのメタ情報（表示順 = 配列順）。追加時はここに足す。 */
+  const TAB_MANIFEST = [
+    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'] },
+    { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'] },
+    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'] },
+    { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'] },
+    { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'] },
+    { id: 'sitesearch', icon: '🔎', label: 'サイト内検索', scripts: [
+      'modules/sitesearch/engine.js',
+      'modules/sitesearch/bar.js',
+      'modules/sitesearch/results.js',
+      'modules/sitesearch/index.js',
+    ]},
+    { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'] },
+    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], storageKey: 'tm_toolkit_memo' },
+  ];
+
+  /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
+  const SETTING_SCRIPTS = [
+    'modules/appsettings.js',
+    'modules/storage.js',
+  ];
+
+  const loaded = {};  // id → true（ロード済みフラグ）
+  let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制（カウンタで並行ロード対応）
+
+  /** スクリプトを順次ロードする汎用関数 */
+  function loadScripts(srcs, done) {
+    let i = 0;
+    function next() {
+      if (i >= srcs.length) { done(); return; }
+      const s = document.createElement('script');
+      s.src = srcs[i++];
+      s.onload = next;
+      s.onerror = next;
+      document.head.appendChild(s);
+    }
+    next();
+  }
+
+  /** タブのスクリプトを遅延ロードし、コンテンツを構築する */
+  function lazyLoad(id) {
+    if (loaded[id]) return;
+    loaded[id] = true;
+    const m = TAB_MANIFEST.find(t => t.id === id);
+    if (!m) return;
+    loading++;
+    loadScripts(m.scripts, () => {
+      loading--;
+      const tab = tabs.find(t => t.id === id);
+      if (!tab) return;
+      const sec = document.getElementById('sec-' + id);
+      if (sec) {
+        sec.innerHTML = tab.html;
+        if (tab.init) tab.init();
+      }
+    });
+  }
+
+  /** DOMContentLoaded でコア設定先読み → シェル構築 */
   document.addEventListener('DOMContentLoaded', () => {
-    initialized = true;
-    preloadCoreConfig(buildUI);
+    preloadCoreConfig(() => {
+      initialized = true;
+      buildUI();
+    });
   });
 
   return {
