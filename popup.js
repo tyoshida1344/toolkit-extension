@@ -214,6 +214,48 @@ const Toolkit = (() => {
     _store.get(STATE_PREFIX + key, data => cb(data[STATE_PREFIX + key]));
   }
 
+  /** 入力欄の保存・復元・イベント結線を宣言的に行い、手動トリガー用の save を返す */
+  function bindState(tabId, fieldMap, opts = {}) {
+    const entries = Object.entries(fieldMap).map(([elId, def]) => {
+      const [prop, key] = Array.isArray(def) ? def : [def, elId];
+      return { elId, prop, key };
+    });
+
+    function save() {
+      const state = {};
+      for (const { elId, prop, key } of entries) {
+        const el = $(elId);
+        if (el) state[key] = el[prop];
+      }
+      if (opts.extra) Object.assign(state, opts.extra());
+      saveState(tabId, state);
+    }
+
+    for (const { elId, prop } of entries) {
+      const el = $(elId);
+      if (!el) continue;
+      if (prop === 'checked') {
+        el.addEventListener('change', save);
+      } else if (prop === 'value') {
+        el.addEventListener('input', save);
+        el.addEventListener('change', save);
+      }
+    }
+
+    loadState(tabId, s => {
+      if (s) {
+        for (const { elId, prop, key } of entries) {
+          if (s[key] == null) continue;
+          const el = $(elId);
+          if (el) el[prop] = s[key];
+        }
+      }
+      if (opts.onRestore) opts.onRestore(s);
+    });
+
+    return save;
+  }
+
   /** 入力状態の保持が有効か。toolId 指定時はそのツールの実効値（全体×個別） */
   function isPersistEnabled(toolId) {
     if (!toolId) return persistGlobal;
@@ -563,7 +605,7 @@ const Toolkit = (() => {
   return {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
     escapeHtml, $, qsa, onTabShortcut,
-    saveState, loadState, isPersistEnabled, getPersistConfig, setPersistEnabled,
+    saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabConfig, setTabConfig,
   };
 })();

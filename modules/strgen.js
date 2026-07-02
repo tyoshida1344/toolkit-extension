@@ -67,15 +67,17 @@ Toolkit.registerTab({
       Toolkit.$('sg-c-line').textContent = v ? v.split('\n').length : 0;
     }
 
-    // 状態の永続化（チェック・文字数・生成結果・カウント入力）
-    function save() {
-      Toolkit.saveState('strgen', {
-        checks: CHECK_IDS.reduce((o, id) => (o[id] = Toolkit.$(id).checked, o), {}),
-        len: lenInput.value,
-        output: out.textContent,
-        count: countInput.value,
-      });
-    }
+    const save = Toolkit.bindState('strgen', {
+      'sg-len': ['value', 'len'],
+      'sg-count-input': ['value', 'count'],
+      'sg-output': ['textContent', 'output'],
+    }, {
+      extra: () => ({ checks: CHECK_IDS.reduce((o, id) => (o[id] = Toolkit.$(id).checked, o), {}) }),
+      onRestore(s) {
+        if (s && s.checks) CHECK_IDS.forEach(id => { if (id in s.checks) Toolkit.$(id).checked = s.checks[id]; });
+        updateCount();
+      },
+    });
 
     Toolkit.$('sg-exec').addEventListener('click', () => {
       let pool = '';
@@ -94,19 +96,6 @@ Toolkit.registerTab({
     });
 
     CHECK_IDS.forEach(id => Toolkit.$(id).addEventListener('change', save));
-    lenInput.addEventListener('input', save);
-
-    countInput.addEventListener('input', () => { updateCount(); save(); });
-
-    // 復元
-    Toolkit.loadState('strgen', s => {
-      if (!s) return;
-      if (s.checks) CHECK_IDS.forEach(id => {
-        if (id in s.checks) Toolkit.$(id).checked = s.checks[id];
-      });
-      if (s.len != null && s.len !== '') lenInput.value = s.len;
-      if (s.output) out.textContent = s.output;
-      if (s.count) { countInput.value = s.count; updateCount(); }
-    });
+    countInput.addEventListener('input', updateCount);
   },
 });
