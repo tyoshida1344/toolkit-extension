@@ -15,9 +15,8 @@ Toolkit.registerTab({
         <label class="tm-check-label"><input type="checkbox" id="rg-gen-upper">英大文字 (A-Z)</label>
         <label class="tm-check-label"><input type="checkbox" id="rg-gen-lower">英小文字 (a-z)</label>
         <label class="tm-check-label"><input type="checkbox" id="rg-gen-digit" checked>数字 (0-9)</label>
-        <label class="tm-check-label"><input type="checkbox" id="rg-gen-symbol" checked>記号</label>
+        <label class="tm-check-label" id="rg-symbols-tip"><input type="checkbox" id="rg-gen-symbol" checked>記号</label>
       </div>
-      <div class="tm-rg-symbols" id="rg-symbols"></div>
     </div>
     <div class="tm-row">
       <label class="tm-label">必須条件</label>
@@ -26,9 +25,6 @@ Toolkit.registerTab({
         <label class="tm-check-label"><input type="checkbox" id="rg-req-lower">英小文字を1文字以上含む</label>
         <label class="tm-check-label"><input type="checkbox" id="rg-req-digit">数字を1文字以上含む</label>
         <label class="tm-check-label"><input type="checkbox" id="rg-req-symbol">記号を1文字以上含む</label>
-      </div>
-      <div class="tm-check-row" style="margin-top:2px">
-        <label class="tm-check-label"><input type="checkbox" id="rg-req-no-space">空白を禁止する</label>
       </div>
     </div>
     <div class="tm-row tm-inline">
@@ -52,7 +48,7 @@ Toolkit.registerTab({
   `,
   init() {
     const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-    const SYMBOLS_CC = '!@#$%\\^&*()_+\\-=\\[\\]{}|;:,.<>?';
+    const SYMBOLS_CC = SYMBOLS.replace(/[\^\-\[\]\\]/g, '\\$&');
 
     const genMinInput = Toolkit.$('rg-gen-min');
     const genMaxInput = Toolkit.$('rg-gen-max');
@@ -60,26 +56,22 @@ Toolkit.registerTab({
     const testInput = Toolkit.$('rg-test');
     const testResult = Toolkit.$('rg-test-result');
 
-    Toolkit.$('rg-symbols').textContent = SYMBOLS;
-
-    const CHECK_IDS = [
-      'rg-gen-upper', 'rg-gen-lower', 'rg-gen-digit', 'rg-gen-symbol',
-      'rg-req-upper', 'rg-req-lower', 'rg-req-digit', 'rg-req-symbol', 'rg-req-no-space',
-    ];
+    Toolkit.$('rg-symbols-tip').title = '対象記号: ' + SYMBOLS;
 
     const save = Toolkit.bindState('regexgen', {
       'rg-gen-min': ['value', 'genMin'],
       'rg-gen-max': ['value', 'genMax'],
       'rg-gen-output': ['textContent', 'genOutput'],
       'rg-test': ['value', 'test'],
-    }, {
-      extra: () => ({ checks: CHECK_IDS.reduce((o, id) => (o[id] = Toolkit.$(id).checked, o), {}) }),
-      onRestore(s) {
-        if (s && s.checks) CHECK_IDS.forEach(id => { if (id in s.checks) Toolkit.$(id).checked = s.checks[id]; });
-      },
+      'rg-gen-upper': ['checked', 'genUpper'],
+      'rg-gen-lower': ['checked', 'genLower'],
+      'rg-gen-digit': ['checked', 'genDigit'],
+      'rg-gen-symbol': ['checked', 'genSymbol'],
+      'rg-req-upper': ['checked', 'reqUpper'],
+      'rg-req-lower': ['checked', 'reqLower'],
+      'rg-req-digit': ['checked', 'reqDigit'],
+      'rg-req-symbol': ['checked', 'reqSymbol'],
     });
-
-    CHECK_IDS.forEach(id => Toolkit.$(id).addEventListener('change', save));
 
     function generate() {
       const min = Math.max(0, parseInt(genMinInput.value) || 0);
@@ -110,7 +102,6 @@ Toolkit.registerTab({
       if (Toolkit.$('rg-req-lower').checked) lookaheads += '(?=.*[a-z])';
       if (Toolkit.$('rg-req-digit').checked) lookaheads += '(?=.*[0-9])';
       if (Toolkit.$('rg-req-symbol').checked) lookaheads += '(?=.*[' + SYMBOLS_CC + '])';
-      if (Toolkit.$('rg-req-no-space').checked) lookaheads += '(?!.*\\s)';
 
       let charClass = '';
       if (allow.upper) charClass += 'A-Z';

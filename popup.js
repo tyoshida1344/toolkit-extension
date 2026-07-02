@@ -11,7 +11,7 @@ const Toolkit = (() => {
    * 各モジュールの registerTab は html / init だけを提供する（id は scripts から自動解決）。
    */
   const TAB_MANIFEST = [
-    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'], styles: ['styles/strgen.css'] },
+    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'] },
     { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'], styles: ['styles/epoch.css'] },
     { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'], styles: ['styles/color.css'] },
     { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'], styles: ['styles/translate.css'] },
