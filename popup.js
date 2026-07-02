@@ -181,7 +181,7 @@ const Toolkit = (() => {
     'textarea:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])';
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && _modalStack.length) {
+    if (e.key === 'Escape' && !e.repeat && _modalStack.length) {
       _modalStack[_modalStack.length - 1].close();
     }
   });
@@ -215,7 +215,11 @@ const Toolkit = (() => {
 
     function isOpen() { return !overlayEl.hidden; }
 
-    overlayEl.addEventListener('click', e => { if (e.target === overlayEl) close(); });
+    overlayEl.addEventListener('click', e => {
+      if (e.target !== overlayEl) return;
+      e.stopPropagation();
+      close();
+    });
 
     overlayEl.addEventListener('keydown', e => {
       if (e.key !== 'Tab' || _modalStack[_modalStack.length - 1] !== inst) return;
