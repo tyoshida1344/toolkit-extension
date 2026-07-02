@@ -27,9 +27,9 @@ node --check modules/<編集したファイル>.js
 
 **CSS は `styles/` に 3 層で分割する（1 枚にまとめない）**: スタイルは用途で 3 つに振り分ける。① `styles/base.css` … ほぼ全機能 / `popup.js` コアで使う共通スタイル（レイアウト・フォーム要素・ボタン・`output`・`inline`・`hr`・`icon-btn`・`copy-btn`・`toast` 等）、② component ファイル（例 `styles/modal.css`）… 用途は限られるが**複数ツールで使う部品**をコンポーネント名で切り出す、③ `styles/<module>.css` … **その機能でしか使わない個別スタイル**。判断基準は「何ツールが使うか」: 1 ツール専用なら base に置かず個別ファイルへ、複数ツールで使い回すなら component ファイルへ昇格させる。`base.css` だけが `popup.html` で静的に読み込まれ、**それ以外は `TAB_MANIFEST` の `styles` で指定し、タブ使用時に動的ロード**される（ポップアップの初期表示を高速化するため）。ビルドが無いので `@import` は使わない。
 
-**状態の永続化**: 入力値・変換結果はモジュール側で `Toolkit.saveState(key, value)` / `loadState(key, cb)` を使って `chrome.storage.local` に保存・復元する（キーは内部で `tm_state_` プレフィックスが付く。`saveState` は同一キー 200ms デバウンス）。保存はモジュール内に閉じる ＝ `popup.js` はストレージ I/O のヘルパーだけを提供し、何を保存するかは各モジュールが決める。新規モジュールでも入力・出力を変える箇所で `saveState` を呼び、`init` 末尾の `loadState` コールバックで復元すること（**コールバックは非同期**なので、DOM 構築直後の同期処理に依存しない）。アクティブタブ自体も `popup.js` が同じ仕組みで `activeTab` キーに保存している。`modules/memo.js` だけは歴史的経緯で独自キー `tm_toolkit_memo` を直接読み書きするが、`registerTab` に `storageKey: 'tm_toolkit_memo'` を宣言して**どのキーを使うかをレジストリに公開**している。
+**状態の永続化**: 入力値・変換結果はモジュール側で `Toolkit.saveState(key, value)` / `loadState(key, cb)` を使って `chrome.storage.local` に保存・復元する（キーは内部で `tm_state_` プレフィックスが付く。`saveState` は同一キー 200ms デバウンス）。保存はモジュール内に閉じる ＝ `popup.js` はストレージ I/O のヘルパーだけを提供し、何を保存するかは各モジュールが決める。新規モジュールでも入力・出力を変える箇所で `saveState` を呼び、`init` 末尾の `loadState` コールバックで復元すること（**コールバックは非同期**なので、DOM 構築直後の同期処理に依存しない）。アクティブタブ自体も `popup.js` が同じ仕組みで `activeTab` キーに保存している。`modules/memo.js` だけは歴史的経緯で独自キー `tm_toolkit_memo` を使うが、`TAB_MANIFEST` に `storageKey: 'tm_toolkit_memo'` を宣言して**どのキーを使うかをレジストリに公開**している。
 
-**ストレージキーはレジストリで一元管理する**: 各タブの保存先キーは `registerTab({ ..., storageKey })` で宣言できる（省略時は既定の `tm_state_<id>`）。`storage.js`（設定の「ストレージ」セクション）はこの宣言を `Toolkit.getTabs()` から読み、使用量表示・個別/一括クリアの一覧を**登録済みタブから動的生成**する（ハードコードの重複一覧は持たない）。つまり新規タブを足すだけでストレージ画面に自動反映され、独自キーを使う場合も `storageKey` を宣言すれば特別扱い不要。
+**ストレージキーはレジストリで一元管理する**: 各タブの保存先キーは `TAB_MANIFEST` の `storageKey` で宣言できる（省略時は既定の `tm_state_<id>`）。`storage.js`（設定の「ストレージ」セクション）はこの宣言を `Toolkit.getTabs()` から読み、使用量表示・個別/一括クリアの一覧を**登録済みタブから動的生成**する（ハードコードの重複一覧は持たない）。つまり `TAB_MANIFEST` にタブを足すだけでストレージ画面に自動反映され、独自キーを使う場合も `storageKey` を宣言すれば特別扱い不要。
 
 ## 外部連携の注意
 

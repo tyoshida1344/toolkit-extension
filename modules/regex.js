@@ -1,7 +1,5 @@
 Toolkit.registerTab({
   id: 'regex',
-  icon: '🔤',
-  label: '正規表現',
   html: `
     <div class="tm-row tm-inline">
       <label class="tm-label" style="margin:0;flex:1">正規表現</label>

@@ -1,7 +1,5 @@
 Toolkit.registerTab({
   id: 'strgen',
-  icon: '✏️',
-  label: '文字列生成',
   html: `
     <div class="tm-row">
       <label class="tm-label">文字種（複数選択可）</label>

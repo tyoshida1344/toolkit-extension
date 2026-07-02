@@ -1,7 +1,5 @@
 Toolkit.registerTab({
   id: 'calc',
-  icon: '🔢',
-  label: '電卓',
   html: `
     <div class="tm-calc">
       <div class="tm-calc-display">

@@ -1,7 +1,5 @@
 Toolkit.registerTab({
   id: 'color',
-  icon: '🎨',
-  label: 'カラー変換',
   html: `
     <div class="tm-row">
       <label class="tm-label">カラーピッカー</label>

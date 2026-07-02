@@ -10,17 +10,15 @@ const Toolkit = (() => {
   let initialized = false;
 
   /**
-   * タブを登録する
+   * タブを登録する（モジュールから呼ばれる）。
+   * id / icon / label は TAB_MANIFEST が唯一の情報源なので、ここでは html / init だけ受け取る。
    * @param {object} opts
    * @param {string} opts.id            - タブの一意ID (例: "strgen")
-   * @param {string} opts.icon          - 絵文字アイコン (例: "✏️")
-   * @param {string} opts.label         - 表示名 (例: "文字列生成")
    * @param {string} opts.html          - タブ内のHTML文字列
    * @param {function} opts.init        - DOM構築後に呼ばれる初期化関数
-   * @param {string} [opts.storageKey]  - 保存先キー（省略時は既定の `tm_state_<id>`）。ストレージ画面がこれを参照する。
    */
-  function registerTab({ id, icon, label, html, init, storageKey }) {
-    tabs.push({ id, icon, label, html, init, storageKey });
+  function registerTab({ id, html, init }) {
+    tabs.push({ id, html, init });
     if (initialized && loading === 0) buildUI();
   }
 

@@ -1,7 +1,5 @@
 Toolkit.registerTab({
   id: 'sitesearch',
-  icon: '🔎',
-  label: 'サイト内検索',
   html: `
     <div class="tm-row tm-inline">
       <input type="text" class="tm-input" id="ss-pattern" list="ss-history-list"
