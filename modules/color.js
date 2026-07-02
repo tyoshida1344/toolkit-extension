@@ -1,5 +1,4 @@
 Toolkit.registerTab({
-  id: 'color',
   html: `
     <div class="tm-row">
       <label class="tm-label">カラーピッカー</label>

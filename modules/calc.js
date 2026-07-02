@@ -1,5 +1,4 @@
 Toolkit.registerTab({
-  id: 'calc',
   html: `
     <div class="tm-calc">
       <div class="tm-calc-display">

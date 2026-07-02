@@ -1,5 +1,4 @@
 Toolkit.registerTab({
-  id: 'sitesearch',
   html: `
     <div class="tm-row tm-inline">
       <input type="text" class="tm-input" id="ss-pattern" list="ss-history-list"

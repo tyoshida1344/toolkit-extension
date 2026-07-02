@@ -7,7 +7,7 @@ const Toolkit = (() => {
   /**
    * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
    * id / icon / label / scripts / styles はこの定義が唯一の情報源。
-   * 各モジュールの registerTab は html / init だけを提供する（id は紐付け用に渡す）。
+   * 各モジュールの registerTab は html / init だけを提供する（id は scripts から自動解決）。
    */
   const TAB_MANIFEST = [
     { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'], styles: ['styles/strgen.css'] },
@@ -25,6 +25,9 @@ const Toolkit = (() => {
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
   ];
   const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
+  // スクリプトパス → タブ id の逆引き（registerTab で document.currentScript から id を自動解決する）
+  const SCRIPT_TO_TAB_ID = new Map();
+  TAB_MANIFEST.forEach(entry => entry.scripts.forEach(src => SCRIPT_TO_TAB_ID.set(src, entry.id)));
 
   /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
   const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
@@ -39,13 +42,15 @@ const Toolkit = (() => {
 
   /**
    * タブを登録する（モジュールから呼ばれる）。
-   * id / icon / label は TAB_MANIFEST が唯一の情報源なので、ここでは html / init だけ受け取る。
+   * id は document.currentScript から自動解決するため、モジュール側で指定する必要はない。
    * @param {object} opts
-   * @param {string} opts.id            - タブの一意ID (例: "strgen")
    * @param {string} opts.html          - タブ内のHTML文字列
    * @param {function} opts.init        - DOM構築後に呼ばれる初期化関数
    */
-  function registerTab({ id, html, init }) {
+  function registerTab({ html, init }) {
+    const src = document.currentScript && document.currentScript.getAttribute('src');
+    const id = src && SCRIPT_TO_TAB_ID.get(src);
+    if (!id) return;
     tabs.push({ id, html, init });
     if (initialized && loading === 0) buildUI();
   }

@@ -1,5 +1,4 @@
 Toolkit.registerTab({
-  id: 'strgen',
   html: `
     <div class="tm-row">
       <label class="tm-label">文字種（複数選択可）</label>

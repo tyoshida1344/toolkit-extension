@@ -1,5 +1,4 @@
 Toolkit.registerTab({
-  id: 'translate',
   html: `
     <div class="tm-row tm-inline" style="justify-content:center">
       <span class="tm-tr-lang" id="tr-src-label">日本語</span>

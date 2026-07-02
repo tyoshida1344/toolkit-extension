@@ -1,5 +1,4 @@
 Toolkit.registerTab({
-  id: 'memo',
   html: `
     <textarea class="tm-notepad-area" id="memo-area"
       placeholder="ここにメモを入力...\nどのサイトでも内容が保存されます。"></textarea>

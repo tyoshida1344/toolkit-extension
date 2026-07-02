@@ -19,7 +19,7 @@ node --check modules/<編集したファイル>.js
 
 `popup.js` は `Toolkit` シングルトン（IIFE）で、タブ管理・UI 構築・共通 UI ヘルパーだけを担い、**機能ロジックは一切持たない**。各機能は `modules/*.js` にあり、`Toolkit.registerTab(...)` を呼んで自己登録する。
 
-**モジュールの遅延ロード**: `popup.html` は `popup.js` だけを静的に読み込む。各モジュールのスクリプトと CSS は `popup.js` 内の `TAB_MANIFEST` に定義され、**タブを使用するタイミングで動的にロード**される（初期描画を高速化するため）。モジュールの `html` テンプレートリテラルは**読み込み時点で** `Toolkit.copyButton` / `iconButton` / `ICONS` を呼ぶため、`popup.js` が先にロードされている必要があるが、動的ロードの仕組みでこの順序は保証される。**UI のタブ順 = `TAB_MANIFEST` の配列順**。モジュール追加 = `modules/<name>.js` 作成 ＋（その機能固有のスタイルがあれば `styles/<name>.css` も作成）＋ `popup.js` の `TAB_MANIFEST` にエントリを追加。
+**モジュールの遅延ロード**: `popup.html` は `popup.js` だけを静的に読み込む。各モジュールのスクリプトと CSS は `popup.js` 内の `TAB_MANIFEST` に定義され、**タブを使用するタイミングで動的にロード**される（初期描画を高速化するため）。モジュールの `html` テンプレートリテラルは**読み込み時点で** `Toolkit.copyButton` / `iconButton` / `ICONS` を呼ぶため、`popup.js` が先にロードされている必要があるが、動的ロードの仕組みでこの順序は保証される。**UI のタブ順 = `TAB_MANIFEST` の配列順**。モジュール追加 = `modules/<name>.js` 作成 ＋（その機能固有のスタイルがあれば `styles/<name>.css` も作成）＋ `popup.js` の `TAB_MANIFEST` にエントリを追加。モジュール側の `registerTab` には `html` と `init` だけ渡す（id は `TAB_MANIFEST` の `scripts` 定義から `document.currentScript` で自動解決される）。
 
 **機能が複数ファイルに分かれる場合はフォルダにまとめる**: 1 ファイルで収まらない機能は `modules/<name>/` に分割してよい（例: `modules/sitesearch/` … `index.js`＝`Toolkit.registerTab` を呼ぶ主ファイル、`engine.js`／`bar.js`＝ページへ注入する補助、`results.js`＝描画専用）。`registerTab` を呼ぶ主ファイルは `index.js` とし、`TAB_MANIFEST` の `scripts` 配列には依存順（補助 → 主）で列挙する。**タブを登録しない補助モジュール**（注入用・描画専用など）は機能ロジックを持ってよいが、`window.SiteSearchEngine` のような名前空間で公開し主ファイルから呼ぶ（`Toolkit` の「機能ロジックを持たない」原則はあくまで `popup.js` コアの話）。CSS はフォルダに同梱せず従来どおり `styles/<name>.css` に置き、`TAB_MANIFEST` の `styles` に指定する。
 
