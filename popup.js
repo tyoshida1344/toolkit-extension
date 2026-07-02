@@ -30,7 +30,7 @@ const Toolkit = (() => {
 
   /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
   const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
-  const SETTING_STYLES = ['styles/modal.css', 'styles/appsettings.css', 'styles/storage.css'];
+  const SETTING_STYLES = ['styles/appsettings.css', 'styles/storage.css'];
 
   const tabs = [];
   const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション。タブではない。
