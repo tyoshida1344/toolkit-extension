@@ -175,6 +175,61 @@ const Toolkit = (() => {
       .catch(() => { showToast('⚠ コピーに失敗しました'); return false; });
   }
 
+  /** 共通ヘルパー: モーダル管理（スタック制御・Escape・背景クリック・フォーカストラップ） */
+  const _modalStack = [];
+  const _FOCUSABLE = 'a[href],button:not(:disabled),input:not(:disabled),' +
+    'textarea:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])';
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && _modalStack.length) {
+      _modalStack[_modalStack.length - 1].close();
+    }
+  });
+
+  function modal(overlayEl, { onOpen, onClose } = {}) {
+    let returnFocus = null;
+
+    function focusable() {
+      return Array.from(overlayEl.querySelectorAll(_FOCUSABLE))
+        .filter(el => !el.closest('[hidden]'));
+    }
+
+    function open() {
+      if (!overlayEl.hidden) return;
+      returnFocus = document.activeElement;
+      overlayEl.hidden = false;
+      _modalStack.push(inst);
+      const f = focusable();
+      if (f.length) f[0].focus();
+      if (onOpen) onOpen();
+    }
+
+    function close() {
+      if (overlayEl.hidden) return;
+      overlayEl.hidden = true;
+      const idx = _modalStack.indexOf(inst);
+      if (idx !== -1) _modalStack.splice(idx, 1);
+      if (onClose) onClose();
+      if (returnFocus) { returnFocus.focus(); returnFocus = null; }
+    }
+
+    function isOpen() { return !overlayEl.hidden; }
+
+    overlayEl.addEventListener('click', e => { if (e.target === overlayEl) close(); });
+
+    overlayEl.addEventListener('keydown', e => {
+      if (e.key !== 'Tab' || _modalStack[_modalStack.length - 1] !== inst) return;
+      const f = focusable();
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    const inst = { open, close, isOpen };
+    return inst;
+  }
+
   /**
    * 共通ヘルパー: 状態の永続化 (chrome.storage.local)
    * 各モジュールがタブごとの入力値・変換結果を保存し、再表示時に復元するために使う。
@@ -424,6 +479,7 @@ const Toolkit = (() => {
   }
 
   /** 設定オーバーレイ（ヘッダーの⚙️から開く全画面オーバーレイ）を構築する */
+  let settingsModal = null;
   function buildSettings() {
     let overlay = document.getElementById('tm-settings-overlay');
     if (overlay) overlay.remove(); // registerSetting 後の再構築に対応
@@ -473,11 +529,13 @@ const Toolkit = (() => {
       });
     }
 
-    // 開閉（⚙️は popup.html の静的要素なので onclick で冪等に結線する）
+    settingsModal = modal(overlay, {
+      onOpen() { document.dispatchEvent(new CustomEvent('tm-settings-open')); },
+    });
+
     const openBtn = document.getElementById('tm-settings-open');
     if (openBtn) openBtn.onclick = openSettings;
-    overlay.querySelector('#tm-settings-close').addEventListener('click', closeSettings);
-    overlay.addEventListener('click', e => { if (e.target === overlay) closeSettings(); });
+    overlay.querySelector('#tm-settings-close').addEventListener('click', () => settingsModal.close());
 
     // 各セクションの init を実行（DOM構築後）
     settings.forEach(s => { if (s.init) s.init(); });
@@ -493,22 +551,16 @@ const Toolkit = (() => {
       loadScripts(SETTING_SCRIPTS, () => {
         loading--;
         buildSettings();
-        const o = document.getElementById('tm-settings-overlay');
-        if (o) { o.hidden = false; }
-        document.dispatchEvent(new CustomEvent('tm-settings-open'));
+        if (settingsModal) settingsModal.open();
       });
     } else {
-      const o = document.getElementById('tm-settings-overlay');
-      if (!o) return;
-      o.hidden = false;
-      document.dispatchEvent(new CustomEvent('tm-settings-open'));
+      if (settingsModal) settingsModal.open();
     }
   }
 
   /** 設定オーバーレイを閉じる */
   function closeSettings() {
-    const o = document.getElementById('tm-settings-overlay');
-    if (o) o.hidden = true;
+    if (settingsModal) settingsModal.close();
   }
 
   /** コピーボタンの共通クリック処理（イベント委譲なのでDOM再構築後も有効） */
@@ -522,16 +574,6 @@ const Toolkit = (() => {
       btn.classList.add('copied');
       setTimeout(() => btn.classList.remove('copied'), 1000);
     });
-  });
-
-  /** Escape で設定オーバーレイを閉じる（一度だけ登録） */
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    const o = document.getElementById('tm-settings-overlay');
-    if (!o || o.hidden) return;
-    // 設定内で別のオーバーレイ（確認ダイアログ等）が開いている場合はそちらを優先
-    if (o.querySelector('.tm-modal-overlay:not([hidden])')) return;
-    closeSettings();
   });
 
   /** UI構築前にコア設定（保持ON/OFF・タブ構成）を読み込む（モジュール init より先に確定させる） */
@@ -604,7 +646,7 @@ const Toolkit = (() => {
 
   return {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
-    escapeHtml, $, qsa, onTabShortcut,
+    escapeHtml, $, qsa, onTabShortcut, modal,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabConfig, setTabConfig,
   };

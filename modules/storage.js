@@ -119,14 +119,13 @@ Toolkit.registerSetting({
 
     // ── 確認ダイアログ ──
     let pendingKeys = null;
+    const confirmModal = Toolkit.modal(confirmEl, {
+      onClose() { pendingKeys = null; },
+    });
     function askConfirm(message, keys) {
       confirmMsgEl.textContent = message;
       pendingKeys = keys;
-      confirmEl.hidden = false;
-    }
-    function closeConfirm() {
-      confirmEl.hidden = true;
-      pendingKeys = null;
+      confirmModal.open();
     }
 
     /** 指定キーを削除し、ポップアップをリロードして画面を初期状態へ戻す */
@@ -146,17 +145,11 @@ Toolkit.registerSetting({
       askConfirm('すべてのツールの保存データを消去します。よろしいですか？', getTools().map(t => t.key));
     });
 
-    confirmCancelBtn.addEventListener('click', closeConfirm);
-    confirmEl.addEventListener('click', e => { if (e.target === confirmEl) closeConfirm(); });
+    confirmCancelBtn.addEventListener('click', () => confirmModal.close());
     confirmOkBtn.addEventListener('click', () => {
       const keys = pendingKeys;
-      closeConfirm();
+      confirmModal.close();
       clearKeys(keys);
-    });
-
-    // 確認ダイアログ表示中は Escape で閉じる（設定オーバーレイより優先）
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !confirmEl.hidden) closeConfirm();
     });
 
     // ── 更新トリガ ──
