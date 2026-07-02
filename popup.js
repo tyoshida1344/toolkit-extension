@@ -1,7 +1,8 @@
 /**
  * popup.js — タブ管理・モジュール登録の共通フレームワーク
  *
- * 各モジュールは Toolkit.registerTab() を呼ぶだけで自動登録される。
+ * タブの定義は TAB_MANIFEST に一元管理し、使用時に動的ロードする。
+ * 各モジュールは Toolkit.registerTab() で html / init を提供する。
  */
 const Toolkit = (() => {
   /**
@@ -25,9 +26,7 @@ const Toolkit = (() => {
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
   ];
   const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
-  // スクリプトパス → タブ id の逆引き（registerTab で document.currentScript から id を自動解決する）
-  const SCRIPT_TO_TAB_ID = new Map();
-  TAB_MANIFEST.forEach(entry => entry.scripts.forEach(src => SCRIPT_TO_TAB_ID.set(src, entry.id)));
+  const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id]))); // スクリプトパス → タブ id の逆引き
 
   /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
   const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
