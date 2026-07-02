@@ -4,10 +4,38 @@
  * 各モジュールは Toolkit.registerTab() を呼ぶだけで自動登録される。
  */
 const Toolkit = (() => {
+  /**
+   * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
+   * id / icon / label / scripts / styles はこの定義が唯一の情報源。
+   * 各モジュールの registerTab は html / init だけを提供する（id は紐付け用に渡す）。
+   */
+  const TAB_MANIFEST = [
+    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'], styles: ['styles/strgen.css'] },
+    { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'], styles: ['styles/epoch.css'] },
+    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'], styles: ['styles/color.css'] },
+    { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'], styles: ['styles/translate.css'] },
+    { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'], styles: ['styles/regex.css'] },
+    { id: 'sitesearch', icon: '🔎', label: 'サイト内検索', scripts: [
+      'modules/sitesearch/engine.js',
+      'modules/sitesearch/bar.js',
+      'modules/sitesearch/results.js',
+      'modules/sitesearch/index.js',
+    ], styles: ['styles/sitesearch.css'] },
+    { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
+    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
+  ];
+  const tabManifestMap = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
+
+  /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
+  const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
+  const SETTING_STYLES = ['styles/modal.css', 'styles/appsettings.css', 'styles/storage.css'];
+
   const tabs = [];
   const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション。タブではない。
   let tabConfig = { order: [], hidden: [] }; // タブの表示順と非表示ID（設定で変更）
   let initialized = false;
+  const loaded = {};  // id → true（ロード済みフラグ）
+  let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制（カウンタで並行ロード対応）
 
   /**
    * タブを登録する（モジュールから呼ばれる）。
@@ -475,35 +503,6 @@ const Toolkit = (() => {
         done();
       });
   }
-
-  /**
-   * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
-   * id / icon / label / scripts / styles はこの定義が唯一の情報源。
-   * 各モジュールの registerTab は html / init だけを提供する（id は紐付け用に渡す）。
-   */
-  const TAB_MANIFEST = [
-    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'], styles: ['styles/strgen.css'] },
-    { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'], styles: ['styles/epoch.css'] },
-    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'], styles: ['styles/color.css'] },
-    { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'], styles: ['styles/translate.css'] },
-    { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'], styles: ['styles/regex.css'] },
-    { id: 'sitesearch', icon: '🔎', label: 'サイト内検索', scripts: [
-      'modules/sitesearch/engine.js',
-      'modules/sitesearch/bar.js',
-      'modules/sitesearch/results.js',
-      'modules/sitesearch/index.js',
-    ], styles: ['styles/sitesearch.css'] },
-    { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
-    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
-  ];
-  const tabManifestMap = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
-
-  /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
-  const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
-  const SETTING_STYLES = ['styles/modal.css', 'styles/appsettings.css', 'styles/storage.css'];
-
-  const loaded = {};  // id → true（ロード済みフラグ）
-  let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制（カウンタで並行ロード対応）
 
   /** CSS を動的に挿入する（並列読み込み・順序不問） */
   function loadStyles(hrefs) {
