@@ -180,12 +180,6 @@ const Toolkit = (() => {
   const _FOCUSABLE = 'a[href],button:not(:disabled),input:not(:disabled),' +
     'textarea:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])';
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !e.repeat && _modalStack.length) {
-      _modalStack[_modalStack.length - 1].close();
-    }
-  });
-
   function modal(overlayEl, { onOpen, onClose } = {}) {
     let returnFocus = null;
 

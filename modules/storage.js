@@ -128,10 +128,9 @@ Toolkit.registerSetting({
       confirmModal.open();
     }
 
-    /** 指定キーを削除し、ポップアップをリロードして画面を初期状態へ戻す */
     function clearKeys(keys) {
       if (!store || !keys || keys.length === 0) return;
-      store.remove(keys, () => { location.reload(); });
+      store.remove(keys);
     }
 
     // ── イベント結線 ──
