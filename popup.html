@@ -2,25 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <!-- Styles: base → component → 機能個別 (タブ順は popup.html のスクリプト順に合わせる) -->
+  <style>html { display: none; }</style>
   <link rel="stylesheet" href="styles/base.css">
-  <link rel="stylesheet" href="styles/modal.css">
-  <link rel="stylesheet" href="styles/strgen.css">
-  <link rel="stylesheet" href="styles/epoch.css">
-  <link rel="stylesheet" href="styles/color.css">
-  <link rel="stylesheet" href="styles/translate.css">
-  <link rel="stylesheet" href="styles/regex.css">
-  <link rel="stylesheet" href="styles/sitesearch.css">
-  <link rel="stylesheet" href="styles/calc.css">
-  <link rel="stylesheet" href="styles/memo.css">
-  <link rel="stylesheet" href="styles/appsettings.css">
-  <link rel="stylesheet" href="styles/storage.css">
 </head>
 <body>
   <div id="app">
     <div class="tm-main">
       <div class="tm-header">
-        <span id="tm-header-title">✏️ 文字列生成</span>
+        <span id="tm-header-title">読み込み中…</span>
         <button type="button" class="tm-icon-btn tm-settings-btn" id="tm-settings-open" title="設定" aria-label="設定">⚙️</button>
       </div>
       <div class="tm-content" id="tm-content"></div>
@@ -28,20 +17,6 @@
     <div class="tm-sidebar" id="tm-sidebar"></div>
   </div>
 
-  <!-- Modules -->
   <script src="popup.js"></script>
-  <script src="modules/strgen.js"></script>
-  <script src="modules/epoch.js"></script>
-  <script src="modules/color.js"></script>
-  <script src="modules/translate.js"></script>
-  <script src="modules/regex.js"></script>
-  <script src="modules/sitesearch/engine.js"></script>
-  <script src="modules/sitesearch/bar.js"></script>
-  <script src="modules/sitesearch/results.js"></script>
-  <script src="modules/sitesearch/index.js"></script>
-  <script src="modules/calc.js"></script>
-  <script src="modules/memo.js"></script>
-  <script src="modules/appsettings.js"></script>
-  <script src="modules/storage.js"></script>
 </body>
 </html>

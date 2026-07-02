@@ -1,7 +1,4 @@
 Toolkit.registerTab({
-  id: 'epoch',
-  icon: '⏱️',
-  label: 'エポック変換',
   html: `
     <div class="tm-row">
       <label class="tm-label">現在のエポックミリ秒</label>
