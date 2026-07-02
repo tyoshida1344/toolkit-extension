@@ -416,6 +416,7 @@ const Toolkit = (() => {
   function openSettings() {
     if (!settingsLoaded) {
       settingsLoaded = true;
+      loadStyles(SETTING_STYLES);
       loading++;
       loadScripts(SETTING_SCRIPTS, () => {
         loading--;
@@ -479,29 +480,37 @@ const Toolkit = (() => {
 
   /** タブのメタ情報（表示順 = 配列順）。追加時はここに足す。 */
   const TAB_MANIFEST = [
-    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'] },
-    { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'] },
-    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'] },
-    { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'] },
-    { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'] },
+    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'], styles: ['styles/strgen.css'] },
+    { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'], styles: ['styles/epoch.css'] },
+    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'], styles: ['styles/color.css'] },
+    { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'], styles: ['styles/translate.css'] },
+    { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'], styles: ['styles/regex.css'] },
     { id: 'sitesearch', icon: '🔎', label: 'サイト内検索', scripts: [
       'modules/sitesearch/engine.js',
       'modules/sitesearch/bar.js',
       'modules/sitesearch/results.js',
       'modules/sitesearch/index.js',
-    ]},
-    { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'] },
-    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], storageKey: 'tm_toolkit_memo' },
+    ], styles: ['styles/sitesearch.css'] },
+    { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
+    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
   ];
 
   /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
-  const SETTING_SCRIPTS = [
-    'modules/appsettings.js',
-    'modules/storage.js',
-  ];
+  const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
+  const SETTING_STYLES = ['styles/modal.css', 'styles/appsettings.css', 'styles/storage.css'];
 
   const loaded = {};  // id → true（ロード済みフラグ）
   let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制（カウンタで並行ロード対応）
+
+  /** CSS を動的に挿入する（並列読み込み・順序不問） */
+  function loadStyles(hrefs) {
+    (hrefs || []).forEach(href => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = href;
+      document.head.appendChild(l);
+    });
+  }
 
   /** スクリプトを順次ロードする汎用関数 */
   function loadScripts(srcs, done) {
@@ -523,6 +532,7 @@ const Toolkit = (() => {
     loaded[id] = true;
     const m = TAB_MANIFEST.find(t => t.id === id);
     if (!m) return;
+    loadStyles(m.styles);
     loading++;
     loadScripts(m.scripts, () => {
       loading--;
