@@ -16,6 +16,7 @@ const Toolkit = (() => {
     { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'], styles: ['styles/color.css'] },
     { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'], styles: ['styles/translate.css'] },
     { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'], styles: ['styles/regex.css'] },
+    { id: 'regexgen', icon: '*️⃣', label: '正規表現生成', scripts: ['modules/regexgen.js'], styles: ['styles/regexgen.css'] },
     { id: 'sitesearch', icon: '🔎', label: 'サイト内検索', scripts: [
       'modules/sitesearch/engine.js',
       'modules/sitesearch/bar.js',

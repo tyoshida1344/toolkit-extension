@@ -1,0 +1,14 @@
+/* ── PW正規表現 生成 ── */
+.tm-rg-len { display: flex; gap: 8px; align-items: center; }
+.tm-rg-len-label { font-size: 12px; color: var(--tm-text-muted); white-space: nowrap; }
+.tm-rg-len .tm-input { flex: 1; }
+.tm-rg-symbols {
+  font-family: 'Consolas', 'Monaco', monospace; font-size: 12px;
+  color: var(--tm-text-muted); background: var(--tm-bg-sunken);
+  border: 1px solid var(--tm-border); border-radius: 4px;
+  padding: 6px 10px; margin-top: 6px; word-break: break-all;
+}
+.tm-rg-result { font-size: 12px; font-weight: 700; margin-top: 6px; min-height: 18px; }
+.tm-rg-pass { color: var(--tm-success); }
+.tm-rg-fail { color: var(--tm-error); }
+.tm-rg-warn { color: var(--tm-text-muted); }
