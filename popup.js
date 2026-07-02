@@ -24,7 +24,7 @@ const Toolkit = (() => {
     { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
   ];
-  const tabManifestMap = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
+  const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
 
   /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
   const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
@@ -234,7 +234,7 @@ const Toolkit = (() => {
 
   /** タブをアクティブ化する共通処理（クリック・復元・設定変更から使う） */
   function activateTab(id, persist = true) {
-    const entry = tabManifestMap.get(id);
+    const entry = TAB_MANIFEST_MAP.get(id);
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     const empty = document.getElementById('tm-tabs-empty');
@@ -361,7 +361,7 @@ const Toolkit = (() => {
     // 前回開いていたタブを復元し遅延ロード（保存が無ければ先頭タブ）
     loadState('activeTab', id => {
       const cfg = getTabConfig();
-      if (id && tabManifestMap.has(id) && !cfg.hidden.includes(id)) {
+      if (id && TAB_MANIFEST_MAP.has(id) && !cfg.hidden.includes(id)) {
         activateTab(id, false);
         lazyLoad(id);
       } else {
@@ -532,7 +532,7 @@ const Toolkit = (() => {
   function lazyLoad(id) {
     if (loaded[id]) return;
     loaded[id] = true;
-    const entry = tabManifestMap.get(id);
+    const entry = TAB_MANIFEST_MAP.get(id);
     if (!entry) return;
     loadStyles(entry.styles);
     loading++;
