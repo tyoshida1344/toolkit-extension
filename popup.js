@@ -208,12 +208,12 @@ const Toolkit = (() => {
 
   /** タブをアクティブ化する共通処理（クリック・復元・設定変更から使う） */
   function activateTab(id, persist = true) {
-    const m = TAB_MANIFEST.find(t => t.id === id);
+    const entry = tabManifestMap.get(id);
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     const empty = document.getElementById('tm-tabs-empty');
     if (!sidebar || !content) return;
-    if (!m) {
+    if (!entry) {
       sidebar.querySelectorAll('.tm-tab').forEach(t => t.classList.remove('active'));
       content.querySelectorAll('.tm-section').forEach(s => s.classList.remove('active'));
       document.getElementById('tm-header-title').textContent = '便利ツール';
@@ -224,22 +224,22 @@ const Toolkit = (() => {
       t.classList.toggle('active', t.dataset.tab === id));
     content.querySelectorAll('.tm-section').forEach(s =>
       s.classList.toggle('active', s.id === 'sec-' + id));
-    document.getElementById('tm-header-title').textContent = m.icon + ' ' + m.label;
+    document.getElementById('tm-header-title').textContent = entry.icon + ' ' + entry.label;
     if (empty) empty.hidden = true;
     if (persist) saveState('activeTab', id);
   }
 
   /** 登録済みタブの一覧（設定UIが表示順・名称・ストレージキーを読む）。storageKey 省略時は既定の `tm_state_<id>`。 */
   function getTabs() {
-    return TAB_MANIFEST.map(m => ({
-      id: m.id, icon: m.icon, label: m.label,
-      storageKey: m.storageKey || (STATE_PREFIX + m.id),
+    return TAB_MANIFEST.map(entry => ({
+      id: entry.id, icon: entry.icon, label: entry.label,
+      storageKey: entry.storageKey || (STATE_PREFIX + entry.id),
     }));
   }
 
   /** 正規化済みのタブ構成を返す（未登録IDを除き、登録済みで未掲載のIDは末尾に補う） */
   function getTabConfig() {
-    const ids = TAB_MANIFEST.map(m => m.id);
+    const ids = TAB_MANIFEST.map(entry => entry.id);
     const order = (tabConfig.order || []).filter(id => ids.includes(id));
     ids.forEach(id => { if (!order.includes(id)) order.push(id); });
     const hidden = (tabConfig.hidden || []).filter(id => ids.includes(id));
@@ -283,26 +283,26 @@ const Toolkit = (() => {
     document.dispatchEvent(new CustomEvent('tm-tabconfig-change'));
   }
 
-  /** UI構築（マニフェストからシェルだけ構築。コンテンツは遅延ロード） */
+  /** UI構築 */
   function buildUI() {
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     sidebar.innerHTML = '';
     content.innerHTML = '';
 
-    TAB_MANIFEST.forEach((m, i) => {
-      // サイドバーボタン
+    // 初期描画のパフォーマンスを優先し、サイドバーのアイコンと空のセクションだけ構築する。
+    // 各タブの中身（html / init）は lazyLoad() でタブ使用時に遅延ロードして埋める。
+    TAB_MANIFEST.forEach((entry, i) => {
       const btn = document.createElement('button');
       btn.className = 'tm-tab' + (i === 0 ? ' active' : '');
-      btn.dataset.tab = m.id;
-      btn.dataset.tip = m.label;
-      btn.textContent = m.icon;
+      btn.dataset.tab = entry.id;
+      btn.dataset.tip = entry.label;
+      btn.textContent = entry.icon;
       sidebar.appendChild(btn);
 
-      // セクション（中身は空。遅延ロード時に埋まる）
       const sec = document.createElement('div');
       sec.className = 'tm-section' + (i === 0 ? ' active' : '');
-      sec.id = 'sec-' + m.id;
+      sec.id = 'sec-' + entry.id;
       content.appendChild(sec);
     });
 
@@ -335,7 +335,7 @@ const Toolkit = (() => {
     // 前回開いていたタブを復元し遅延ロード（保存が無ければ先頭タブ）
     loadState('activeTab', id => {
       const cfg = getTabConfig();
-      if (id && TAB_MANIFEST.some(m => m.id === id) && !cfg.hidden.includes(id)) {
+      if (id && tabManifestMap.has(id) && !cfg.hidden.includes(id)) {
         activateTab(id, false);
         lazyLoad(id);
       } else {
@@ -478,7 +478,11 @@ const Toolkit = (() => {
       });
   }
 
-  /** タブのメタ情報（表示順 = 配列順）。追加時はここに足す。 */
+  /**
+   * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
+   * id / icon / label / scripts / styles はこの定義が唯一の情報源。
+   * 各モジュールの registerTab は html / init だけを提供する（id は紐付け用に渡す）。
+   */
   const TAB_MANIFEST = [
     { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'], styles: ['styles/strgen.css'] },
     { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'], styles: ['styles/epoch.css'] },
@@ -494,6 +498,7 @@ const Toolkit = (() => {
     { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
   ];
+  const tabManifestMap = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
 
   /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
   const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
@@ -530,11 +535,11 @@ const Toolkit = (() => {
   function lazyLoad(id) {
     if (loaded[id]) return;
     loaded[id] = true;
-    const m = TAB_MANIFEST.find(t => t.id === id);
-    if (!m) return;
-    loadStyles(m.styles);
+    const entry = tabManifestMap.get(id);
+    if (!entry) return;
+    loadStyles(entry.styles);
     loading++;
-    loadScripts(m.scripts, () => {
+    loadScripts(entry.scripts, () => {
       loading--;
       const tab = tabs.find(t => t.id === id);
       if (!tab) return;
