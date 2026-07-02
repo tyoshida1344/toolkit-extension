@@ -132,11 +132,8 @@ Toolkit.registerTab({
     testInput.addEventListener('input', update);
 
     // チートシート モーダルの開閉
-    Toolkit.$('re-help').addEventListener('click', () => { modal.hidden = false; });
-    Toolkit.$('re-modal-close').addEventListener('click', () => { modal.hidden = true; });
-    modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !modal.hidden) modal.hidden = true;
-    });
+    const cheatModal = Toolkit.modal(modal);
+    Toolkit.$('re-help').addEventListener('click', () => cheatModal.open());
+    Toolkit.$('re-modal-close').addEventListener('click', () => cheatModal.close());
   },
 });
