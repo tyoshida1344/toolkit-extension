@@ -48,6 +48,12 @@ Toolkit.registerTab({
   init() {
     const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
     const SYMBOLS_CC = SYMBOLS.replace(/[\^\-\[\]\\]/g, '\\$&');
+    const TYPES = [
+      { key: 'upper', cc: 'A-Z' },
+      { key: 'lower', cc: 'a-z' },
+      { key: 'digit', cc: '0-9' },
+      { key: 'symbol', cc: SYMBOLS_CC },
+    ];
 
     const genMinInput = Toolkit.$('rg-gen-min');
     const genMaxInput = Toolkit.$('rg-gen-max');
@@ -83,30 +89,18 @@ Toolkit.registerTab({
         return;
       }
 
-      const allow = {
-        upper: Toolkit.$('rg-gen-upper').checked || Toolkit.$('rg-req-upper').checked,
-        lower: Toolkit.$('rg-gen-lower').checked || Toolkit.$('rg-req-lower').checked,
-        digit: Toolkit.$('rg-gen-digit').checked || Toolkit.$('rg-req-digit').checked,
-        symbol: Toolkit.$('rg-gen-symbol').checked || Toolkit.$('rg-req-symbol').checked,
-      };
+      let lookaheads = '', charClass = '';
+      for (const { key, cc } of TYPES) {
+        const req = Toolkit.$('rg-req-' + key).checked;
+        if (req) lookaheads += '(?=.*[' + cc + '])';
+        if (Toolkit.$('rg-gen-' + key).checked || req) charClass += cc;
+      }
 
-      if (!allow.upper && !allow.lower && !allow.digit && !allow.symbol) {
+      if (!charClass) {
         genOutput.textContent = '⚠ 文字種を1つ以上選択してください';
         save();
         return;
       }
-
-      let lookaheads = '';
-      if (Toolkit.$('rg-req-upper').checked) lookaheads += '(?=.*[A-Z])';
-      if (Toolkit.$('rg-req-lower').checked) lookaheads += '(?=.*[a-z])';
-      if (Toolkit.$('rg-req-digit').checked) lookaheads += '(?=.*[0-9])';
-      if (Toolkit.$('rg-req-symbol').checked) lookaheads += '(?=.*[' + SYMBOLS_CC + '])';
-
-      let charClass = '';
-      if (allow.upper) charClass += 'A-Z';
-      if (allow.lower) charClass += 'a-z';
-      if (allow.digit) charClass += '0-9';
-      if (allow.symbol) charClass += SYMBOLS_CC;
 
       const quantifier = max !== '' ? '{' + min + ',' + max + '}' : '{' + min + ',}';
       genOutput.textContent = '^' + lookaheads + '[' + charClass + ']' + quantifier + '$';
@@ -139,9 +133,9 @@ Toolkit.registerTab({
 
     genMinInput.addEventListener('input', generate);
     genMaxInput.addEventListener('input', generate);
-    for (const id of ['rg-gen-upper', 'rg-gen-lower', 'rg-gen-digit', 'rg-gen-symbol',
-      'rg-req-upper', 'rg-req-lower', 'rg-req-digit', 'rg-req-symbol']) {
-      Toolkit.$(id).addEventListener('change', generate);
+    for (const { key } of TYPES) {
+      Toolkit.$('rg-gen-' + key).addEventListener('change', generate);
+      Toolkit.$('rg-req-' + key).addEventListener('change', generate);
     }
     Toolkit.$('rg-test-exec').addEventListener('click', test);
   },
