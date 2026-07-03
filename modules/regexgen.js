@@ -27,13 +27,12 @@ Toolkit.registerTab({
         <label class="tm-check-label"><input type="checkbox" id="rg-req-symbol">記号を1文字以上含む</label>
       </div>
     </div>
-    <div class="tm-row tm-inline">
-      <button class="tm-btn tm-btn-primary" id="rg-gen-exec">正規表現を生成</button>
-      ${Toolkit.copyButton('rg-gen-output')}
-    </div>
     <div class="tm-row">
       <label class="tm-label">生成結果</label>
-      <div class="tm-output" id="rg-gen-output"></div>
+      <div class="tm-inline">
+        <div class="tm-output" id="rg-gen-output" style="flex:1"></div>
+        ${Toolkit.copyButton('rg-gen-output')}
+      </div>
     </div>
     <hr class="tm-hr">
     <div class="tm-row">
@@ -71,7 +70,7 @@ Toolkit.registerTab({
       'rg-req-lower': ['checked', 'reqLower'],
       'rg-req-digit': ['checked', 'reqDigit'],
       'rg-req-symbol': ['checked', 'reqSymbol'],
-    });
+    }, { onRestore() { generate(); } });
 
     function generate() {
       const min = Math.max(0, parseInt(genMinInput.value) || 0);
@@ -138,7 +137,12 @@ Toolkit.registerTab({
       }
     }
 
-    Toolkit.$('rg-gen-exec').addEventListener('click', generate);
+    genMinInput.addEventListener('input', generate);
+    genMaxInput.addEventListener('input', generate);
+    for (const id of ['rg-gen-upper', 'rg-gen-lower', 'rg-gen-digit', 'rg-gen-symbol',
+      'rg-req-upper', 'rg-req-lower', 'rg-req-digit', 'rg-req-symbol']) {
+      Toolkit.$(id).addEventListener('change', generate);
+    }
     Toolkit.$('rg-test-exec').addEventListener('click', test);
   },
 });
