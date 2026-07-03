@@ -1,27 +1,58 @@
 /**
  * popup.js — タブ管理・モジュール登録の共通フレームワーク
  *
- * 各モジュールは Toolkit.registerTab() を呼ぶだけで自動登録される。
+ * タブの定義は TAB_MANIFEST に一元管理し、使用時に動的ロードする。
+ * 各モジュールは Toolkit.registerTab() で html / init を提供する。
  */
 const Toolkit = (() => {
+  /**
+   * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
+   * id / icon / label / scripts / styles はこの定義が唯一の情報源。
+   * 各モジュールの registerTab は html / init だけを提供する（id は scripts から自動解決）。
+   */
+  const TAB_MANIFEST = [
+    { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'] },
+    { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'], styles: ['styles/epoch.css'] },
+    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'], styles: ['styles/color.css'] },
+    { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'], styles: ['styles/translate.css'] },
+    { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'], styles: ['styles/regex.css'] },
+    { id: 'regexgen', icon: '*️⃣', label: '正規表現生成', scripts: ['modules/regexgen.js'], styles: ['styles/regexgen.css'] },
+    { id: 'sitesearch', icon: '🔎', label: 'サイト内検索', scripts: [
+      'modules/sitesearch/engine.js',
+      'modules/sitesearch/bar.js',
+      'modules/sitesearch/results.js',
+      'modules/sitesearch/index.js',
+    ], styles: ['styles/sitesearch.css'] },
+    { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
+    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
+  ];
+  const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
+  const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id]))); // スクリプトパス → タブ id の逆引き
+
+  /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
+  const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
+  const SETTING_STYLES = ['styles/appsettings.css', 'styles/storage.css'];
+
   const tabs = [];
   const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション。タブではない。
   let tabConfig = { order: [], hidden: [] }; // タブの表示順と非表示ID（設定で変更）
   let initialized = false;
+  const loaded = {};  // id → true（ロード済みフラグ）
+  let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制（カウンタで並行ロード対応）
 
   /**
-   * タブを登録する
+   * タブを登録する（モジュールから呼ばれる）。
+   * id は document.currentScript から自動解決するため、モジュール側で指定する必要はない。
    * @param {object} opts
-   * @param {string} opts.id            - タブの一意ID (例: "strgen")
-   * @param {string} opts.icon          - 絵文字アイコン (例: "✏️")
-   * @param {string} opts.label         - 表示名 (例: "文字列生成")
    * @param {string} opts.html          - タブ内のHTML文字列
    * @param {function} opts.init        - DOM構築後に呼ばれる初期化関数
-   * @param {string} [opts.storageKey]  - 保存先キー（省略時は既定の `tm_state_<id>`）。ストレージ画面がこれを参照する。
    */
-  function registerTab({ id, icon, label, html, init, storageKey }) {
-    tabs.push({ id, icon, label, html, init, storageKey });
-    if (initialized) buildUI();
+  function registerTab({ html, init }) {
+    const src = document.currentScript && document.currentScript.getAttribute('src');
+    const id = src && SCRIPT_TO_TAB_ID.get(src);
+    if (!id) return;
+    tabs.push({ id, html, init });
+    if (initialized && loading === 0) buildUI();
   }
 
   /**
@@ -35,7 +66,7 @@ const Toolkit = (() => {
    */
   function registerSetting({ id, title = '', html, init }) {
     settings.push({ id, title, html, init });
-    if (initialized) buildSettings();
+    if (initialized && loading === 0) buildSettings();
   }
 
   /** 共通ヘルパー: コピー完了トースト */
@@ -145,6 +176,59 @@ const Toolkit = (() => {
       .catch(() => { showToast('⚠ コピーに失敗しました'); return false; });
   }
 
+  /** 共通ヘルパー: モーダル管理（スタック制御・Escape・背景クリック・フォーカストラップ） */
+  const _modalStack = [];
+  const _FOCUSABLE = 'a[href],button:not(:disabled),input:not(:disabled),' +
+    'textarea:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])';
+
+  function modal(overlayEl, { onOpen, onClose } = {}) {
+    let returnFocus = null;
+
+    function focusable() {
+      return Array.from(overlayEl.querySelectorAll(_FOCUSABLE))
+        .filter(el => !el.closest('[hidden]'));
+    }
+
+    function open() {
+      if (!overlayEl.hidden) return;
+      returnFocus = document.activeElement;
+      overlayEl.hidden = false;
+      _modalStack.push(inst);
+      const f = focusable();
+      if (f.length) f[0].focus();
+      if (onOpen) onOpen();
+    }
+
+    function close() {
+      if (overlayEl.hidden) return;
+      overlayEl.hidden = true;
+      const idx = _modalStack.indexOf(inst);
+      if (idx !== -1) _modalStack.splice(idx, 1);
+      if (onClose) onClose();
+      if (returnFocus) { returnFocus.focus(); returnFocus = null; }
+    }
+
+    function isOpen() { return !overlayEl.hidden; }
+
+    overlayEl.addEventListener('click', e => {
+      if (e.target !== overlayEl) return;
+      e.stopPropagation();
+      close();
+    });
+
+    overlayEl.addEventListener('keydown', e => {
+      if (e.key !== 'Tab' || _modalStack[_modalStack.length - 1] !== inst) return;
+      const f = focusable();
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    const inst = { open, close, isOpen };
+    return inst;
+  }
+
   /**
    * 共通ヘルパー: 状態の永続化 (chrome.storage.local)
    * 各モジュールがタブごとの入力値・変換結果を保存し、再表示時に復元するために使う。
@@ -184,6 +268,48 @@ const Toolkit = (() => {
     _store.get(STATE_PREFIX + key, data => cb(data[STATE_PREFIX + key]));
   }
 
+  /** 入力欄の保存・復元・イベント結線を宣言的に行い、手動トリガー用の save を返す */
+  function bindState(tabId, fieldMap, opts = {}) {
+    const entries = Object.entries(fieldMap).map(([elId, def]) => {
+      const [prop, key] = Array.isArray(def) ? def : [def, elId];
+      return { elId, prop, key };
+    });
+
+    function save() {
+      const state = {};
+      for (const { elId, prop, key } of entries) {
+        const el = $(elId);
+        if (el) state[key] = el[prop];
+      }
+      if (opts.extra) Object.assign(state, opts.extra());
+      saveState(tabId, state);
+    }
+
+    for (const { elId, prop } of entries) {
+      const el = $(elId);
+      if (!el) continue;
+      if (prop === 'checked') {
+        el.addEventListener('change', save);
+      } else if (prop === 'value') {
+        el.addEventListener('input', save);
+        el.addEventListener('change', save);
+      }
+    }
+
+    loadState(tabId, s => {
+      if (s) {
+        for (const { elId, prop, key } of entries) {
+          if (s[key] == null) continue;
+          const el = $(elId);
+          if (el) el[prop] = s[key];
+        }
+      }
+      if (opts.onRestore) opts.onRestore(s);
+    });
+
+    return save;
+  }
+
   /** 入力状態の保持が有効か。toolId 指定時はそのツールの実効値（全体×個別） */
   function isPersistEnabled(toolId) {
     if (!toolId) return persistGlobal;
@@ -208,12 +334,12 @@ const Toolkit = (() => {
 
   /** タブをアクティブ化する共通処理（クリック・復元・設定変更から使う） */
   function activateTab(id, persist = true) {
-    const tab = tabs.find(t => t.id === id);
+    const entry = TAB_MANIFEST_MAP.get(id);
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     const empty = document.getElementById('tm-tabs-empty');
     if (!sidebar || !content) return;
-    if (!tab) { // 表示タブが無い等：すべて非アクティブにして空状態を表示
+    if (!entry) {
       sidebar.querySelectorAll('.tm-tab').forEach(t => t.classList.remove('active'));
       content.querySelectorAll('.tm-section').forEach(s => s.classList.remove('active'));
       document.getElementById('tm-header-title').textContent = '便利ツール';
@@ -224,22 +350,22 @@ const Toolkit = (() => {
       t.classList.toggle('active', t.dataset.tab === id));
     content.querySelectorAll('.tm-section').forEach(s =>
       s.classList.toggle('active', s.id === 'sec-' + id));
-    document.getElementById('tm-header-title').textContent = tab.icon + ' ' + tab.label;
+    document.getElementById('tm-header-title').textContent = entry.icon + ' ' + entry.label;
     if (empty) empty.hidden = true;
     if (persist) saveState('activeTab', id);
   }
 
   /** 登録済みタブの一覧（設定UIが表示順・名称・ストレージキーを読む）。storageKey 省略時は既定の `tm_state_<id>`。 */
   function getTabs() {
-    return tabs.map(t => ({
-      id: t.id, icon: t.icon, label: t.label,
-      storageKey: t.storageKey || (STATE_PREFIX + t.id),
+    return TAB_MANIFEST.map(entry => ({
+      id: entry.id, icon: entry.icon, label: entry.label,
+      storageKey: entry.storageKey || (STATE_PREFIX + entry.id),
     }));
   }
 
   /** 正規化済みのタブ構成を返す（未登録IDを除き、登録済みで未掲載のIDは末尾に補う） */
   function getTabConfig() {
-    const ids = tabs.map(t => t.id);
+    const ids = TAB_MANIFEST.map(entry => entry.id);
     const order = (tabConfig.order || []).filter(id => ids.includes(id));
     ids.forEach(id => { if (!order.includes(id)) order.push(id); });
     const hidden = (tabConfig.hidden || []).filter(id => ids.includes(id));
@@ -267,7 +393,9 @@ const Toolkit = (() => {
     const activeBtn = sidebar.querySelector('.tm-tab.active');
     const activeId = activeBtn ? activeBtn.dataset.tab : null;
     if (!activeId || cfg.hidden.includes(activeId)) {
-      activateTab(visible.length ? visible[0] : null, false);
+      const next = visible.length ? visible[0] : null;
+      activateTab(next, false);
+      if (next) lazyLoad(next);
     }
   }
 
@@ -288,20 +416,19 @@ const Toolkit = (() => {
     sidebar.innerHTML = '';
     content.innerHTML = '';
 
-    tabs.forEach((tab, i) => {
-      // サイドバーボタン
+    // 初期描画のパフォーマンスを優先し、サイドバーのアイコンと空のセクションだけ構築する。
+    // 各タブの中身（html / init）は lazyLoad() でタブ使用時に遅延ロードして埋める。
+    TAB_MANIFEST.forEach((entry, i) => {
       const btn = document.createElement('button');
       btn.className = 'tm-tab' + (i === 0 ? ' active' : '');
-      btn.dataset.tab = tab.id;
-      btn.dataset.tip = tab.label;
-      btn.textContent = tab.icon;
+      btn.dataset.tab = entry.id;
+      btn.dataset.tip = entry.label;
+      btn.textContent = entry.icon;
       sidebar.appendChild(btn);
 
-      // セクション
       const sec = document.createElement('div');
       sec.className = 'tm-section' + (i === 0 ? ' active' : '');
-      sec.id = 'sec-' + tab.id;
-      sec.innerHTML = tab.html;
+      sec.id = 'sec-' + entry.id;
       content.appendChild(sec);
     });
 
@@ -314,33 +441,44 @@ const Toolkit = (() => {
     content.appendChild(empty);
 
     // ヘッダー初期値
-    if (tabs.length > 0) {
+    if (TAB_MANIFEST.length > 0) {
       document.getElementById('tm-header-title').textContent =
-        tabs[0].icon + ' ' + tabs[0].label;
+        TAB_MANIFEST[0].icon + ' ' + TAB_MANIFEST[0].label;
     }
 
-    // タブ切り替え
-    sidebar.querySelectorAll('.tm-tab').forEach(btn => {
-      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    // タブ切り替え（遅延ロードを兼ねる）
+    sidebar.addEventListener('click', e => {
+      const btn = e.target.closest('.tm-tab');
+      if (!btn) return;
+      const id = btn.dataset.tab;
+      activateTab(id);
+      lazyLoad(id);
     });
-
-    // 各モジュールの init を実行
-    tabs.forEach(tab => { if (tab.init) tab.init(); });
 
     // タブ構成（表示順・非表示）を反映
     applyTabConfig();
 
-    // 前回開いていたタブを復元（保存が無ければ先頭タブのまま。非表示タブは復元しない）
+    // 前回開いていたタブを復元し遅延ロード（保存が無ければ先頭タブ）
     loadState('activeTab', id => {
       const cfg = getTabConfig();
-      if (id && tabs.some(t => t.id === id) && !cfg.hidden.includes(id)) activateTab(id, false);
+      if (id && TAB_MANIFEST_MAP.has(id) && !cfg.hidden.includes(id)) {
+        activateTab(id, false);
+        lazyLoad(id);
+      } else {
+        const visible = cfg.order.filter(i => !cfg.hidden.includes(i));
+        lazyLoad(visible[0] || TAB_MANIFEST[0].id);
+      }
     });
 
-    // 設定オーバーレイを構築
+    // 設定オーバーレイを構築（中身のモジュールは設定を開くときに遅延ロード）
     buildSettings();
+
+    // FOUC 防止: <html> の display:none を解除して描画開始
+    document.documentElement.style.display = 'block';
   }
 
   /** 設定オーバーレイ（ヘッダーの⚙️から開く全画面オーバーレイ）を構築する */
+  let settingsModal = null;
   function buildSettings() {
     let overlay = document.getElementById('tm-settings-overlay');
     if (overlay) overlay.remove(); // registerSetting 後の再構築に対応
@@ -390,28 +528,38 @@ const Toolkit = (() => {
       });
     }
 
-    // 開閉（⚙️は popup.html の静的要素なので onclick で冪等に結線する）
+    settingsModal = modal(overlay, {
+      onOpen() { document.dispatchEvent(new CustomEvent('tm-settings-open')); },
+    });
+
     const openBtn = document.getElementById('tm-settings-open');
     if (openBtn) openBtn.onclick = openSettings;
-    overlay.querySelector('#tm-settings-close').addEventListener('click', closeSettings);
-    overlay.addEventListener('click', e => { if (e.target === overlay) closeSettings(); });
+    overlay.querySelector('#tm-settings-close').addEventListener('click', () => settingsModal.close());
 
     // 各セクションの init を実行（DOM構築後）
     settings.forEach(s => { if (s.init) s.init(); });
   }
 
-  /** 設定オーバーレイを開く（開いた瞬間に最新状態へ更新できるようイベントを通知） */
+  /** 設定オーバーレイを開く（初回は設定モジュールを遅延ロード） */
+  let settingsLoaded = false;
   function openSettings() {
-    const o = document.getElementById('tm-settings-overlay');
-    if (!o) return;
-    o.hidden = false;
-    document.dispatchEvent(new CustomEvent('tm-settings-open'));
+    if (!settingsLoaded) {
+      settingsLoaded = true;
+      loadStyles(SETTING_STYLES);
+      loading++;
+      loadScripts(SETTING_SCRIPTS, () => {
+        loading--;
+        buildSettings();
+        if (settingsModal) settingsModal.open();
+      });
+    } else {
+      if (settingsModal) settingsModal.open();
+    }
   }
 
   /** 設定オーバーレイを閉じる */
   function closeSettings() {
-    const o = document.getElementById('tm-settings-overlay');
-    if (o) o.hidden = true;
+    if (settingsModal) settingsModal.close();
   }
 
   /** コピーボタンの共通クリック処理（イベント委譲なのでDOM再構築後も有効） */
@@ -425,16 +573,6 @@ const Toolkit = (() => {
       btn.classList.add('copied');
       setTimeout(() => btn.classList.remove('copied'), 1000);
     });
-  });
-
-  /** Escape で設定オーバーレイを閉じる（一度だけ登録） */
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    const o = document.getElementById('tm-settings-overlay');
-    if (!o || o.hidden) return;
-    // 設定内で別のオーバーレイ（確認ダイアログ等）が開いている場合はそちらを優先
-    if (o.querySelector('.tm-modal-overlay:not([hidden])')) return;
-    closeSettings();
   });
 
   /** UI構築前にコア設定（保持ON/OFF・タブ構成）を読み込む（モジュール init より先に確定させる） */
@@ -453,16 +591,62 @@ const Toolkit = (() => {
       });
   }
 
-  /** DOMContentLoaded で一括構築（コア設定を先読みしてから） */
+  /** CSS を動的に挿入する（並列読み込み・順序不問） */
+  function loadStyles(hrefs) {
+    (hrefs || []).forEach(href => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = href;
+      document.head.appendChild(l);
+    });
+  }
+
+  /** スクリプトを順次ロードする汎用関数 */
+  function loadScripts(srcs, done) {
+    let i = 0;
+    function next() {
+      if (i >= srcs.length) { done(); return; }
+      const s = document.createElement('script');
+      s.src = srcs[i++];
+      s.onload = next;
+      s.onerror = next;
+      document.head.appendChild(s);
+    }
+    next();
+  }
+
+  /** タブのスクリプトを遅延ロードし、コンテンツを構築する */
+  function lazyLoad(id) {
+    if (loaded[id]) return;
+    loaded[id] = true;
+    const entry = TAB_MANIFEST_MAP.get(id);
+    if (!entry) return;
+    loadStyles(entry.styles);
+    loading++;
+    loadScripts(entry.scripts, () => {
+      loading--;
+      const tab = tabs.find(t => t.id === id);
+      if (!tab) return;
+      const sec = document.getElementById('sec-' + id);
+      if (sec) {
+        sec.innerHTML = tab.html;
+        if (tab.init) tab.init();
+      }
+    });
+  }
+
+  /** DOMContentLoaded でコア設定先読み → シェル構築 */
   document.addEventListener('DOMContentLoaded', () => {
-    initialized = true;
-    preloadCoreConfig(buildUI);
+    preloadCoreConfig(() => {
+      initialized = true;
+      buildUI();
+    });
   });
 
   return {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
-    escapeHtml, $, qsa, onTabShortcut,
-    saveState, loadState, isPersistEnabled, getPersistConfig, setPersistEnabled,
+    escapeHtml, $, qsa, onTabShortcut, modal,
+    saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabConfig, setTabConfig,
   };
 })();

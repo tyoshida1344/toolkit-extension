@@ -1,7 +1,4 @@
 Toolkit.registerTab({
-  id: 'translate',
-  icon: '🌐',
-  label: '翻訳',
   html: `
     <div class="tm-row tm-inline" style="justify-content:center">
       <span class="tm-tr-lang" id="tr-src-label">日本語</span>
@@ -35,16 +32,20 @@ Toolkit.registerTab({
     const input = Toolkit.$('tr-input');
     const result = Toolkit.$('tr-result');
 
-    // 状態の永続化（言語の向き・入力テキスト・翻訳結果）
-    function save() {
-      Toolkit.saveState('translate', {
-        src, tgt,
-        input: input.value,
-        result: result.textContent,
-      });
-    }
-
-    input.addEventListener('input', save);
+    const save = Toolkit.bindState('translate', {
+      'tr-input': ['value', 'input'],
+      'tr-result': ['textContent', 'result'],
+    }, {
+      extra: () => ({ src, tgt }),
+      onRestore(s) {
+        if (!s) return;
+        if (s.src && s.tgt && LABELS[s.src] && LABELS[s.tgt]) {
+          src = s.src; tgt = s.tgt;
+          Toolkit.$('tr-src-label').textContent = LABELS[src];
+          Toolkit.$('tr-tgt-label').textContent = LABELS[tgt];
+        }
+      },
+    });
 
     Toolkit.$('tr-swap').addEventListener('click', () => {
       [src, tgt] = [tgt, src];
@@ -72,18 +73,6 @@ Toolkit.registerTab({
         status.textContent = '';
       }
       save();
-    });
-
-    // 復元
-    Toolkit.loadState('translate', s => {
-      if (!s) return;
-      if (s.src && s.tgt && LABELS[s.src] && LABELS[s.tgt]) {
-        src = s.src; tgt = s.tgt;
-        Toolkit.$('tr-src-label').textContent = LABELS[src];
-        Toolkit.$('tr-tgt-label').textContent = LABELS[tgt];
-      }
-      if (s.input) input.value = s.input;
-      if (s.result) result.textContent = s.result;
     });
   },
 });

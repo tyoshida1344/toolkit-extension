@@ -1,7 +1,4 @@
 Toolkit.registerTab({
-  id: 'epoch',
-  icon: '⏱️',
-  label: 'エポック変換',
   html: `
     <div class="tm-row">
       <label class="tm-label">現在のエポックミリ秒</label>
@@ -52,18 +49,17 @@ Toolkit.registerTab({
     const dateResult = Toolkit.$('ep-date-result');
     const dateUnit = Toolkit.$('ep-date-unit');
 
-    // 状態の永続化（各入力値と変換結果。現在時刻はライブなので保存しない）
-    function save() {
-      Toolkit.saveState('epoch', {
-        msInput: msInput.value,
-        msResult: msResult.textContent,
-        dateInput: dateInput.value,
-        dateResult: dateResult.textContent,
-        unit: !dateUnit.hidden,
-      });
-    }
-
-    msInput.addEventListener('input', save);
+    const save = Toolkit.bindState('epoch', {
+      'ep-ms-input': ['value', 'msInput'],
+      'ep-ms-result': ['textContent', 'msResult'],
+      'ep-date-input': ['value', 'dateInput'],
+      'ep-date-result': ['textContent', 'dateResult'],
+    }, {
+      extra: () => ({ unit: !dateUnit.hidden }),
+      onRestore(s) {
+        if (s && s.dateResult) dateUnit.hidden = !s.unit;
+      },
+    });
 
     Toolkit.$('ep-ms2date').addEventListener('click', () => {
       const v = msInput.value.trim();
@@ -82,7 +78,6 @@ Toolkit.registerTab({
     const openPicker = () => { try { dateInput.showPicker(); } catch (_) { /* 既に表示中など */ } };
     dateInput.addEventListener('click', openPicker);
     dateInput.addEventListener('focus', openPicker);
-    dateInput.addEventListener('change', save);
 
     Toolkit.$('ep-date2ms').addEventListener('click', () => {
       const v = dateInput.value;
@@ -96,18 +91,6 @@ Toolkit.registerTab({
       dateResult.textContent = new Date(v).getTime();
       dateUnit.hidden = false;
       save();
-    });
-
-    // 復元
-    Toolkit.loadState('epoch', s => {
-      if (!s) return;
-      if (s.msInput) msInput.value = s.msInput;
-      if (s.msResult) msResult.textContent = s.msResult;
-      if (s.dateInput) dateInput.value = s.dateInput;
-      if (s.dateResult) {
-        dateResult.textContent = s.dateResult;
-        dateUnit.hidden = !s.unit;
-      }
     });
   },
 });

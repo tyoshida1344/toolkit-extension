@@ -1,7 +1,4 @@
 Toolkit.registerTab({
-  id: 'regex',
-  icon: '🔤',
-  label: '正規表現',
   html: `
     <div class="tm-row tm-inline">
       <label class="tm-label" style="margin:0;flex:1">正規表現</label>
@@ -124,31 +121,19 @@ Toolkit.registerTab({
       output.innerHTML = renderHighlight(text, findMatches(re, text));
     }
 
-    function save() {
-      Toolkit.saveState('regex', {
-        pattern: patternInput.value,
-        text: testInput.value,
-      });
-    }
+    Toolkit.bindState('regex', {
+      're-pattern': ['value', 'pattern'],
+      're-test': ['value', 'text'],
+    }, {
+      onRestore() { update(); },
+    });
 
-    // リアルタイム判定（入力のたびに更新）
-    patternInput.addEventListener('input', () => { update(); save(); });
-    testInput.addEventListener('input', () => { update(); save(); });
+    patternInput.addEventListener('input', update);
+    testInput.addEventListener('input', update);
 
     // チートシート モーダルの開閉
-    Toolkit.$('re-help').addEventListener('click', () => { modal.hidden = false; });
-    Toolkit.$('re-modal-close').addEventListener('click', () => { modal.hidden = true; });
-    modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !modal.hidden) modal.hidden = true;
-    });
-
-    // 復元（コールバックは非同期。末尾で update して結果を再描画する）
-    Toolkit.loadState('regex', s => {
-      if (!s) { update(); return; }
-      if (s.pattern != null) patternInput.value = s.pattern;
-      if (s.text != null) testInput.value = s.text;
-      update();
-    });
+    const cheatModal = Toolkit.modal(modal);
+    Toolkit.$('re-help').addEventListener('click', () => cheatModal.open());
+    Toolkit.$('re-modal-close').addEventListener('click', () => cheatModal.close());
   },
 });

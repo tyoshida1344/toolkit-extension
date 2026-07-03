@@ -1,7 +1,4 @@
 Toolkit.registerTab({
-  id: 'color',
-  icon: '🎨',
-  label: 'カラー変換',
   html: `
     <div class="tm-row">
       <label class="tm-label">カラーピッカー</label>
@@ -70,6 +67,11 @@ Toolkit.registerTab({
       return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
     }
 
+    const save = Toolkit.bindState('color', {}, {
+      extra: () => ({ hex: Toolkit.$('cl-hex').value }),
+      onRestore(s) { if (s && s.hex) updateColor(s.hex); },
+    });
+
     function updateColor(hex) {
       hex = hex.startsWith('#') ? hex : '#' + hex;
       if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return;
@@ -83,8 +85,7 @@ Toolkit.registerTab({
       Toolkit.$('cl-rgb-out').textContent = `rgb(${r}, ${g}, ${b})`;
       Toolkit.$('cl-hsl-out').textContent = `hsl(${h}, ${s}%, ${l}%)`;
       Toolkit.$('cl-dec-out').textContent = `${r}, ${g}, ${b}`;
-      // 現在色を永続化（updateColor が色変更の唯一の入口）
-      Toolkit.saveState('color', { hex: full });
+      save();
     }
 
     Toolkit.$('cl-picker').addEventListener('input', e => updateColor(e.target.value));
@@ -106,9 +107,5 @@ Toolkit.registerTab({
       } catch (e) { /* cancelled */ }
     });
 
-    // 復元（保存色があれば再描画。なければ HTML の初期値のまま）
-    Toolkit.loadState('color', s => {
-      if (s && s.hex) updateColor(s.hex);
-    });
   },
 });
