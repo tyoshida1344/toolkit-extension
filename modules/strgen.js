@@ -39,7 +39,7 @@ Toolkit.registerTab({
       'sg-alpha-upper': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
       'sg-alpha-lower': 'abcdefghijklmnopqrstuvwxyz',
       'sg-num': '0123456789',
-      'sg-symbol': '!@#$%^&*()-_=+[]{}|;:,.<>?/',
+      'sg-symbol': Toolkit.SYMBOLS,
       'sg-hkata': 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ',
     };
     const CHECK_IDS = Object.keys(CHAR_SETS);

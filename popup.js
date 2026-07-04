@@ -363,6 +363,20 @@ const Toolkit = (() => {
     }));
   }
 
+  /** getTabs() の結果を id をキーにしたオブジェクトで返す */
+  function getTabsById() {
+    return Object.fromEntries(getTabs().map(t => [t.id, t]));
+  }
+
+  /** 正規表現を安全に生成する。成功時 {re, error: null}、失敗時 {re: null, error: message文字列} */
+  function tryRegex(pattern, flags) {
+    try { return { re: new RegExp(pattern, flags), error: null }; }
+    catch (e) { return { re: null, error: e.message }; }
+  }
+
+  const HISTORY_LIMIT = 20;
+  const SYMBOLS = '!@#$%^&*()-_=+[]{}|;:,.<>?/';
+
   /** 正規化済みのタブ構成を返す（未登録IDを除き、登録済みで未掲載のIDは末尾に補う） */
   function getTabConfig() {
     const ids = TAB_MANIFEST.map(entry => entry.id);
@@ -647,6 +661,6 @@ const Toolkit = (() => {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
     escapeHtml, $, qsa, onTabShortcut, modal,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
-    getTabs, getTabConfig, setTabConfig,
+    getTabs, getTabsById, getTabConfig, setTabConfig, tryRegex, HISTORY_LIMIT, SYMBOLS,
   };
 })();

@@ -41,8 +41,7 @@ Toolkit.registerSetting({
   init() {
     // ツール一覧は登録済みタブから動的に作る。並び順はタブ構成に従う。
     function getTools() {
-      const byId = {};
-      Toolkit.getTabs().forEach(t => { byId[t.id] = t; });
+      const byId = Toolkit.getTabsById();
       return Toolkit.getTabConfig().order
         .map(id => byId[id])
         .filter(Boolean)

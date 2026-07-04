@@ -71,7 +71,7 @@ Toolkit.registerTab({
     let lastOp = null;        // = 連打用：直前の演算子
     let lastRhs = null;       // = 連打用：直前の右オペランド（正規化済み文字列）
     let errorState = false;   // 0 除算などのエラー中
-    const history = [];       // 計算履歴（最大 20 件・ストレージに保存）
+    const history = [];       // 計算履歴（最大 HISTORY_LIMIT 件・ストレージに保存）
 
     const isInt = (s) => /^-?\d+$/.test(s);
 
@@ -242,10 +242,10 @@ Toolkit.registerTab({
       render(); save();
     }
 
-    // ── 履歴（最大 20 件・ストレージに保存） ──
+    // ── 履歴（ストレージに保存） ──
     function addHistory(expr, result) {
       history.unshift({ expr, result });
-      if (history.length > 20) history.pop();
+      if (history.length > Toolkit.HISTORY_LIMIT) history.pop();
       renderHistory();
       save();
     }
@@ -380,7 +380,7 @@ Toolkit.registerTab({
       lastOp = s.lastOp != null ? s.lastOp : null;
       lastRhs = s.lastRhs != null ? String(s.lastRhs) : null;
       errorState = !!s.errorState;
-      if (Array.isArray(s.history)) { history.push(...s.history.slice(0, 20)); }
+      if (Array.isArray(s.history)) { history.push(...s.history.slice(0, Toolkit.HISTORY_LIMIT)); }
       renderHistory();
       render();
     });
