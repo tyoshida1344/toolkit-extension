@@ -135,6 +135,21 @@ const Toolkit = (() => {
     return (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? el.value : el.textContent;
   }
 
+  /** 共通ヘルパー: number 入力を min/max 属性の範囲に即時クランプする */
+  function clampInput(id) {
+    const el = typeof id === 'string' ? document.getElementById(id) : id;
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (el.value === '') return;
+      const n = parseInt(el.value);
+      if (isNaN(n)) return;
+      const max = el.hasAttribute('max') ? parseInt(el.max) : null;
+      const min = el.hasAttribute('min') ? parseInt(el.min) : null;
+      if (max != null && n > max) el.value = max;
+      else if (min != null && n < min) el.value = min;
+    });
+  }
+
   /** 共通ヘルパー: HTML エスケープ（& < > のみ。表示・ハイライトの危険文字を無害化） */
   function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -340,16 +355,16 @@ const Toolkit = (() => {
     const empty = document.getElementById('tm-tabs-empty');
     if (!sidebar || !content) return;
     if (!entry) {
-      sidebar.querySelectorAll('.tm-tab').forEach(t => t.classList.remove('active'));
-      content.querySelectorAll('.tm-section').forEach(s => s.classList.remove('active'));
+      sidebar.querySelector('.tm-tab.active')?.classList.remove('active');
+      content.querySelector('.tm-section.active')?.classList.remove('active');
       document.getElementById('tm-header-title').textContent = '便利ツール';
       if (empty) empty.hidden = false;
       return;
     }
-    sidebar.querySelectorAll('.tm-tab').forEach(t =>
-      t.classList.toggle('active', t.dataset.tab === id));
-    content.querySelectorAll('.tm-section').forEach(s =>
-      s.classList.toggle('active', s.id === 'sec-' + id));
+    sidebar.querySelector('.tm-tab.active')?.classList.remove('active');
+    sidebar.querySelector(`[data-tab="${id}"]`)?.classList.add('active');
+    content.querySelector('.tm-section.active')?.classList.remove('active');
+    document.getElementById('sec-' + id)?.classList.add('active');
     document.getElementById('tm-header-title').textContent = entry.icon + ' ' + entry.label;
     if (empty) empty.hidden = true;
     if (persist) saveState('activeTab', id);
@@ -659,7 +674,7 @@ const Toolkit = (() => {
 
   return {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
-    escapeHtml, $, qsa, onTabShortcut, modal,
+    escapeHtml, $, qsa, clampInput, onTabShortcut, modal,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabsById, getTabConfig, setTabConfig, tryRegex, HISTORY_LIMIT, SYMBOLS,
   };
