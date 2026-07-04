@@ -1,10 +1,6 @@
 /* ── Memo ── */
 .tm-notepad-area {
-  width: 100%; box-sizing: border-box; min-height: 380px;
-  background: var(--tm-bg); color: var(--tm-text); border: 1px solid var(--tm-border-strong);
-  border-radius: 6px; padding: 10px; font-size: 13px;
-  font-family: 'Consolas', 'Monaco', 'Hiragino Sans', monospace;
-  outline: none; resize: vertical; line-height: 1.6;
+  min-height: 380px; padding: 10px;
+  font-family: var(--tm-font-mono); line-height: 1.6;
 }
-.tm-notepad-area:focus { border-color: var(--tm-accent); }
 .tm-note-status { font-size: 11px; color: var(--tm-text-faint); text-align: right; margin-top: 4px; }

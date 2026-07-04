@@ -9,7 +9,7 @@
 .tm-calc-expr {
   text-align: right; min-height: 16px;
   font-size: 12px; color: var(--tm-text-muted);
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--tm-font-mono);
   white-space: nowrap; overflow-x: auto;
 }
 .tm-calc-main { display: flex; align-items: center; gap: 8px; }
@@ -17,7 +17,7 @@
   flex: 1; min-width: 0; text-align: right;
   font-size: 28px; font-weight: 700; line-height: 1.2;
   color: var(--tm-text-heading);
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--tm-font-mono);
   white-space: nowrap; overflow-x: auto; user-select: all;
 }
 
@@ -65,7 +65,7 @@
 .tm-calc-history-expr { font-size: 11px; color: var(--tm-text-muted); }
 .tm-calc-history-result {
   font-size: 14px; font-weight: 700; color: var(--tm-text-heading);
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--tm-font-mono);
 }
 .tm-calc-history-empty {
   padding: 10px 8px; font-size: 12px; color: var(--tm-text-faint); text-align: center;

@@ -28,10 +28,10 @@ Toolkit.registerSetting({
         const t = byId[id];
         if (!t) return '';
         const checked = cfg.hidden.includes(id) ? '' : ' checked';
-        return `<div class="tm-tabcfg-item" draggable="true" data-id="${id}">
+        return `<div class="tm-settings-row tm-tabcfg-item" draggable="true" data-id="${id}">
           <span class="tm-tabcfg-handle" title="ドラッグで並び替え" aria-hidden="true">⠿</span>
-          <span class="tm-tabcfg-icon">${t.icon}</span>
-          <span class="tm-tabcfg-label">${t.label}</span>
+          <span class="tm-settings-icon">${t.icon}</span>
+          <span class="tm-settings-label">${t.label}</span>
           <label class="tm-switch">
             <input type="checkbox" class="tm-tabcfg-toggle"${checked} aria-label="${t.label}を表示">
             <span class="tm-switch-slider"></span>
@@ -126,9 +126,9 @@ Toolkit.registerSetting({
         const t = byId[id];
         if (!t) return '';
         const on = cfg.byTool[id] !== false;
-        return `<div class="tm-persist-item${cfg.global ? '' : ' is-disabled'}">
-          <span class="tm-persist-icon">${t.icon}</span>
-          <span class="tm-persist-label">${t.label}</span>
+        return `<div class="tm-settings-row tm-persist-item${cfg.global ? '' : ' is-disabled'}">
+          <span class="tm-settings-icon">${t.icon}</span>
+          <span class="tm-settings-label">${t.label}</span>
           <label class="tm-switch">
             <input type="checkbox" class="tm-persist-toggle" data-id="${id}"${on ? ' checked' : ''}${cfg.global ? '' : ' disabled'} aria-label="${t.label}の保持">
             <span class="tm-switch-slider"></span>
