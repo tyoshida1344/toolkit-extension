@@ -131,6 +131,8 @@ Toolkit.registerTab({
       }
     }
 
+    Toolkit.clampInput(genMinInput);
+    Toolkit.clampInput(genMaxInput);
     genMinInput.addEventListener('input', generate);
     genMaxInput.addEventListener('input', generate);
     for (const { key } of TYPES) {

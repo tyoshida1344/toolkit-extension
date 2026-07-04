@@ -88,11 +88,13 @@ Toolkit.registerTab({
         out.textContent = '⚠ 文字種を1つ以上選択してください';
         return;
       }
-      const len = Math.max(1, Math.min(10000, parseInt(lenInput.value) || 10));
+      const len = parseInt(lenInput.value) || 10;
       const result = Array.from({length: len}, () => pool[Math.floor(Math.random() * pool.length)]).join('');
       out.textContent = result;
       save();
     });
+
+    Toolkit.clampInput(lenInput);
 
     CHECK_IDS.forEach(id => Toolkit.$(id).addEventListener('change', save));
     countInput.addEventListener('input', updateCount);

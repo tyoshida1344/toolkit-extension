@@ -135,6 +135,21 @@ const Toolkit = (() => {
     return (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? el.value : el.textContent;
   }
 
+  /** 共通ヘルパー: number 入力を min/max 属性の範囲に即時クランプする */
+  function clampInput(id) {
+    const el = typeof id === 'string' ? document.getElementById(id) : id;
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (el.value === '') return;
+      const n = parseInt(el.value);
+      if (isNaN(n)) return;
+      const max = el.hasAttribute('max') ? parseInt(el.max) : null;
+      const min = el.hasAttribute('min') ? parseInt(el.min) : null;
+      if (max != null && n > max) el.value = max;
+      else if (min != null && n < min) el.value = min;
+    });
+  }
+
   /** 共通ヘルパー: HTML エスケープ（& < > のみ。表示・ハイライトの危険文字を無害化） */
   function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -645,7 +660,7 @@ const Toolkit = (() => {
 
   return {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
-    escapeHtml, $, qsa, onTabShortcut, modal,
+    escapeHtml, $, qsa, clampInput, onTabShortcut, modal,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabConfig, setTabConfig,
   };
