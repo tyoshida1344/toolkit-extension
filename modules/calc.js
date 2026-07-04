@@ -1,5 +1,4 @@
 (() => {
-  // ── 定数 ──
   const SYM = { '+': '+', '-': '−', '*': '×', '/': '÷', '%': '%' }; // 演算子の表示記号（内部キー → 画面表示）
   // 入力と計算結果で別々の桁数上限（絶対値）。下限は符号を反転した値。
   const MAX_INPUT_DIGITS = 16;
@@ -11,8 +10,13 @@
   const MAX_RESULT_ABS_NUM = Number(MAX_RESULT_ABS); // 結果上限（小数判定用）
   const MSG_DIV0 = 'Cannot divide by 0';
   const MSG_OVERFLOW = 'Overflow';
+  const KEY_MAP = { Enter: '=', '=': '=', Backspace: 'back', Escape: 'C', Delete: 'CE' };
 
-  // ── 純粋関数 ──
+  function calcKey(key, label, { cls = '', title = '' } = {}) {
+    return `<button type="button" class="tm-calc-key${cls ? ' ' + cls : ''}" data-key="${key}"` +
+      `${title ? ` title="${title}" aria-label="${title}"` : ''}>${label}</button>`;
+  }
+
   const isInt = (s) => /^-?\d+$/.test(s);
 
   function fmt(n) {
@@ -70,7 +74,6 @@
     return { ok: true, value };
   }
 
-  // ── タブ登録 ──
   Toolkit.registerTab({
     html: `
       <div class="tm-calc">
@@ -82,30 +85,23 @@
           </div>
         </div>
         <div class="tm-calc-keys" id="calc-keys">
-          <button type="button" class="tm-calc-key tm-calc-fn" data-key="C" title="全消去：式・途中結果をすべてリセット" aria-label="全消去">C</button>
-          <button type="button" class="tm-calc-key tm-calc-fn" data-key="CE" title="入力中の数値だけ消去（演算子・途中結果は保持）" aria-label="入力中の数値を消去">CE</button>
-          <button type="button" class="tm-calc-key tm-calc-fn" data-key="back" title="1文字削除" aria-label="1文字削除">⌫</button>
-          <button type="button" class="tm-calc-key tm-calc-op" data-key="/">÷</button>
+          ${calcKey('C', 'C', { cls: 'tm-calc-fn', title: '全消去：式・途中結果をすべてリセット' })}
+          ${calcKey('CE', 'CE', { cls: 'tm-calc-fn', title: '入力中の数値だけ消去（演算子・途中結果は保持）' })}
+          ${calcKey('back', '⌫', { cls: 'tm-calc-fn', title: '1文字削除' })}
+          ${calcKey('/', '÷', { cls: 'tm-calc-op' })}
 
-          <button type="button" class="tm-calc-key" data-key="7">7</button>
-          <button type="button" class="tm-calc-key" data-key="8">8</button>
-          <button type="button" class="tm-calc-key" data-key="9">9</button>
-          <button type="button" class="tm-calc-key tm-calc-op" data-key="*">×</button>
+          ${calcKey('7', '7')} ${calcKey('8', '8')} ${calcKey('9', '9')}
+          ${calcKey('*', '×', { cls: 'tm-calc-op' })}
 
-          <button type="button" class="tm-calc-key" data-key="4">4</button>
-          <button type="button" class="tm-calc-key" data-key="5">5</button>
-          <button type="button" class="tm-calc-key" data-key="6">6</button>
-          <button type="button" class="tm-calc-key tm-calc-op" data-key="-">−</button>
+          ${calcKey('4', '4')} ${calcKey('5', '5')} ${calcKey('6', '6')}
+          ${calcKey('-', '−', { cls: 'tm-calc-op' })}
 
-          <button type="button" class="tm-calc-key" data-key="1">1</button>
-          <button type="button" class="tm-calc-key" data-key="2">2</button>
-          <button type="button" class="tm-calc-key" data-key="3">3</button>
-          <button type="button" class="tm-calc-key tm-calc-op" data-key="+">+</button>
+          ${calcKey('1', '1')} ${calcKey('2', '2')} ${calcKey('3', '3')}
+          ${calcKey('+', '+', { cls: 'tm-calc-op' })}
 
-          <button type="button" class="tm-calc-key tm-calc-op" data-key="%" title="剰余">%</button>
-          <button type="button" class="tm-calc-key" data-key="0">0</button>
-          <button type="button" class="tm-calc-key" data-key=".">.</button>
-          <button type="button" class="tm-calc-key tm-calc-eq" data-key="=">=</button>
+          ${calcKey('%', '%', { cls: 'tm-calc-op', title: '剰余' })}
+          ${calcKey('0', '0')} ${calcKey('.', '.')}
+          ${calcKey('=', '=', { cls: 'tm-calc-eq' })}
         </div>
         <div class="tm-calc-history">
           <div class="tm-calc-history-head">
@@ -117,7 +113,6 @@
       </div>
     `,
     init() {
-      // ── 状態 ──
       // 逐次計算の状態（数値はすべて文字列で保持し、整数は BigInt で正確に計算する）
       const displayEl = Toolkit.$('calc-display');
       const exprEl = Toolkit.$('calc-expr');
@@ -132,7 +127,6 @@
       let errorState = false;   // 0 除算などのエラー中
       const history = [];       // 計算履歴（最大 20 件・ストレージに保存）
 
-      // ── 描画 ──
       function render() {
         displayEl.textContent = display;
         exprEl.innerHTML = exprText() || '&nbsp;';
@@ -153,7 +147,6 @@
         save();
       }
 
-      // ── 入力操作 ──
       function clearAll() {
         display = '0'; accumulator = null; pendingOp = null;
         waiting = false; lastOp = null; lastRhs = null; errorState = false;
@@ -234,7 +227,6 @@
         render(); save();
       }
 
-      // ── 履歴 ──
       function addHistory(expr, result) {
         history.unshift({ expr, result });
         if (history.length > 20) history.pop();
@@ -291,7 +283,6 @@
         render(); save();
       }
 
-      // ── 入力ディスパッチ ──
       function press(key) {
         if (key >= '0' && key <= '9') return inputDigit(key);
         switch (key) {
@@ -304,7 +295,6 @@
         }
       }
 
-      // ── 永続化 ──
       function save() {
         Toolkit.saveState('calc', {
           display, accumulator, pendingOp, waiting, lastOp, lastRhs, errorState,
@@ -312,7 +302,6 @@
         });
       }
 
-      // ── イベント結線 ──
       Toolkit.$('calc-keys').addEventListener('click', (e) => {
         const btn = e.target.closest('.tm-calc-key');
         if (!btn) return;
@@ -334,16 +323,8 @@
       Toolkit.onTabShortcut('calc', {
         keydown(e) {
           if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-          let key = null;
-          if (e.key >= '0' && e.key <= '9') key = e.key;
-          else if (e.key === '.') key = '.';
-          else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '%') key = e.key;
-          else if (e.key === 'Enter' || e.key === '=') key = '=';
-          else if (e.key === 'Backspace') key = 'back';
-          else if (e.key === 'Escape') key = 'C';
-          else if (e.key === 'Delete') key = 'CE';
-
+          const k = e.key;
+          const key = (k >= '0' && k <= '9') || '+-*/.%'.includes(k) ? k : KEY_MAP[k];
           if (key != null) { e.preventDefault(); press(key); }
         },
         paste(e) {
@@ -354,7 +335,6 @@
         },
       });
 
-      // ── 復元 ──
       renderHistory();
       Toolkit.loadState('calc', s => {
         if (!s) { render(); return; }

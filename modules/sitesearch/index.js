@@ -1,5 +1,4 @@
 (() => {
-  // ── 定数 ──
   const MAX_PAGE_MATCHES = 2000;
   const MAX_TAB_MATCHES = 300;
   const MAX_LIST_RENDER = 300;
@@ -7,7 +6,6 @@
 
   const blankNav = () => ({ tabId: null, count: 0, current: -1 });
 
-  // ── タブ登録 ──
   Toolkit.registerTab({
     html: `
       <div class="tm-row tm-inline">
@@ -37,7 +35,6 @@
     init() {
       const View = window.SiteSearchResults;
 
-      // ── DOM 参照・Chrome API ──
       const patternInput = Toolkit.$('ss-pattern'), execBtn = Toolkit.$('ss-exec'), scopeAllChk = Toolkit.$('ss-scope-all');
       const regexChk = Toolkit.$('ss-regex'), caseChk = Toolkit.$('ss-case'), countEl = Toolkit.$('ss-count');
       const statusEl = Toolkit.$('ss-status'), resultsEl = Toolkit.$('ss-results'), historyEl = Toolkit.$('ss-history-list');
@@ -45,7 +42,6 @@
       const _scripting = (typeof chrome !== 'undefined' && chrome.scripting) || null;
       const _tabs = (typeof chrome !== 'undefined' && chrome.tabs) || null;
 
-      // ── 状態 ──
       let scope = 'page';
       let regexMode = true;
       let caseSensitive = false;
@@ -53,7 +49,6 @@
       let nav = blankNav();
       let lastResults = null;
 
-      // ── エンジン実行 ──
       // 検索本体はページ側エンジン(engine.js)を MAIN ワールドで実行（pattern/flags の組み立てもエンジン側）
       async function runOnTab(tabId, action, opts = {}) {
         if (!_scripting || !window.SiteSearchEngine) throw new Error('no-engine');
@@ -64,7 +59,6 @@
         return res && res[0] ? res[0].result : null;
       }
 
-      // ── タブ取得 ──
       async function getActiveTab() {
         if (!_tabs) return null;
         let list = await _tabs.query({ active: true, currentWindow: true });
@@ -79,7 +73,6 @@
         return null;
       }
 
-      // ── UI ヘルパー ──
       function clearResults() { resultsEl.innerHTML = ''; countEl.textContent = ''; }
       function setStatus(msg, isError) { statusEl.textContent = msg || ''; statusEl.classList.toggle('ss-status-error', !!isError); }
       function setCountDisplay() {
@@ -87,7 +80,6 @@
         else if (scope === 'page') countEl.textContent = '';
       }
 
-      // ── 検索実行 ──
       async function doSearch() {
         const query = patternInput.value;
         if (!query) {
@@ -147,7 +139,6 @@
         lastResults = View.render(resultsEl, countEl, groups, total, MAX_LIST_RENDER);
       }
 
-      // ── 結果ナビゲーション ──
       async function gotoTab(tabId, idx) {
         let res;
         try { res = await runOnTab(tabId, 'search', { query: patternInput.value, startIdx: idx, max: MAX_PAGE_MATCHES }); }
@@ -163,7 +154,6 @@
         } catch (e) { /* 切替失敗でもハイライトは適用済み */ }
       }
 
-      // ── ページ常駐バー ──
       async function openBar() {
         const engine = window.SiteSearchEngine && window.SiteSearchEngine.run;
         const bar = window.SiteSearchBar && window.SiteSearchBar.install;
@@ -177,7 +167,6 @@
         } catch (e) { setStatus('検索バーを表示できませんでした（' + (e.message || e) + '）', true); }
       }
 
-      // ── 検索ワード履歴 ──
       function addHistory(q) {
         const i = history.indexOf(q);
         if (i !== -1) history.splice(i, 1);
@@ -190,7 +179,6 @@
         history.forEach(q => { const o = document.createElement('option'); o.value = q; historyEl.appendChild(o); });
       }
 
-      // ── 永続化 ──
       function save() {
         Toolkit.saveState('sitesearch', { pattern: patternInput.value, scope, regexMode, caseSensitive, history, nav, results: lastResults });
       }
@@ -201,7 +189,6 @@
         nav = blankNav(); lastResults = null; save();
       }
 
-      // ── イベント結線 ──
       execBtn.addEventListener('click', doSearch);
       patternInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
       patternInput.addEventListener('input', save);
@@ -215,7 +202,6 @@
         gotoTab(parseInt(item.dataset.tabid, 10), parseInt(item.dataset.index, 10) || 0);
       });
 
-      // ── 復元 ──
       Toolkit.loadState('sitesearch', s => {
         if (!s) return;
         if (typeof s.pattern === 'string') patternInput.value = s.pattern;

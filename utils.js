@@ -5,16 +5,13 @@
  * モジュールからは Toolkit.$ / Toolkit.escapeHtml 等として利用する（再公開は popup.js が行う）。
  */
 const _TkUtils = (() => {
-  // ── DOM ショートハンド ──
   const $ = id => document.getElementById(id);
   const qsa = (sel, root = document) => Array.from((root || document).querySelectorAll(sel));
 
-  // ── 文字列ユーティリティ ──
   function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // ── トースト通知 ──
   let toastTimer = null;
   function showToast(message = '📋 コピーしました') {
     let toast = document.getElementById('tm-toast');
@@ -32,7 +29,6 @@ const _TkUtils = (() => {
     toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
   }
 
-  // ── アイコン・ボタン ──
   const svgIco = (extraClass, inner, sw = 2) =>
     `<svg class="tm-ico${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
     ` stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
@@ -59,13 +55,11 @@ const _TkUtils = (() => {
       `title="${title}" aria-label="${title}">${ICONS.copy}${ICONS.check}</button>`;
   }
 
-  // ── テキスト読み取り ──
   function readText(el) {
     if (!el) return '';
     return (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? el.value : el.textContent;
   }
 
-  // ── 入力クランプ ──
   function clampInput(id) {
     const el = typeof id === 'string' ? document.getElementById(id) : id;
     if (!el) return;

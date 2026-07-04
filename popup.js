@@ -5,10 +5,7 @@
  * 各モジュールは Toolkit.registerTab() で html / init を提供する。
  */
 const Toolkit = (() => {
-  // ── UI ユーティリティ（utils.js から取得） ──
   const { $, qsa, escapeHtml, showToast, svgIco, ICONS, iconButton, copyButton, readText, clampInput } = _TkUtils;
-
-  // ── タブマニフェスト・登録 ──
 
   /**
    * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
@@ -57,19 +54,20 @@ const Toolkit = (() => {
     if (initialized && loading === 0) buildUI();
   }
 
-  // ── 設定セクション登録 ──
-
   function registerSetting({ id, title = '', html, init }) {
     settings.push({ id, title, html, init });
     if (initialized && loading === 0) buildSettings();
   }
 
-  // ── キーボードショートカットガード ──
-
   /**
    * タブ別ショートカット共通ガード。指定タブのセクション(#sec-<tabId>)がアクティブで、
    * イベント対象が INPUT/TEXTAREA/contentEditable でなく、モーダル(.tm-modal-overlay)が
    * 開いていないときだけ、対応するハンドラ（keydown / paste）へイベントを渡す。
+   * 修飾キーの扱いや preventDefault など機能固有の判断はハンドラ側で行う。
+   * @param {string} tabId - 対象タブID
+   * @param {object} handlers
+   * @param {function} [handlers.keydown] - ガード通過時に呼ばれる keydown ハンドラ
+   * @param {function} [handlers.paste] - ガード通過時に呼ばれる paste ハンドラ
    */
   function onTabShortcut(tabId, { keydown, paste } = {}) {
     const passes = (e) => {
@@ -84,8 +82,6 @@ const Toolkit = (() => {
     if (paste) document.addEventListener('paste', e => { if (passes(e)) paste(e); });
   }
 
-  // ── クリップボードコピー ──
-
   function copyText(text) {
     text = (text || '').trim();
     if (!text) { showToast('⚠ コピーする内容がありません'); return Promise.resolve(false); }
@@ -93,8 +89,6 @@ const Toolkit = (() => {
       .then(() => { showToast(); return true; })
       .catch(() => { showToast('⚠ コピーに失敗しました'); return false; });
   }
-
-  // ── モーダル管理 ──
 
   const _modalStack = [];
   const _FOCUSABLE = 'a[href],button:not(:disabled),input:not(:disabled),' +
@@ -147,8 +141,6 @@ const Toolkit = (() => {
     const inst = { open, close, isOpen };
     return inst;
   }
-
-  // ── 状態永続化エンジン ──
 
   const _store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
   const STATE_PREFIX = 'tm_state_';
@@ -238,8 +230,6 @@ const Toolkit = (() => {
     }
   }
 
-  // ── タブ切替・タブ設定管理 ──
-
   function activateTab(id, persist = true) {
     const entry = TAB_MANIFEST_MAP.get(id);
     const sidebar = document.getElementById('tm-sidebar');
@@ -309,8 +299,6 @@ const Toolkit = (() => {
     document.dispatchEvent(new CustomEvent('tm-tabconfig-change'));
   }
 
-  // ── DOM 構築・遅延読み込み ──
-
   function buildUI() {
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
@@ -368,8 +356,6 @@ const Toolkit = (() => {
 
     document.documentElement.style.display = 'block';
   }
-
-  // ── 設定オーバーレイ ──
 
   let settingsModal = null;
   function buildSettings() {
@@ -450,8 +436,6 @@ const Toolkit = (() => {
     if (settingsModal) settingsModal.close();
   }
 
-  // ── コピーボタンのイベント委譲 ──
-
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.tm-copy-btn');
     if (!btn) return;
@@ -463,8 +447,6 @@ const Toolkit = (() => {
       setTimeout(() => btn.classList.remove('copied'), 1000);
     });
   });
-
-  // ── コア設定プリロード ──
 
   function preloadCoreConfig(done) {
     if (!_store) { done(); return; }
@@ -480,8 +462,6 @@ const Toolkit = (() => {
         done();
       });
   }
-
-  // ── スクリプト・スタイルローダー ──
 
   function loadStyles(hrefs) {
     (hrefs || []).forEach(href => {
@@ -523,8 +503,6 @@ const Toolkit = (() => {
       }
     });
   }
-
-  // ── 初期化 ──
 
   document.addEventListener('DOMContentLoaded', () => {
     preloadCoreConfig(() => {
