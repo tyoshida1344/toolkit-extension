@@ -46,8 +46,7 @@ Toolkit.registerTab({
     </div>
   `,
   init() {
-    const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-    const SYMBOLS_CC = SYMBOLS.replace(/[\^\-\[\]\\]/g, '\\$&');
+    const SYMBOLS_CC = Toolkit.SYMBOLS.replace(/[\^\-\[\]\\]/g, '\\$&');
     const TYPES = [
       { key: 'upper', cc: 'A-Z' },
       { key: 'lower', cc: 'a-z' },
@@ -61,7 +60,7 @@ Toolkit.registerTab({
     const testInput = Toolkit.$('rg-test');
     const testResult = Toolkit.$('rg-test-result');
 
-    Toolkit.$('rg-symbols-tip').title = '対象記号: ' + SYMBOLS;
+    Toolkit.$('rg-symbols-tip').title = '対象記号: ' + Toolkit.SYMBOLS;
 
     const save = Toolkit.bindState('regexgen', {
       'rg-gen-min': ['value', 'genMin'],
@@ -116,18 +115,18 @@ Toolkit.registerTab({
         testResult.className = 'tm-rg-result tm-rg-warn';
         return;
       }
-      try {
-        const re = new RegExp(pattern);
-        if (re.test(testInput.value)) {
-          testResult.textContent = '✓ 合格';
-          testResult.className = 'tm-rg-result tm-rg-pass';
-        } else {
-          testResult.textContent = '✗ 不合格';
-          testResult.className = 'tm-rg-result tm-rg-fail';
-        }
-      } catch (e) {
+      const { re, error } = Toolkit.tryRegex(pattern);
+      if (error) {
         testResult.textContent = '⚠ 不正な正規表現';
         testResult.className = 'tm-rg-result tm-rg-warn';
+        return;
+      }
+      if (re.test(testInput.value)) {
+        testResult.textContent = '✓ 合格';
+        testResult.className = 'tm-rg-result tm-rg-pass';
+      } else {
+        testResult.textContent = '✗ 不合格';
+        testResult.className = 'tm-rg-result tm-rg-fail';
       }
     }
 

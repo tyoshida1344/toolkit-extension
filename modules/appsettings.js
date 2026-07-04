@@ -22,8 +22,7 @@ Toolkit.registerSetting({
     /** 現在のタブ構成を一覧へ描画する */
     function render() {
       const cfg = Toolkit.getTabConfig();
-      const byId = {};
-      Toolkit.getTabs().forEach(t => { byId[t.id] = t; });
+      const byId = Toolkit.getTabsById();
       listEl.innerHTML = cfg.order.map(id => {
         const t = byId[id];
         if (!t) return '';
@@ -119,8 +118,7 @@ Toolkit.registerSetting({
     function render() {
       const cfg = Toolkit.getPersistConfig();
       globalToggle.checked = cfg.global;
-      const byId = {};
-      Toolkit.getTabs().forEach(t => { byId[t.id] = t; });
+      const byId = Toolkit.getTabsById();
       // ツールごと（全体OFF中は個別を無効表示）
       listEl.innerHTML = Toolkit.getTabConfig().order.map(id => {
         const t = byId[id];
