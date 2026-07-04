@@ -88,10 +88,9 @@
           if (t && INJECTABLE.test(t.url || '')) runOnTab(t.id, 'clear').catch(() => {});
           return;
         }
-        // 正規表現モードのときだけ事前検証（OFF はエスケープされるので常に有効）
         if (regexMode) {
-          try { new RegExp(query, 'g'); }
-          catch (e) { setStatus('⚠ 不正な正規表現: ' + e.message, true); clearResults(); return; }
+          const { error } = Toolkit.tryRegex(query, 'g');
+          if (error) { setStatus('⚠ 不正な正規表現: ' + error, true); clearResults(); return; }
         }
         addHistory(query);
         setStatus('');
@@ -171,7 +170,7 @@
         const i = history.indexOf(q);
         if (i !== -1) history.splice(i, 1);
         history.unshift(q);
-        if (history.length > 20) history.length = 20;
+        if (history.length > Toolkit.HISTORY_LIMIT) history.length = 20;
         renderHistory(); save();
       }
       function renderHistory() {
@@ -208,7 +207,7 @@
         if (s.scope === 'all' || s.scope === 'page') { scope = s.scope; scopeAllChk.checked = (scope === 'all'); }
         if (typeof s.regexMode === 'boolean') { regexMode = s.regexMode; regexChk.checked = regexMode; }
         if (typeof s.caseSensitive === 'boolean') { caseSensitive = s.caseSensitive; caseChk.checked = caseSensitive; }
-        if (Array.isArray(s.history)) { history.push(...s.history.slice(0, 20)); renderHistory(); }
+        if (Array.isArray(s.history)) { history.push(...s.history.slice(0, Toolkit.HISTORY_LIMIT)); renderHistory(); }
         if (s.nav && typeof s.nav === 'object') nav = s.nav;
         if (s.results && Array.isArray(s.results.groups)) {
           lastResults = View.render(resultsEl, countEl, s.results.groups, s.results.total || 0, MAX_LIST_RENDER);

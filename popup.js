@@ -259,6 +259,18 @@ const Toolkit = (() => {
     }));
   }
 
+  function getTabsById() {
+    return Object.fromEntries(getTabs().map(t => [t.id, t]));
+  }
+
+  function tryRegex(pattern, flags) {
+    try { return { re: new RegExp(pattern, flags), error: null }; }
+    catch (e) { return { re: null, error: e.message }; }
+  }
+
+  const HISTORY_LIMIT = 20;
+  const SYMBOLS = '!@#$%^&*()-_=+[]{}|;:,.<>?/';
+
   function getTabConfig() {
     const ids = TAB_MANIFEST.map(entry => entry.id);
     const order = (tabConfig.order || []).filter(id => ids.includes(id));
@@ -515,6 +527,6 @@ const Toolkit = (() => {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
     escapeHtml, $, qsa, clampInput, onTabShortcut, modal,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
-    getTabs, getTabConfig, setTabConfig,
+    getTabs, getTabsById, getTabConfig, setTabConfig, tryRegex, HISTORY_LIMIT, SYMBOLS,
   };
 })();

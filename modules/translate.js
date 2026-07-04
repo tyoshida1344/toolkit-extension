@@ -6,7 +6,7 @@ Toolkit.registerTab({
       <span class="tm-tr-lang" id="tr-tgt-label">English</span>
     </div>
     <div class="tm-row">
-      <textarea class="tm-tr-area" id="tr-input" placeholder="翻訳するテキストを入力..."></textarea>
+      <textarea class="tm-textarea tm-tr-area" id="tr-input" placeholder="翻訳するテキストを入力..."></textarea>
     </div>
     <div class="tm-row tm-inline">
       <button class="tm-btn tm-btn-primary" id="tr-exec">翻訳</button>
@@ -15,7 +15,7 @@ Toolkit.registerTab({
       <span style="font-size:11px;color:var(--tm-text-faint)" id="tr-status"></span>
     </div>
     <div class="tm-row">
-      <div class="tm-tr-result" id="tr-result"></div>
+      <div class="tm-output tm-tr-result" id="tr-result"></div>
     </div>
   `,
   init() {

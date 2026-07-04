@@ -1,6 +1,6 @@
 Toolkit.registerTab({
   html: `
-    <textarea class="tm-notepad-area" id="memo-area"
+    <textarea class="tm-textarea tm-notepad-area" id="memo-area"
       placeholder="ここにメモを入力...\nどのサイトでも内容が保存されます。"></textarea>
     <div class="tm-note-status" id="memo-status">読み込み中...</div>
   `,

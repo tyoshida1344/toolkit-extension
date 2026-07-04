@@ -15,7 +15,7 @@ Toolkit.registerTab({
     </div>
     <div class="tm-row">
       <label class="tm-label">マッチ結果</label>
-      <div class="tm-re-output" id="re-output"></div>
+      <div class="tm-output tm-re-output" id="re-output"></div>
       <div class="tm-re-status" id="re-status"></div>
     </div>
 
@@ -110,11 +110,9 @@ Toolkit.registerTab({
       const text = testInput.value;
       status.textContent = '';
       if (!pattern) { output.textContent = text; return; }
-      let re;
-      try {
-        re = new RegExp(pattern, FLAGS);
-      } catch (e) {
-        status.textContent = '⚠ 不正な正規表現: ' + e.message;
+      const { re, error } = Toolkit.tryRegex(pattern, FLAGS);
+      if (error) {
+        status.textContent = '⚠ 不正な正規表現: ' + error;
         output.textContent = text;
         return;
       }

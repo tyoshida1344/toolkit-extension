@@ -41,8 +41,7 @@ Toolkit.registerSetting({
   init() {
     // ツール一覧は登録済みタブから動的に作る。並び順はタブ構成に従う。
     function getTools() {
-      const byId = {};
-      Toolkit.getTabs().forEach(t => { byId[t.id] = t; });
+      const byId = Toolkit.getTabsById();
       return Toolkit.getTabConfig().order
         .map(id => byId[id])
         .filter(Boolean)
@@ -72,9 +71,9 @@ Toolkit.registerSetting({
     // ── 描画 ──
     function renderRows(tools) {
       listEl.innerHTML = tools.map(t =>
-        `<div class="tm-storage-item" id="storage-item-${t.key}">
-          <span class="tm-storage-item-icon">${t.icon}</span>
-          <span class="tm-storage-item-label">${t.label}</span>
+        `<div class="tm-settings-row tm-storage-item" id="storage-item-${t.key}">
+          <span class="tm-settings-icon">${t.icon}</span>
+          <span class="tm-settings-label">${t.label}</span>
           <span class="tm-storage-item-size" id="storage-size-${t.key}">—</span>
           <button type="button" class="tm-icon-btn tm-storage-item-clear"
             data-key="${t.key}" data-label="${t.label}"
