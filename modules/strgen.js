@@ -89,8 +89,7 @@ Toolkit.registerTab({
         return;
       }
       const len = Math.max(1, Math.min(10000, parseInt(lenInput.value) || 10));
-      let result = '';
-      for (let i = 0; i < len; i++) result += pool[Math.floor(Math.random() * pool.length)];
+      const result = Array.from({length: len}, () => pool[Math.floor(Math.random() * pool.length)]).join('');
       out.textContent = result;
       save();
     });

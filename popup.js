@@ -340,16 +340,16 @@ const Toolkit = (() => {
     const empty = document.getElementById('tm-tabs-empty');
     if (!sidebar || !content) return;
     if (!entry) {
-      sidebar.querySelectorAll('.tm-tab').forEach(t => t.classList.remove('active'));
-      content.querySelectorAll('.tm-section').forEach(s => s.classList.remove('active'));
+      sidebar.querySelector('.tm-tab.active')?.classList.remove('active');
+      content.querySelector('.tm-section.active')?.classList.remove('active');
       document.getElementById('tm-header-title').textContent = '便利ツール';
       if (empty) empty.hidden = false;
       return;
     }
-    sidebar.querySelectorAll('.tm-tab').forEach(t =>
-      t.classList.toggle('active', t.dataset.tab === id));
-    content.querySelectorAll('.tm-section').forEach(s =>
-      s.classList.toggle('active', s.id === 'sec-' + id));
+    sidebar.querySelector('.tm-tab.active')?.classList.remove('active');
+    sidebar.querySelector(`[data-tab="${id}"]`)?.classList.add('active');
+    content.querySelector('.tm-section.active')?.classList.remove('active');
+    document.getElementById('sec-' + id)?.classList.add('active');
     document.getElementById('tm-header-title').textContent = entry.icon + ' ' + entry.label;
     if (empty) empty.hidden = true;
     if (persist) saveState('activeTab', id);

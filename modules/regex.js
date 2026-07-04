@@ -128,8 +128,16 @@ Toolkit.registerTab({
       onRestore() { update(); },
     });
 
-    patternInput.addEventListener('input', update);
-    testInput.addEventListener('input', update);
+    let rafPending = false;
+    function scheduleUpdate() {
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(() => { update(); rafPending = false; });
+      }
+    }
+
+    patternInput.addEventListener('input', scheduleUpdate);
+    testInput.addEventListener('input', scheduleUpdate);
 
     // チートシート モーダルの開閉
     const cheatModal = Toolkit.modal(modal);
