@@ -8,7 +8,7 @@
 }
 .tm-storage-total {
   font-size: 12px; font-weight: 700; color: var(--tm-text-heading);
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--tm-font-mono);
 }
 .tm-storage-percent { font-size: 11px; color: var(--tm-text-muted); }
 .tm-storage-bar {
@@ -21,17 +21,10 @@
 
 /* ツール別内訳 */
 .tm-storage-list { display: flex; flex-direction: column; gap: 4px; }
-.tm-storage-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px; border: 1px solid var(--tm-border); border-radius: 6px;
-  background: var(--tm-bg);
-}
 .tm-storage-item.is-empty { opacity: .55; }
-.tm-storage-item-icon { font-size: 16px; flex-shrink: 0; line-height: 1; }
-.tm-storage-item-label { flex: 1; font-size: 12px; color: var(--tm-text); }
 .tm-storage-item-size {
   font-size: 11px; color: var(--tm-text-muted); white-space: nowrap;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: var(--tm-font-mono);
 }
 .tm-storage-item-clear { width: 30px; height: 30px; font-size: 14px; }
 .tm-storage-item-clear:disabled { opacity: .4; cursor: default; pointer-events: none; }

@@ -15,7 +15,7 @@ Toolkit.registerTab({
     </div>
     <div class="tm-row">
       <label class="tm-label">マッチ結果</label>
-      <div class="tm-re-output" id="re-output"></div>
+      <div class="tm-output tm-re-output" id="re-output"></div>
       <div class="tm-re-status" id="re-status"></div>
     </div>
 
