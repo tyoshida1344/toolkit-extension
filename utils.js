@@ -45,14 +45,29 @@ const _TkUtils = (() => {
       '<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>'),
   };
 
-  function iconButton(icon, { id = '', title = '', cls = '' } = {}) {
+  /**
+   * 汎用アイコンボタンのHTMLを返す（コピー以外のアイコン操作も統一）。
+   * @param {string} icon - SVG文字列 / 絵文字
+   * @param {object} [opts]
+   * @param {string} [opts.id] - ボタンのid（init側でハンドラを付ける用）
+   * @param {string} [opts.title] - ツールチップ / アクセシビリティ文言
+   * @param {string} [opts.cls] - 追加クラス
+   * @param {object} [opts.data] - data-* 属性のキーと値
+   */
+  function iconButton(icon, { id = '', title = '', cls = '', data = {} } = {}) {
+    const dataAttrs = Object.entries(data).map(([k, v]) => ` data-${k}="${v}"`).join('');
     return `<button type="button" class="tm-icon-btn${cls ? ' ' + cls : ''}"` +
-      `${id ? ` id="${id}"` : ''}${title ? ` title="${title}" aria-label="${title}"` : ''}>${icon}</button>`;
+      `${id ? ` id="${id}"` : ''}${title ? ` title="${title}" aria-label="${title}"` : ''}${dataAttrs}>${icon}</button>`;
   }
 
+  /**
+   * 統一コピーボタンのHTMLを返す。クリック処理はイベント委譲で共通化。
+   * @param {string} targetId - コピー対象要素のID (textContent / value を読む)
+   * @param {object} [opts]
+   * @param {string} [opts.title] - ツールチップ / アクセシビリティ文言
+   */
   function copyButton(targetId, { title = 'コピー' } = {}) {
-    return `<button type="button" class="tm-icon-btn tm-copy-btn" data-copy-target="${targetId}" ` +
-      `title="${title}" aria-label="${title}">${ICONS.copy}${ICONS.check}</button>`;
+    return iconButton(ICONS.copy + ICONS.check, { cls: 'tm-copy-btn', title, data: { 'copy-target': targetId } });
   }
 
   function readText(el) {

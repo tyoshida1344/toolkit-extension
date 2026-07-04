@@ -39,12 +39,15 @@ const Toolkit = (() => {
   const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション
   let tabConfig = { order: [], hidden: [] }; // タブの表示順と非表示ID（設定で変更）
   let initialized = false;
-  const loaded = {};
+  const loaded = {}; // id → true（ロード済みフラグ）
   let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制
 
   /**
    * タブを登録する（モジュールから呼ばれる）。
    * id は document.currentScript から自動解決するため、モジュール側で指定する必要はない。
+   * @param {object} opts
+   * @param {string} opts.html - タブ内のHTML文字列
+   * @param {function} opts.init - DOM構築後に呼ばれる初期化関数
    */
   function registerTab({ html, init }) {
     const src = document.currentScript && document.currentScript.getAttribute('src');
@@ -54,6 +57,14 @@ const Toolkit = (() => {
     if (initialized && loading === 0) buildUI();
   }
 
+  /**
+   * 設定画面のセクションを登録する（タブではなく、ヘッダーの⚙️から開くオーバーレイに表示）。
+   * @param {object} opts
+   * @param {string} opts.id - セクションの一意ID
+   * @param {string} [opts.title] - セクション見出し
+   * @param {string} opts.html - セクション内のHTML
+   * @param {function} [opts.init] - DOM構築後に呼ばれる初期化関数
+   */
   function registerSetting({ id, title = '', html, init }) {
     settings.push({ id, title, html, init });
     if (initialized && loading === 0) buildSettings();
