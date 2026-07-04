@@ -54,6 +54,7 @@
       let lastResults = null;
 
       // ── エンジン実行 ──
+      // 検索本体はページ側エンジン(engine.js)を MAIN ワールドで実行（pattern/flags の組み立てもエンジン側）
       async function runOnTab(tabId, action, opts = {}) {
         if (!_scripting || !window.SiteSearchEngine) throw new Error('no-engine');
         const o = { regexMode, caseSensitive, max: opts.max || MAX_PAGE_MATCHES, startIdx: opts.startIdx || 0 };
@@ -95,6 +96,7 @@
           if (t && INJECTABLE.test(t.url || '')) runOnTab(t.id, 'clear').catch(() => {});
           return;
         }
+        // 正規表現モードのときだけ事前検証（OFF はエスケープされるので常に有効）
         if (regexMode) {
           try { new RegExp(query, 'g'); }
           catch (e) { setStatus('⚠ 不正な正規表現: ' + e.message, true); clearResults(); return; }
@@ -154,6 +156,7 @@
         nav = { tabId, count: res.count, current: res.current };
         setCountDisplay();
         if (scope !== 'all') return;
+        // 別タブを前面に（別ウィンドウだとポップアップは閉じるがハイライトは残る）
         try {
           const t = await _tabs.update(tabId, { active: true });
           if (t && t.windowId != null && chrome.windows) chrome.windows.update(t.windowId, { focused: true });

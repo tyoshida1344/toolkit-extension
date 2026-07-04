@@ -39,11 +39,11 @@ const Toolkit = (() => {
   const SETTING_STYLES = ['styles/appsettings.css', 'styles/storage.css'];
 
   const tabs = [];
-  const settings = [];
-  let tabConfig = { order: [], hidden: [] };
+  const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション
+  let tabConfig = { order: [], hidden: [] }; // タブの表示順と非表示ID（設定で変更）
   let initialized = false;
   const loaded = {};
-  let loading = 0;
+  let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制
 
   /**
    * タブを登録する（モジュールから呼ばれる）。
@@ -154,9 +154,11 @@ const Toolkit = (() => {
   const STATE_PREFIX = 'tm_state_';
   const _saveTimers = {};
 
+  // アプリ自身の設定キー。「入力状態の保持」をオフにしても、これらは保存・復元を続ける
+  // （タブ構成・最後のタブ・保持設定自体はツールの入力状態ではなくアプリ設定のため）。
   const CORE_STATE_KEYS = new Set(['activeTab', 'tabConfig', 'persistEnabled', 'persistByTool']);
-  let persistGlobal = true;
-  const persistByTool = {};
+  let persistGlobal = true;  // 入力状態の保持（全体マスター）
+  const persistByTool = {};  // ツールごとの保持（toolId → bool。未設定は有効扱い）
 
   function persistAllowed(key) {
     if (CORE_STATE_KEYS.has(key)) return true;
@@ -302,6 +304,8 @@ const Toolkit = (() => {
     tabConfig = { order: (cfg && cfg.order) || [], hidden: (cfg && cfg.hidden) || [] };
     applyTabConfig();
     saveState('tabConfig', tabConfig);
+    // タブ構成に依存する設定セクション（保持・ストレージ）へ即時再描画を促す。
+    // ストレージの保存（saveState）は非同期＆デバウンスなので、表示同期はこのイベントで揃える。
     document.dispatchEvent(new CustomEvent('tm-tabconfig-change'));
   }
 
