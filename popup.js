@@ -5,6 +5,8 @@
  * 各モジュールは Toolkit.registerTab() で html / init を提供する。
  */
 const Toolkit = (() => {
+  const { $, qsa, escapeHtml, showToast, svgIco, ICONS, iconButton, copyButton, readText, clampInput } = _TkUtils;
+
   /**
    * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
    * id / icon / label / scripts / styles はこの定義が唯一の情報源。
@@ -27,25 +29,25 @@ const Toolkit = (() => {
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
   ];
   const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
-  const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id]))); // スクリプトパス → タブ id の逆引き
+  const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id])));
 
   /** 設定専用モジュール（タブを持たない。設定を初めて開くときにロード） */
   const SETTING_SCRIPTS = ['modules/appsettings.js', 'modules/storage.js'];
   const SETTING_STYLES = ['styles/appsettings.css', 'styles/storage.css'];
 
   const tabs = [];
-  const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション。タブではない。
+  const settings = []; // 設定画面（ヘッダー⚙️のオーバーレイ）に並べるセクション
   let tabConfig = { order: [], hidden: [] }; // タブの表示順と非表示ID（設定で変更）
   let initialized = false;
-  const loaded = {};  // id → true（ロード済みフラグ）
-  let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制（カウンタで並行ロード対応）
+  const loaded = {}; // id → true（ロード済みフラグ）
+  let loading = 0; // スクリプトロード中は registerTab/registerSetting の自動構築を抑制
 
   /**
    * タブを登録する（モジュールから呼ばれる）。
    * id は document.currentScript から自動解決するため、モジュール側で指定する必要はない。
    * @param {object} opts
-   * @param {string} opts.html          - タブ内のHTML文字列
-   * @param {function} opts.init        - DOM構築後に呼ばれる初期化関数
+   * @param {string} opts.html - タブ内のHTML文字列
+   * @param {function} opts.init - DOM構築後に呼ばれる初期化関数
    */
   function registerTab({ html, init }) {
     const src = document.currentScript && document.currentScript.getAttribute('src');
@@ -57,107 +59,16 @@ const Toolkit = (() => {
 
   /**
    * 設定画面のセクションを登録する（タブではなく、ヘッダーの⚙️から開くオーバーレイに表示）。
-   * registerTab と対の自己登録 API。機能ロジックはモジュール側に置く。
    * @param {object} opts
-   * @param {string} opts.id        - セクションの一意ID
-   * @param {string} [opts.title]   - セクション見出し
-   * @param {string} opts.html      - セクション内のHTML
-   * @param {function} [opts.init]  - DOM構築後に呼ばれる初期化関数
+   * @param {string} opts.id - セクションの一意ID
+   * @param {string} [opts.title] - セクション見出し
+   * @param {string} opts.html - セクション内のHTML
+   * @param {function} [opts.init] - DOM構築後に呼ばれる初期化関数
    */
   function registerSetting({ id, title = '', html, init }) {
     settings.push({ id, title, html, init });
     if (initialized && loading === 0) buildSettings();
   }
-
-  /** 共通ヘルパー: コピー完了トースト */
-  let toastTimer = null;
-  function showToast(message = '📋 コピーしました') {
-    let toast = document.getElementById('tm-toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'tm-toast';
-      toast.className = 'tm-toast';
-      document.body.appendChild(toast);
-    }
-    toast.textContent = message;
-    // reflow を挟んでアニメーションを確実に再生
-    toast.classList.remove('show');
-    void toast.offsetWidth;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
-  }
-
-  /** 共通アイコン (Feather風 SVG, 16x16 を想定) */
-  const svgIco = (extraClass, inner, sw = 2) =>
-    `<svg class="tm-ico${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
-    ` stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
-
-  const ICONS = {
-    copy: svgIco('tm-copy-ico tm-copy-ico-default',
-      '<rect x="9" y="9" width="13" height="13" rx="2"></rect>' +
-      '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>'),
-    check: svgIco('tm-copy-ico tm-copy-ico-done',
-      '<polyline points="20 6 9 17 4 12"></polyline>', 2.5),
-    refresh: svgIco('',
-      '<polyline points="23 4 23 10 17 10"></polyline>' +
-      '<polyline points="1 20 1 14 7 14"></polyline>' +
-      '<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>'),
-  };
-
-  /**
-   * 汎用アイコンボタンのHTMLを返す（コピー以外のアイコン操作も統一）。
-   * @param {string} icon - SVG文字列 / 絵文字
-   * @param {object} [opts]
-   * @param {string} [opts.id]    - ボタンのid（init側でハンドラを付ける用）
-   * @param {string} [opts.title] - ツールチップ / アクセシビリティ文言
-   * @param {string} [opts.cls]   - 追加クラス
-   */
-  function iconButton(icon, { id = '', title = '', cls = '' } = {}) {
-    return `<button type="button" class="tm-icon-btn${cls ? ' ' + cls : ''}"` +
-      `${id ? ` id="${id}"` : ''}${title ? ` title="${title}" aria-label="${title}"` : ''}>${icon}</button>`;
-  }
-
-  /**
-   * 統一コピーボタンのHTMLを返す。クリック処理はイベント委譲で共通化。
-   * @param {string} targetId - コピー対象要素のID (textContent / value を読む)
-   * @param {object} [opts]
-   * @param {string} [opts.title] - ツールチップ / アクセシビリティ文言
-   */
-  function copyButton(targetId, { title = 'コピー' } = {}) {
-    return `<button type="button" class="tm-icon-btn tm-copy-btn" data-copy-target="${targetId}" ` +
-      `title="${title}" aria-label="${title}">${ICONS.copy}${ICONS.check}</button>`;
-  }
-
-  /** 要素からコピー対象テキストを取得 */
-  function readText(el) {
-    if (!el) return '';
-    return (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? el.value : el.textContent;
-  }
-
-  /** 共通ヘルパー: number 入力を min/max 属性の範囲に即時クランプする */
-  function clampInput(id) {
-    const el = typeof id === 'string' ? document.getElementById(id) : id;
-    if (!el) return;
-    el.addEventListener('input', () => {
-      if (el.value === '') return;
-      const n = parseInt(el.value);
-      if (isNaN(n)) return;
-      const max = el.hasAttribute('max') ? parseInt(el.max) : null;
-      const min = el.hasAttribute('min') ? parseInt(el.min) : null;
-      if (max != null && n > max) el.value = max;
-      else if (min != null && n < min) el.value = min;
-    });
-  }
-
-  /** 共通ヘルパー: HTML エスケープ（& < > のみ。表示・ハイライトの危険文字を無害化） */
-  function escapeHtml(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  /** 共通ヘルパー: DOM 取得ショートハンド（id 取得 / セレクタ一括取得は配列で返す） */
-  const $ = id => document.getElementById(id);
-  const qsa = (sel, root = document) => Array.from((root || document).querySelectorAll(sel));
 
   /**
    * タブ別ショートカット共通ガード。指定タブのセクション(#sec-<tabId>)がアクティブで、
@@ -167,13 +78,13 @@ const Toolkit = (() => {
    * @param {string} tabId - 対象タブID
    * @param {object} handlers
    * @param {function} [handlers.keydown] - ガード通過時に呼ばれる keydown ハンドラ
-   * @param {function} [handlers.paste]   - ガード通過時に呼ばれる paste ハンドラ
+   * @param {function} [handlers.paste] - ガード通過時に呼ばれる paste ハンドラ
    */
   function onTabShortcut(tabId, { keydown, paste } = {}) {
     const passes = (e) => {
       const sec = document.getElementById('sec-' + tabId);
       if (!sec || !sec.classList.contains('active')) return false;
-      if (document.querySelector('.tm-modal-overlay:not([hidden])')) return false; // モーダル表示中は無視
+      if (document.querySelector('.tm-modal-overlay:not([hidden])')) return false;
       const tag = (e.target.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return false;
       return true;
@@ -182,7 +93,6 @@ const Toolkit = (() => {
     if (paste) document.addEventListener('paste', e => { if (passes(e)) paste(e); });
   }
 
-  /** 共通ヘルパー: クリップボードコピー (成功時 true を resolve) */
   function copyText(text) {
     text = (text || '').trim();
     if (!text) { showToast('⚠ コピーする内容がありません'); return Promise.resolve(false); }
@@ -191,7 +101,6 @@ const Toolkit = (() => {
       .catch(() => { showToast('⚠ コピーに失敗しました'); return false; });
   }
 
-  /** 共通ヘルパー: モーダル管理（スタック制御・Escape・背景クリック・フォーカストラップ） */
   const _modalStack = [];
   const _FOCUSABLE = 'a[href],button:not(:disabled),input:not(:disabled),' +
     'textarea:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])';
@@ -244,11 +153,6 @@ const Toolkit = (() => {
     return inst;
   }
 
-  /**
-   * 共通ヘルパー: 状態の永続化 (chrome.storage.local)
-   * 各モジュールがタブごとの入力値・変換結果を保存し、再表示時に復元するために使う。
-   * キーには `tm_state_` プレフィックスを付けて他データと衝突しないようにする。
-   */
   const _store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
   const STATE_PREFIX = 'tm_state_';
   const _saveTimers = {};
@@ -259,16 +163,11 @@ const Toolkit = (() => {
   let persistGlobal = true;  // 入力状態の保持（全体マスター）
   const persistByTool = {};  // ツールごとの保持（toolId → bool。未設定は有効扱い）
 
-  /**
-   * 指定キー（=ツールID）が現在の保持設定で保存・復元してよいか。
-   * コア設定キーは常に許可。ツールは「全体ON かつ 個別が無効でない」とき許可。
-   */
   function persistAllowed(key) {
     if (CORE_STATE_KEYS.has(key)) return true;
     return persistGlobal && persistByTool[key] !== false;
   }
 
-  /** 状態を保存する（同一キーへの連続呼び出しはデバウンスされる） */
   function saveState(key, value, delay = 200) {
     if (!_store || !persistAllowed(key)) return;
     clearTimeout(_saveTimers[key]);
@@ -277,13 +176,11 @@ const Toolkit = (() => {
     }, delay);
   }
 
-  /** 保存済みの状態を読み込んで cb(value) を呼ぶ（未保存・保持オフなら undefined） */
   function loadState(key, cb) {
     if (!_store || !persistAllowed(key)) { cb(undefined); return; }
     _store.get(STATE_PREFIX + key, data => cb(data[STATE_PREFIX + key]));
   }
 
-  /** 入力欄の保存・復元・イベント結線を宣言的に行い、手動トリガー用の save を返す */
   function bindState(tabId, fieldMap, opts = {}) {
     const entries = Object.entries(fieldMap).map(([elId, def]) => {
       const [prop, key] = Array.isArray(def) ? def : [def, elId];
@@ -325,18 +222,15 @@ const Toolkit = (() => {
     return save;
   }
 
-  /** 入力状態の保持が有効か。toolId 指定時はそのツールの実効値（全体×個別） */
   function isPersistEnabled(toolId) {
     if (!toolId) return persistGlobal;
     return persistGlobal && persistByTool[toolId] !== false;
   }
 
-  /** 保持設定のスナップショット（設定UIが全体/個別を正確に描くため） */
   function getPersistConfig() {
     return { global: persistGlobal, byTool: Object.assign({}, persistByTool) };
   }
 
-  /** 保持の有効/無効を切り替える。toolId 指定で個別、未指定で全体（設定は常に保存） */
   function setPersistEnabled(on, toolId) {
     if (toolId) {
       persistByTool[toolId] = !!on;
@@ -347,7 +241,6 @@ const Toolkit = (() => {
     }
   }
 
-  /** タブをアクティブ化する共通処理（クリック・復元・設定変更から使う） */
   function activateTab(id, persist = true) {
     const entry = TAB_MANIFEST_MAP.get(id);
     const sidebar = document.getElementById('tm-sidebar');
@@ -370,7 +263,6 @@ const Toolkit = (() => {
     if (persist) saveState('activeTab', id);
   }
 
-  /** 登録済みタブの一覧（設定UIが表示順・名称・ストレージキーを読む）。storageKey 省略時は既定の `tm_state_<id>`。 */
   function getTabs() {
     return TAB_MANIFEST.map(entry => ({
       id: entry.id, icon: entry.icon, label: entry.label,
@@ -378,12 +270,10 @@ const Toolkit = (() => {
     }));
   }
 
-  /** getTabs() の結果を id をキーにしたオブジェクトで返す */
   function getTabsById() {
     return Object.fromEntries(getTabs().map(t => [t.id, t]));
   }
 
-  /** 正規表現を安全に生成する。成功時 {re, error: null}、失敗時 {re: null, error: message文字列} */
   function tryRegex(pattern, flags) {
     try { return { re: new RegExp(pattern, flags), error: null }; }
     catch (e) { return { re: null, error: e.message }; }
@@ -392,7 +282,6 @@ const Toolkit = (() => {
   const HISTORY_LIMIT = 20;
   const SYMBOLS = '!@#$%^&*()-_=+[]{}|;:,.<>?/';
 
-  /** 正規化済みのタブ構成を返す（未登録IDを除き、登録済みで未掲載のIDは末尾に補う） */
   function getTabConfig() {
     const ids = TAB_MANIFEST.map(entry => entry.id);
     const order = (tabConfig.order || []).filter(id => ids.includes(id));
@@ -401,23 +290,19 @@ const Toolkit = (() => {
     return { order, hidden };
   }
 
-  /** タブ構成をDOMへ反映する（サイドバー/セクションの並び替えと表示/非表示） */
   function applyTabConfig() {
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     if (!sidebar || !content) return;
     const cfg = getTabConfig();
-    // 並び替え（既存ノードを移動するだけ。再生成しないので init は走らない）
     cfg.order.forEach(id => {
       const btn = sidebar.querySelector(`.tm-tab[data-tab="${id}"]`);
       const sec = document.getElementById('sec-' + id);
       if (btn) { sidebar.appendChild(btn); btn.hidden = cfg.hidden.includes(id); }
       if (sec) content.appendChild(sec);
     });
-    // 空状態の要素は常にコンテンツ末尾へ
     const empty = document.getElementById('tm-tabs-empty');
     if (empty) content.appendChild(empty);
-    // アクティブタブが非表示になったら、先頭の表示タブへ切り替える（無ければ空状態）
     const visible = cfg.order.filter(id => !cfg.hidden.includes(id));
     const activeBtn = sidebar.querySelector('.tm-tab.active');
     const activeId = activeBtn ? activeBtn.dataset.tab : null;
@@ -428,7 +313,6 @@ const Toolkit = (() => {
     }
   }
 
-  /** タブ構成を更新して反映・保存する（設定UIから呼ぶ） */
   function setTabConfig(cfg) {
     tabConfig = { order: (cfg && cfg.order) || [], hidden: (cfg && cfg.hidden) || [] };
     applyTabConfig();
@@ -438,15 +322,12 @@ const Toolkit = (() => {
     document.dispatchEvent(new CustomEvent('tm-tabconfig-change'));
   }
 
-  /** UI構築 */
   function buildUI() {
     const sidebar = document.getElementById('tm-sidebar');
     const content = document.getElementById('tm-content');
     sidebar.innerHTML = '';
     content.innerHTML = '';
 
-    // 初期描画のパフォーマンスを優先し、サイドバーのアイコンと空のセクションだけ構築する。
-    // 各タブの中身（html / init）は lazyLoad() でタブ使用時に遅延ロードして埋める。
     TAB_MANIFEST.forEach((entry, i) => {
       const btn = document.createElement('button');
       btn.className = 'tm-tab' + (i === 0 ? ' active' : '');
@@ -461,7 +342,6 @@ const Toolkit = (() => {
       content.appendChild(sec);
     });
 
-    // 表示タブが1つも無いときの空状態
     const empty = document.createElement('div');
     empty.className = 'tm-tabs-empty';
     empty.id = 'tm-tabs-empty';
@@ -469,13 +349,11 @@ const Toolkit = (() => {
     empty.textContent = '表示するツールがありません。右上の ⚙️ 設定から表示するツールを選んでください。';
     content.appendChild(empty);
 
-    // ヘッダー初期値
     if (TAB_MANIFEST.length > 0) {
       document.getElementById('tm-header-title').textContent =
         TAB_MANIFEST[0].icon + ' ' + TAB_MANIFEST[0].label;
     }
 
-    // タブ切り替え（遅延ロードを兼ねる）
     sidebar.addEventListener('click', e => {
       const btn = e.target.closest('.tm-tab');
       if (!btn) return;
@@ -484,10 +362,8 @@ const Toolkit = (() => {
       lazyLoad(id);
     });
 
-    // タブ構成（表示順・非表示）を反映
     applyTabConfig();
 
-    // 前回開いていたタブを復元し遅延ロード（保存が無ければ先頭タブ）
     loadState('activeTab', id => {
       const cfg = getTabConfig();
       if (id && TAB_MANIFEST_MAP.has(id) && !cfg.hidden.includes(id)) {
@@ -499,25 +375,21 @@ const Toolkit = (() => {
       }
     });
 
-    // 設定オーバーレイを構築（中身のモジュールは設定を開くときに遅延ロード）
     buildSettings();
 
-    // FOUC 防止: <html> の display:none を解除して描画開始
     document.documentElement.style.display = 'block';
   }
 
-  /** 設定オーバーレイ（ヘッダーの⚙️から開く全画面オーバーレイ）を構築する */
   let settingsModal = null;
   function buildSettings() {
     let overlay = document.getElementById('tm-settings-overlay');
-    if (overlay) overlay.remove(); // registerSetting 後の再構築に対応
+    if (overlay) overlay.remove();
 
     overlay = document.createElement('div');
     overlay.className = 'tm-modal-overlay';
     overlay.id = 'tm-settings-overlay';
     overlay.hidden = true;
 
-    // 左ナビ（セクションが2つ以上のときだけ表示）＋ 右コンテンツ（アクティブのみ表示）
     const multi = settings.length > 1;
     const navHtml = multi
       ? '<div class="tm-settings-nav" id="tm-settings-nav">' +
@@ -544,7 +416,6 @@ const Toolkit = (() => {
       '</div>';
     document.body.appendChild(overlay);
 
-    // ナビでセクションを切り替える
     const nav = overlay.querySelector('#tm-settings-nav');
     if (nav) {
       nav.addEventListener('click', e => {
@@ -565,11 +436,9 @@ const Toolkit = (() => {
     if (openBtn) openBtn.onclick = openSettings;
     overlay.querySelector('#tm-settings-close').addEventListener('click', () => settingsModal.close());
 
-    // 各セクションの init を実行（DOM構築後）
     settings.forEach(s => { if (s.init) s.init(); });
   }
 
-  /** 設定オーバーレイを開く（初回は設定モジュールを遅延ロード） */
   let settingsLoaded = false;
   function openSettings() {
     if (!settingsLoaded) {
@@ -586,12 +455,10 @@ const Toolkit = (() => {
     }
   }
 
-  /** 設定オーバーレイを閉じる */
   function closeSettings() {
     if (settingsModal) settingsModal.close();
   }
 
-  /** コピーボタンの共通クリック処理（イベント委譲なのでDOM再構築後も有効） */
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.tm-copy-btn');
     if (!btn) return;
@@ -604,7 +471,6 @@ const Toolkit = (() => {
     });
   });
 
-  /** UI構築前にコア設定（保持ON/OFF・タブ構成）を読み込む（モジュール init より先に確定させる） */
   function preloadCoreConfig(done) {
     if (!_store) { done(); return; }
     _store.get(
@@ -620,7 +486,6 @@ const Toolkit = (() => {
       });
   }
 
-  /** CSS を動的に挿入する（並列読み込み・順序不問） */
   function loadStyles(hrefs) {
     (hrefs || []).forEach(href => {
       const l = document.createElement('link');
@@ -630,7 +495,6 @@ const Toolkit = (() => {
     });
   }
 
-  /** スクリプトを順次ロードする汎用関数 */
   function loadScripts(srcs, done) {
     let i = 0;
     function next() {
@@ -644,7 +508,6 @@ const Toolkit = (() => {
     next();
   }
 
-  /** タブのスクリプトを遅延ロードし、コンテンツを構築する */
   function lazyLoad(id) {
     if (loaded[id]) return;
     loaded[id] = true;
@@ -664,7 +527,6 @@ const Toolkit = (() => {
     });
   }
 
-  /** DOMContentLoaded でコア設定先読み → シェル構築 */
   document.addEventListener('DOMContentLoaded', () => {
     preloadCoreConfig(() => {
       initialized = true;
