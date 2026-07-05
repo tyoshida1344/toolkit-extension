@@ -98,7 +98,7 @@ Toolkit.registerTab({
     // スポイト（EyeDropper API）
     Toolkit.$('cl-eyedrop').addEventListener('click', async () => {
       if (!('EyeDropper' in window)) {
-        alert('このブラウザはスポイト機能（EyeDropper API）に対応していません。\nChrome / Edge をお使いください。');
+        Toolkit.showToast('⚠ スポイト機能はこのブラウザに対応していません');
         return;
       }
       try {

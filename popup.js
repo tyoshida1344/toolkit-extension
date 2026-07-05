@@ -26,7 +26,7 @@ const Toolkit = (() => {
       'modules/sitesearch/index.js',
     ], styles: ['styles/sitesearch.css'] },
     { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
-    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'], storageKey: 'tm_toolkit_memo' },
+    { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'] },
   ];
   const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
   const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id])));
@@ -168,7 +168,9 @@ const Toolkit = (() => {
     return persistGlobal && persistByTool[key] !== false;
   }
 
-  function saveState(key, value, delay = 200) {
+  const SAVE_DEBOUNCE = 200;
+
+  function saveState(key, value, delay = SAVE_DEBOUNCE) {
     if (!_store || !persistAllowed(key)) return;
     clearTimeout(_saveTimers[key]);
     _saveTimers[key] = setTimeout(() => {

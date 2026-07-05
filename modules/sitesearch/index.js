@@ -170,7 +170,7 @@
         const i = history.indexOf(q);
         if (i !== -1) history.splice(i, 1);
         history.unshift(q);
-        if (history.length > Toolkit.HISTORY_LIMIT) history.length = 20;
+        if (history.length > Toolkit.HISTORY_LIMIT) history.length = Toolkit.HISTORY_LIMIT;
         renderHistory(); save();
       }
       function renderHistory() {

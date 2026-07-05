@@ -26,54 +26,43 @@ Toolkit.registerTab({
           <span>正規表現チートシート</span>
           ${Toolkit.iconButton('✕', { id: 're-modal-close', title: '閉じる' })}
         </div>
-        <div class="tm-modal-body">
-          <div class="tm-cheat-section">
-            <h4>アンカー / 位置</h4>
-            <div class="tm-cheat-item"><code>^</code><span>行頭</span></div>
-            <div class="tm-cheat-item"><code>$</code><span>行末</span></div>
-            <div class="tm-cheat-item"><code>\\b</code><span>単語境界</span></div>
-            <div class="tm-cheat-item"><code>\\B</code><span>非単語境界</span></div>
-          </div>
-          <div class="tm-cheat-section">
-            <h4>文字クラス</h4>
-            <div class="tm-cheat-item"><code>.</code><span>任意の1文字（改行を除く）</span></div>
-            <div class="tm-cheat-item"><code>\\d</code><span>数字 [0-9]</span></div>
-            <div class="tm-cheat-item"><code>\\D</code><span>数字以外</span></div>
-            <div class="tm-cheat-item"><code>\\w</code><span>英数字とアンダースコア</span></div>
-            <div class="tm-cheat-item"><code>\\W</code><span>\\w 以外</span></div>
-            <div class="tm-cheat-item"><code>\\s</code><span>空白文字</span></div>
-            <div class="tm-cheat-item"><code>\\S</code><span>空白以外</span></div>
-            <div class="tm-cheat-item"><code>[abc]</code><span>a / b / c のいずれか</span></div>
-            <div class="tm-cheat-item"><code>[^abc]</code><span>a / b / c 以外</span></div>
-            <div class="tm-cheat-item"><code>[a-z]</code><span>範囲指定</span></div>
-          </div>
-          <div class="tm-cheat-section">
-            <h4>量指定子</h4>
-            <div class="tm-cheat-item"><code>*</code><span>0 回以上</span></div>
-            <div class="tm-cheat-item"><code>+</code><span>1 回以上</span></div>
-            <div class="tm-cheat-item"><code>?</code><span>0 または 1 回</span></div>
-            <div class="tm-cheat-item"><code>{n}</code><span>ちょうど n 回</span></div>
-            <div class="tm-cheat-item"><code>{n,}</code><span>n 回以上</span></div>
-            <div class="tm-cheat-item"><code>{n,m}</code><span>n〜m 回</span></div>
-            <div class="tm-cheat-item"><code>*? +?</code><span>最短マッチ（非貪欲）</span></div>
-          </div>
-          <div class="tm-cheat-section">
-            <h4>グループ / 選択 / 参照</h4>
-            <div class="tm-cheat-item"><code>(...)</code><span>キャプチャグループ</span></div>
-            <div class="tm-cheat-item"><code>(?:...)</code><span>非キャプチャグループ</span></div>
-            <div class="tm-cheat-item"><code>(?&lt;name&gt;...)</code><span>名前付きグループ</span></div>
-            <div class="tm-cheat-item"><code>a|b</code><span>a または b</span></div>
-            <div class="tm-cheat-item"><code>\\1</code><span>後方参照（1 番目のグループ）</span></div>
-          </div>
-          <div class="tm-cheat-section">
-            <h4>エスケープ</h4>
-            <div class="tm-cheat-item"><code>\\. \\* \\\\</code><span>記号をリテラルとして扱う</span></div>
-          </div>
-        </div>
+        <div class="tm-modal-body" id="re-cheat-body"></div>
       </div>
     </div>
   `,
   init() {
+    const CHEATSHEET = [
+      ['アンカー / 位置', [
+        ['^', '行頭'], ['$', '行末'], ['\\b', '単語境界'], ['\\B', '非単語境界'],
+      ]],
+      ['文字クラス', [
+        ['.', '任意の1文字（改行を除く）'], ['\\d', '数字 [0-9]'], ['\\D', '数字以外'],
+        ['\\w', '英数字とアンダースコア'], ['\\W', '\\w 以外'],
+        ['\\s', '空白文字'], ['\\S', '空白以外'],
+        ['[abc]', 'a / b / c のいずれか'], ['[^abc]', 'a / b / c 以外'], ['[a-z]', '範囲指定'],
+      ]],
+      ['量指定子', [
+        ['*', '0 回以上'], ['+', '1 回以上'], ['?', '0 または 1 回'],
+        ['{n}', 'ちょうど n 回'], ['{n,}', 'n 回以上'], ['{n,m}', 'n〜m 回'],
+        ['*? +?', '最短マッチ（非貪欲）'],
+      ]],
+      ['グループ / 選択 / 参照', [
+        ['(...)', 'キャプチャグループ'], ['(?:...)', '非キャプチャグループ'],
+        ['(?&lt;name&gt;...)', '名前付きグループ'], ['a|b', 'a または b'],
+        ['\\1', '後方参照（1 番目のグループ）'],
+      ]],
+      ['エスケープ', [
+        ['\\. \\* \\\\', '記号をリテラルとして扱う'],
+      ]],
+    ];
+
+    Toolkit.$('re-cheat-body').innerHTML = CHEATSHEET.map(([title, items]) =>
+      '<div class="tm-cheat-section"><h4>' + title + '</h4>' +
+      items.map(([code, desc]) =>
+        '<div class="tm-cheat-item"><code>' + code + '</code><span>' + desc + '</span></div>'
+      ).join('') + '</div>'
+    ).join('');
+
     const FLAGS = 'gim'; // 常に global / ignoreCase / multiline で判定する
     const patternInput = Toolkit.$('re-pattern');
     const testInput = Toolkit.$('re-test');

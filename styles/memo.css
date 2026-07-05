@@ -3,4 +3,3 @@
   min-height: 380px; padding: 10px;
   font-family: var(--tm-font-mono); line-height: 1.6;
 }
-.tm-note-status { font-size: 11px; color: var(--tm-text-faint); text-align: right; margin-top: 4px; }
