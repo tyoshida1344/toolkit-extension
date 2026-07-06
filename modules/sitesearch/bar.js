@@ -51,6 +51,7 @@ window.SiteSearchBar = (() => {
       + '<span class="cnt"></span>'
       + '<button class="prev" title="前へ (Shift+Enter)">▲</button>'
       + '<button class="next" title="次へ (Enter)">▼</button>'
+      + '<button class="popup" title="ポップアップを開く" aria-label="ポップアップを開く">↗</button>'
       + '<button class="close" title="閉じる (Esc)">✕</button>'
       + '</div>';
     document.documentElement.appendChild(host);
@@ -73,6 +74,7 @@ window.SiteSearchBar = (() => {
     sr.querySelector('.close').addEventListener('click', close);
     reBtn.addEventListener('click', () => { reOn = !reOn; reBtn.classList.toggle('on', reOn); doSearch(); });
     ciBtn.addEventListener('click', () => { ciOn = !ciOn; ciBtn.classList.toggle('on', ciOn); doSearch(); });
+    sr.querySelector('.popup').addEventListener('click', () => { host.remove(); document.dispatchEvent(new CustomEvent('__tm_openPopup')); });
 
     host.__tmFocus();
     if (input.value) doSearch();
