@@ -72,13 +72,13 @@ Toolkit.registerTab({
       onRestore(s) { if (s && s.hex) updateColor(s.hex); },
     });
 
-    function updateColor(hex, skipPicker) {
+    function updateColor(hex) {
       hex = hex.startsWith('#') ? hex : '#' + hex;
       if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return;
       const { r, g, b } = hexToRgb(hex);
       const { h, s, l } = rgbToHsl(r, g, b);
       const full = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-      if (!skipPicker) Toolkit.$('cl-picker').value = full;
+      Toolkit.$('cl-picker').value = full;
       Toolkit.$('cl-hex').value = full;
       Toolkit.$('cl-preview').style.background = full;
       Toolkit.$('cl-hex-out').textContent = full;
@@ -88,7 +88,7 @@ Toolkit.registerTab({
       save();
     }
 
-    Toolkit.$('cl-picker').addEventListener('input', e => updateColor(e.target.value, true));
+    Toolkit.$('cl-picker').addEventListener('change', e => updateColor(e.target.value));
     Toolkit.$('cl-apply').addEventListener('click', () =>
       updateColor(Toolkit.$('cl-hex').value.trim()));
     Toolkit.$('cl-hex').addEventListener('keydown', e => {
