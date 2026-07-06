@@ -72,9 +72,12 @@ Toolkit.registerTab({
       onRestore(s) { if (s && s.hex) updateColor(s.hex); },
     });
 
+    let updating = false;
     function updateColor(hex) {
+      if (updating) return;
+      updating = true;
       hex = hex.startsWith('#') ? hex : '#' + hex;
-      if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return;
+      if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) { updating = false; return; }
       const { r, g, b } = hexToRgb(hex);
       const { h, s, l } = rgbToHsl(r, g, b);
       const full = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
@@ -86,6 +89,7 @@ Toolkit.registerTab({
       Toolkit.$('cl-hsl-out').textContent = `hsl(${h}, ${s}%, ${l}%)`;
       Toolkit.$('cl-dec-out').textContent = `${r}, ${g}, ${b}`;
       save();
+      updating = false;
     }
 
     Toolkit.$('cl-picker').addEventListener('input', e => updateColor(e.target.value));
