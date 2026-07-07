@@ -169,17 +169,20 @@ window.ColorPicker = { run: function tmScreenPicker(imgSrc) {
     sr.querySelector('.pick').addEventListener('click', function () {
       host.style.display = 'none';
       chrome.runtime.sendMessage({ type: 'captureTab' }, function (res) {
-        if (res && res.dataUrl) { host.remove(); startPicker(res.dataUrl); }
+        if (res && res.dataUrl) { host.remove(); document.removeEventListener('keydown', onBarKey); startPicker(res.dataUrl); }
         else host.style.display = '';
       });
     });
     sr.querySelector('.popup').addEventListener('click', function () {
       chrome.runtime.sendMessage({ type: 'openPopup' });
     });
-    sr.querySelector('.close').addEventListener('click', function () { host.remove(); });
-    document.addEventListener('keydown', function onBarKey(e) {
+    function onBarKey(e) {
       if (e.key === 'Escape') { host.remove(); document.removeEventListener('keydown', onBarKey); }
+    }
+    sr.querySelector('.close').addEventListener('click', function () {
+      host.remove(); document.removeEventListener('keydown', onBarKey);
     });
+    document.addEventListener('keydown', onBarKey);
   }
 
   startPicker(imgSrc);

@@ -6,7 +6,7 @@
  */
 const _TkUtils = (() => {
   const $ = id => document.getElementById(id);
-  const qsa = (sel, root = document) => Array.from((root || document).querySelectorAll(sel));
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
   function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
