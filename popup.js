@@ -5,8 +5,8 @@
  * 各モジュールは Toolkit.registerTab() で html / init を提供する。
  */
 const Toolkit = (() => {
-  const { $, qsa, escapeHtml, showToast, svgIco, ICONS, iconButton, copyButton, readText, clampInput } = _TkUtils;
-  const { checkLabel, outputRow, toggle, settingsRow, modalHtml } = _TkUI;
+  const { $, qsa, escapeHtml, showToast, readText, clampInput } = _TkUtils;
+  const { svgIco, ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml } = _TkUI;
 
   /**
    * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
