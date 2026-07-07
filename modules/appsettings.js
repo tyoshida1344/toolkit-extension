@@ -26,16 +26,9 @@ Toolkit.registerSetting({
       listEl.innerHTML = cfg.order.map(id => {
         const t = byId[id];
         if (!t) return '';
-        const checked = cfg.hidden.includes(id) ? '' : ' checked';
-        return `<div class="tm-settings-row tm-tabcfg-item" draggable="true" data-id="${id}">
-          <span class="tm-tabcfg-handle" title="ドラッグで並び替え" aria-hidden="true">⠿</span>
-          <span class="tm-settings-icon">${t.icon}</span>
-          <span class="tm-settings-label">${t.label}</span>
-          <label class="tm-switch">
-            <input type="checkbox" class="tm-tabcfg-toggle"${checked} aria-label="${t.label}を表示">
-            <span class="tm-switch-slider"></span>
-          </label>
-        </div>`;
+        return Toolkit.settingsRow(t.icon, t.label,
+          Toolkit.toggle({ cls: 'tm-tabcfg-toggle', checked: !cfg.hidden.includes(id), aria: `${t.label}を表示` }),
+          { cls: 'tm-tabcfg-item', draggable: true, handle: true, data: { id } });
       }).join('');
     }
 
@@ -103,10 +96,7 @@ Toolkit.registerSetting({
     <p class="tm-set-desc">各ツールの入力・結果を保存し、次回開いたときに復元します。全体をオフにするとすべて停止します（既存の保存データは下の「ストレージ」から消去できます）。</p>
     <div class="tm-set-row tm-persist-global">
       <span class="tm-set-row-text"><strong>全体</strong></span>
-      <label class="tm-switch">
-        <input type="checkbox" id="persist-global" aria-label="入力状態の保持（全体）">
-        <span class="tm-switch-slider"></span>
-      </label>
+      ${Toolkit.toggle({ id: 'persist-global', aria: '入力状態の保持（全体）' })}
     </div>
     <div class="tm-persist-list" id="persist-list"></div>
   `,
@@ -123,15 +113,9 @@ Toolkit.registerSetting({
       listEl.innerHTML = Toolkit.getTabConfig().order.map(id => {
         const t = byId[id];
         if (!t) return '';
-        const on = cfg.byTool[id] !== false;
-        return `<div class="tm-settings-row tm-persist-item${cfg.global ? '' : ' is-disabled'}">
-          <span class="tm-settings-icon">${t.icon}</span>
-          <span class="tm-settings-label">${t.label}</span>
-          <label class="tm-switch">
-            <input type="checkbox" class="tm-persist-toggle" data-id="${id}"${on ? ' checked' : ''}${cfg.global ? '' : ' disabled'} aria-label="${t.label}の保持">
-            <span class="tm-switch-slider"></span>
-          </label>
-        </div>`;
+        return Toolkit.settingsRow(t.icon, t.label,
+          Toolkit.toggle({ cls: 'tm-persist-toggle', checked: cfg.byTool[id] !== false, disabled: !cfg.global, aria: `${t.label}の保持`, data: { id } }),
+          { cls: 'tm-persist-item' + (cfg.global ? '' : ' is-disabled') });
       }).join('');
     }
 

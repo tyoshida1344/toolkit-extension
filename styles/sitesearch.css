@@ -6,12 +6,7 @@
 .ss-opts { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .ss-nav { display: flex; align-items: center; gap: 8px; }
 
-/* オプションのチェックボックス（全タブ検索 / 正規表現 / 大文字小文字区別） */
-.ss-check {
-  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
-  font-size: 12px; color: var(--tm-text-muted); cursor: pointer; user-select: none;
-}
-.ss-check input { cursor: pointer; }
+.ss-opts .tm-check-label { flex-shrink: 0; }
 
 /* 件数・現在位置 */
 .ss-count { font-size: 11px; color: var(--tm-text-muted); white-space: nowrap; }

@@ -17,15 +17,9 @@
       </div>
       <div class="tm-row ss-controls">
         <div class="ss-opts">
-          <label class="ss-check" title="開いている全タブを検索する（OFF で現在のページのみ）">
-            <input type="checkbox" id="ss-scope-all"> 全タブ検索
-          </label>
-          <label class="ss-check" title="正規表現として検索する（OFF で入力をそのまま検索）">
-            <input type="checkbox" id="ss-regex" checked> 正規表現
-          </label>
-          <label class="ss-check" title="大文字小文字を区別する">
-            <input type="checkbox" id="ss-case"> 大文字小文字区別
-          </label>
+          ${Toolkit.checkLabel('ss-scope-all', '全タブ検索', { title: '開いている全タブを検索する（OFF で現在のページのみ）' })}
+          ${Toolkit.checkLabel('ss-regex', '正規表現', { checked: true, title: '正規表現として検索する（OFF で入力をそのまま検索）' })}
+          ${Toolkit.checkLabel('ss-case', '大文字小文字区別', { title: '大文字小文字を区別する' })}
         </div>
         <div class="ss-nav"><span class="ss-count" id="ss-count"></span></div>
       </div>

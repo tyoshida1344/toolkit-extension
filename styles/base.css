@@ -153,9 +153,9 @@ body {
 .tm-check-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .tm-check-label {
   display: flex; align-items: center; gap: 4px; font-size: 12px;
-  cursor: pointer; color: var(--tm-text-muted);
+  cursor: pointer; color: var(--tm-text-muted); user-select: none;
 }
-.tm-check-label input { accent-color: var(--tm-accent); }
+.tm-check-label input { accent-color: var(--tm-accent); cursor: pointer; }
 
 /* ── 汎用アイコンボタン (コピー・更新・スポイト等で共通) ── */
 .tm-icon-btn {

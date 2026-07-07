@@ -19,16 +19,7 @@ Toolkit.registerTab({
       <div class="tm-re-status" id="re-status"></div>
     </div>
 
-    <!-- チートシート モーダル -->
-    <div class="tm-modal-overlay" id="re-modal" hidden>
-      <div class="tm-modal">
-        <div class="tm-modal-header">
-          <span>正規表現チートシート</span>
-          ${Toolkit.iconButton('✕', { id: 're-modal-close', title: '閉じる' })}
-        </div>
-        <div class="tm-modal-body" id="re-cheat-body"></div>
-      </div>
-    </div>
+    ${Toolkit.modalHtml('re-modal', '正規表現チートシート', '', { closeId: 're-modal-close', bodyId: 're-cheat-body' })}
   `,
   init() {
     const CHEATSHEET = [

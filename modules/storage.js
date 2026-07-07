@@ -23,19 +23,13 @@ Toolkit.registerSetting({
         <button type="button" class="tm-btn tm-btn-danger" id="storage-clear-all">すべて消去</button>
       </div>
 
-      <!-- 確認ダイアログ（クリア実行前に表示） -->
-      <div class="tm-modal-overlay tm-storage-confirm" id="storage-confirm" hidden>
-        <div class="tm-modal tm-storage-confirm-modal">
-          <div class="tm-modal-header"><span>確認</span></div>
-          <div class="tm-modal-body">
-            <p class="tm-storage-confirm-msg" id="storage-confirm-msg"></p>
-            <div class="tm-storage-confirm-actions">
-              <button type="button" class="tm-btn tm-btn-secondary" id="storage-confirm-cancel">キャンセル</button>
-              <button type="button" class="tm-btn tm-btn-danger" id="storage-confirm-ok">消去する</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      ${Toolkit.modalHtml('storage-confirm', '確認',
+        '<p class="tm-storage-confirm-msg" id="storage-confirm-msg"></p>' +
+        '<div class="tm-storage-confirm-actions">' +
+          '<button type="button" class="tm-btn tm-btn-secondary" id="storage-confirm-cancel">キャンセル</button>' +
+          '<button type="button" class="tm-btn tm-btn-danger" id="storage-confirm-ok">消去する</button>' +
+        '</div>',
+        { cls: 'tm-storage-confirm', modalCls: 'tm-storage-confirm-modal' })}
     </div>
   `,
   init() {
@@ -71,14 +65,13 @@ Toolkit.registerSetting({
     // ── 描画 ──
     function renderRows(tools) {
       listEl.innerHTML = tools.map(t =>
-        `<div class="tm-settings-row tm-storage-item" id="storage-item-${t.key}">
-          <span class="tm-settings-icon">${t.icon}</span>
-          <span class="tm-settings-label">${t.label}</span>
-          <span class="tm-storage-item-size" id="storage-size-${t.key}">—</span>
-          <button type="button" class="tm-icon-btn tm-storage-item-clear"
-            data-key="${t.key}" data-label="${t.label}"
-            title="${t.label}のデータを消去" aria-label="${t.label}のデータを消去">🗑️</button>
-        </div>`).join('');
+        Toolkit.settingsRow(t.icon, t.label,
+          `<span class="tm-storage-item-size" id="storage-size-${t.key}">—</span>` +
+          `<button type="button" class="tm-icon-btn tm-storage-item-clear"` +
+          ` data-key="${t.key}" data-label="${t.label}"` +
+          ` title="${t.label}のデータを消去" aria-label="${t.label}のデータを消去">🗑️</button>`,
+          { cls: 'tm-storage-item', id: `storage-item-${t.key}` })
+      ).join('');
     }
 
     /** 合計・ツール別の使用量を取得して反映する */
