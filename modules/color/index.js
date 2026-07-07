@@ -14,31 +14,19 @@ Toolkit.registerTab({
     <div class="tm-color-grid">
       <div class="tm-row">
         <label class="tm-label">HEX</label>
-        <div class="tm-inline">
-          <div class="tm-output" id="cl-hex-out" style="flex:1;min-height:auto">#0ea5e9</div>
-          ${Toolkit.copyButton('cl-hex-out')}
-        </div>
+        ${Toolkit.outputRow('cl-hex-out', '#0ea5e9')}
       </div>
       <div class="tm-row">
         <label class="tm-label">RGB</label>
-        <div class="tm-inline">
-          <div class="tm-output" id="cl-rgb-out" style="flex:1;min-height:auto">rgb(14, 165, 233)</div>
-          ${Toolkit.copyButton('cl-rgb-out')}
-        </div>
+        ${Toolkit.outputRow('cl-rgb-out', 'rgb(14, 165, 233)')}
       </div>
       <div class="tm-row">
         <label class="tm-label">HSL</label>
-        <div class="tm-inline">
-          <div class="tm-output" id="cl-hsl-out" style="flex:1;min-height:auto">hsl(199, 89%, 48%)</div>
-          ${Toolkit.copyButton('cl-hsl-out')}
-        </div>
+        ${Toolkit.outputRow('cl-hsl-out', 'hsl(199, 89%, 48%)')}
       </div>
       <div class="tm-row">
         <label class="tm-label">RGB 10進</label>
-        <div class="tm-inline">
-          <div class="tm-output" id="cl-dec-out" style="flex:1;min-height:auto">14, 165, 233</div>
-          ${Toolkit.copyButton('cl-dec-out')}
-        </div>
+        ${Toolkit.outputRow('cl-dec-out', '14, 165, 233')}
       </div>
     </div>
   `,

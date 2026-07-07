@@ -3,13 +3,13 @@ Toolkit.registerTab({
     <div class="tm-row">
       <label class="tm-label">文字種（複数選択可）</label>
       <div class="tm-check-row">
-        <label class="tm-check-label"><input type="checkbox" id="sg-hira" checked>ひらがな</label>
-        <label class="tm-check-label"><input type="checkbox" id="sg-kata">カタカナ</label>
-        <label class="tm-check-label"><input type="checkbox" id="sg-alpha-upper">英大文字</label>
-        <label class="tm-check-label"><input type="checkbox" id="sg-alpha-lower">英小文字</label>
-        <label class="tm-check-label"><input type="checkbox" id="sg-num">数字</label>
-        <label class="tm-check-label"><input type="checkbox" id="sg-symbol">記号</label>
-        <label class="tm-check-label"><input type="checkbox" id="sg-hkata">半角ｶﾅ</label>
+        ${Toolkit.checkLabel('sg-hira', 'ひらがな', { checked: true })}
+        ${Toolkit.checkLabel('sg-kata', 'カタカナ')}
+        ${Toolkit.checkLabel('sg-alpha-upper', '英大文字')}
+        ${Toolkit.checkLabel('sg-alpha-lower', '英小文字')}
+        ${Toolkit.checkLabel('sg-num', '数字')}
+        ${Toolkit.checkLabel('sg-symbol', '記号')}
+        ${Toolkit.checkLabel('sg-hkata', '半角ｶﾅ')}
       </div>
     </div>
     <div class="tm-row tm-inline">

@@ -12,27 +12,24 @@ Toolkit.registerTab({
     <div class="tm-row">
       <label class="tm-label">許可する文字種</label>
       <div class="tm-check-row">
-        <label class="tm-check-label"><input type="checkbox" id="rg-gen-upper">英大文字 (A-Z)</label>
-        <label class="tm-check-label"><input type="checkbox" id="rg-gen-lower">英小文字 (a-z)</label>
-        <label class="tm-check-label"><input type="checkbox" id="rg-gen-digit" checked>数字 (0-9)</label>
-        <label class="tm-check-label" id="rg-symbols-tip"><input type="checkbox" id="rg-gen-symbol" checked>記号</label>
+        ${Toolkit.checkLabel('rg-gen-upper', '英大文字 (A-Z)')}
+        ${Toolkit.checkLabel('rg-gen-lower', '英小文字 (a-z)')}
+        ${Toolkit.checkLabel('rg-gen-digit', '数字 (0-9)', { checked: true })}
+        ${Toolkit.checkLabel('rg-gen-symbol', '記号', { checked: true, labelId: 'rg-symbols-tip' })}
       </div>
     </div>
     <div class="tm-row">
       <label class="tm-label">必須条件</label>
       <div class="tm-check-row">
-        <label class="tm-check-label"><input type="checkbox" id="rg-req-upper">英大文字を1文字以上含む</label>
-        <label class="tm-check-label"><input type="checkbox" id="rg-req-lower">英小文字を1文字以上含む</label>
-        <label class="tm-check-label"><input type="checkbox" id="rg-req-digit">数字を1文字以上含む</label>
-        <label class="tm-check-label"><input type="checkbox" id="rg-req-symbol">記号を1文字以上含む</label>
+        ${Toolkit.checkLabel('rg-req-upper', '英大文字を1文字以上含む')}
+        ${Toolkit.checkLabel('rg-req-lower', '英小文字を1文字以上含む')}
+        ${Toolkit.checkLabel('rg-req-digit', '数字を1文字以上含む')}
+        ${Toolkit.checkLabel('rg-req-symbol', '記号を1文字以上含む')}
       </div>
     </div>
     <div class="tm-row">
       <label class="tm-label">生成結果</label>
-      <div class="tm-inline">
-        <div class="tm-output" id="rg-gen-output" style="flex:1"></div>
-        ${Toolkit.copyButton('rg-gen-output')}
-      </div>
+      ${Toolkit.outputRow('rg-gen-output')}
     </div>
     <hr class="tm-hr">
     <div class="tm-row">

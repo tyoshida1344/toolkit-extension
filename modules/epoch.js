@@ -2,11 +2,7 @@ Toolkit.registerTab({
   html: `
     <div class="tm-row">
       <label class="tm-label">現在のエポックミリ秒</label>
-      <div class="tm-inline">
-        <div class="tm-output" id="ep-now" style="flex:1;min-height:auto"></div>
-        ${Toolkit.copyButton('ep-now')}
-        ${Toolkit.iconButton(Toolkit.ICONS.refresh, { id: 'ep-refresh', title: '更新' })}
-      </div>
+      ${Toolkit.outputRow('ep-now', '', { extra: Toolkit.iconButton(Toolkit.ICONS.refresh, { id: 'ep-refresh', title: '更新' }) })}
     </div>
     <hr class="tm-hr">
     <div class="tm-row">
