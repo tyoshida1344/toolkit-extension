@@ -42,6 +42,7 @@ window.ColorPicker = { run: function tmScreenPicker(imgSrc) {
     var ready = false;
     var capturing = false;
     var lastHex = '';
+    var capScrollX = window.scrollX, capScrollY = window.scrollY;
 
     function drawImage(s) {
       ready = false;
@@ -50,6 +51,8 @@ window.ColorPicker = { run: function tmScreenPicker(imgSrc) {
         cvs.width = window.innerWidth;
         cvs.height = window.innerHeight;
         ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, cvs.width, cvs.height);
+        capScrollX = window.scrollX;
+        capScrollY = window.scrollY;
         ready = true;
         capturing = false;
       };
@@ -79,7 +82,9 @@ window.ColorPicker = { run: function tmScreenPicker(imgSrc) {
     window.addEventListener('resize', scheduleRecapture);
 
     function pixelHex(x, y) {
-      var d = ctx.getImageData(x, y, 1, 1).data;
+      var ax = Math.max(0, Math.min(cvs.width - 1, x + window.scrollX - capScrollX));
+      var ay = Math.max(0, Math.min(cvs.height - 1, y + window.scrollY - capScrollY));
+      var d = ctx.getImageData(ax, ay, 1, 1).data;
       return '#' + [d[0], d[1], d[2]].map(function (v) { return v.toString(16).padStart(2, '0'); }).join('');
     }
 
