@@ -87,12 +87,9 @@ Toolkit.registerSetting({
         percentEl.textContent = (total > 0 && pct < 0.1) ? '0.1% 未満' : pct.toFixed(1) + '%';
         barEl.style.width = Math.min(100, pct) + '%';
       });
-      // ツール別の内訳（一括取得で IPC 1回）。データの無いツールは淡色＋クリア無効。
-      const keys = tools.map(t => t.key);
-      store.get(keys, items => {
-        for (const t of tools) {
-          const val = items[t.key];
-          const bytes = val != null ? JSON.stringify(val).length : 0;
+      // ツール別の内訳。データの無いツールは淡色＋クリア無効。
+      for (const t of tools) {
+        store.getBytesInUse(t.key, bytes => {
           const sizeEl = Toolkit.$('storage-size-' + t.key);
           const rowEl = Toolkit.$('storage-item-' + t.key);
           if (sizeEl) sizeEl.textContent = fmtBytes(bytes);
@@ -101,8 +98,8 @@ Toolkit.registerSetting({
             const btn = rowEl.querySelector('.tm-storage-item-clear');
             if (btn) btn.disabled = (bytes === 0);
           }
-        }
-      });
+        });
+      }
     }
 
     /** 最新のタブ構成で行を組み直し、使用量を反映する（並び替えにも追従） */
