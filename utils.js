@@ -23,7 +23,8 @@ const _TkUtils = (() => {
       document.body.appendChild(toast);
     }
     toast.textContent = message;
-    toast.classList.remove('show');
+    toast.classList.remove('show', 'error');
+    toast.classList.toggle('error', message.startsWith('⚠'));
     void toast.offsetWidth;
     toast.classList.add('show');
     clearTimeout(toastTimer);
