@@ -88,7 +88,7 @@ Toolkit.registerTab({
       save();
     }
 
-    Toolkit.$('cl-picker').addEventListener('input', e => updateColor(e.target.value));
+    Toolkit.$('cl-picker').addEventListener('change', e => updateColor(e.target.value));
     Toolkit.$('cl-apply').addEventListener('click', () =>
       updateColor(Toolkit.$('cl-hex').value.trim()));
     Toolkit.$('cl-hex').addEventListener('keydown', e => {
