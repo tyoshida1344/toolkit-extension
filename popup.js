@@ -6,7 +6,7 @@
  */
 const Toolkit = (() => {
   const { $, qsa, escapeHtml, showToast, readText, clampInput } = _TkUtils;
-  const { svgIco, ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml } = _TkUI;
+  const { ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml } = _TkUI;
 
   /**
    * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
@@ -264,16 +264,14 @@ const Toolkit = (() => {
     if (persist) saveState('activeTab', id);
   }
 
-  function getTabs() {
-    return TAB_MANIFEST.map(entry => ({
-      id: entry.id, icon: entry.icon, label: entry.label,
-      storageKey: entry.storageKey || (STATE_PREFIX + entry.id),
-    }));
-  }
+  const _tabsCache = TAB_MANIFEST.map(entry => ({
+    id: entry.id, icon: entry.icon, label: entry.label,
+    storageKey: STATE_PREFIX + entry.id,
+  }));
+  const _tabsByIdCache = Object.fromEntries(_tabsCache.map(t => [t.id, t]));
 
-  function getTabsById() {
-    return Object.fromEntries(getTabs().map(t => [t.id, t]));
-  }
+  function getTabs() { return _tabsCache; }
+  function getTabsById() { return _tabsByIdCache; }
 
   function tryRegex(pattern, flags) {
     try { return { re: new RegExp(pattern, flags), error: null }; }
@@ -454,10 +452,6 @@ const Toolkit = (() => {
     } else {
       if (settingsModal) settingsModal.open();
     }
-  }
-
-  function closeSettings() {
-    if (settingsModal) settingsModal.close();
   }
 
   document.addEventListener('click', (e) => {
