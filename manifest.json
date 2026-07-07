@@ -3,7 +3,7 @@
   "name": "便利ツール オールインワン",
   "version": "1.1.0",
   "description": "文字列生成・エポック変換・カラー変換・翻訳・メモ帳のオールインワンツール",
-  "permissions": ["storage", "scripting", "activeTab"],
+  "permissions": ["storage", "scripting"],
   "host_permissions": ["https://translate.googleapis.com/*", "http://*/*", "https://*/*"],
   "action": {
     "default_popup": "popup.html",
