@@ -77,7 +77,6 @@ Toolkit.registerTab({
     // 入力欄のどこをクリックしてもカレンダーを開く（カレンダーアイコンだけだと当たり判定が小さいため）
     const openPicker = () => { try { dateInput.showPicker(); } catch (_) { /* 既に表示中など */ } };
     dateInput.addEventListener('click', openPicker);
-    dateInput.addEventListener('focus', openPicker);
 
     Toolkit.$('ep-date2ms').addEventListener('click', () => {
       const v = dateInput.value;

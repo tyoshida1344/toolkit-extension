@@ -15,7 +15,7 @@ const Toolkit = (() => {
   const TAB_MANIFEST = [
     { id: 'strgen', icon: '✏️', label: '文字列生成', scripts: ['modules/strgen.js'] },
     { id: 'epoch', icon: '⏱️', label: 'エポック変換', scripts: ['modules/epoch.js'], styles: ['styles/epoch.css'] },
-    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color.js'], styles: ['styles/color.css'] },
+    { id: 'color', icon: '🎨', label: 'カラー変換', scripts: ['modules/color/picker.js', 'modules/color/index.js'], styles: ['styles/color.css'] },
     { id: 'translate', icon: '🌐', label: '翻訳', scripts: ['modules/translate.js'], styles: ['styles/translate.css'] },
     { id: 'regex', icon: '🔤', label: '正規表現', scripts: ['modules/regex.js'], styles: ['styles/regex.css'] },
     { id: 'regexgen', icon: '*️⃣', label: '正規表現生成', scripts: ['modules/regexgen.js'], styles: ['styles/regexgen.css'] },
