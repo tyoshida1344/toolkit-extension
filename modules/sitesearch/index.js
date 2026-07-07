@@ -162,8 +162,20 @@
         try {
           await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: engine, args: ['ensure'] });
           await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: bar, args: [patternInput.value || '', regexMode, caseSensitive] });
-          setStatus('📌 ページに検索バーを表示しました。ポップアップを閉じても使えます');
-        } catch (e) { setStatus('検索バーを表示できませんでした（' + (e.message || e) + '）', true); }
+        } catch (e) { setStatus('検索バーを表示できませんでした（' + (e.message || e) + '）', true); return; }
+        try {
+          await _scripting.executeScript({
+            target: { tabId: tab.id },
+            func: function () {
+              if (window.__tmOpenPopupBridge) return;
+              window.__tmOpenPopupBridge = true;
+              document.addEventListener('__tm_openPopup', function () {
+                chrome.runtime.sendMessage({ type: 'openPopup' });
+              });
+            },
+          });
+        } catch (_) {}
+        window.close();
       }
 
       function addHistory(q) {
