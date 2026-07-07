@@ -95,24 +95,7 @@ Toolkit.registerTab({
       if (e.key === 'Enter') updateColor(e.target.value.trim());
     });
 
-    // EyeDropper API は一部の Windows 環境でブラウザフリーズを起こすため、
-    // captureVisibleTab + canvas 方式をデフォルトにしている。
-    // Chrome 側のバグが修正されたら true に戻す。
-    const USE_EYEDROPPER = false;
-
     Toolkit.$('cl-eyedrop').addEventListener('click', async () => {
-      if (USE_EYEDROPPER) {
-        if (!('EyeDropper' in window)) {
-          alert('このブラウザはスポイト機能（EyeDropper API）に対応していません。\nChrome / Edge をお使いください。');
-          return;
-        }
-        try {
-          const result = await new EyeDropper().open();
-          updateColor(result.sRGBHex);
-        } catch (_) { /* cancelled */ }
-        return;
-      }
-
       const tabs = typeof chrome !== 'undefined' && chrome.tabs;
       if (!tabs) {
         alert('このブラウザはスポイト機能に対応していません。');
