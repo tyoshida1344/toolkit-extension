@@ -31,6 +31,10 @@ Toolkit.registerTab({
     </div>
   `,
   init() {
+    const pickerEl = Toolkit.$('cl-picker'), hexEl = Toolkit.$('cl-hex'), previewEl = Toolkit.$('cl-preview');
+    const hexOut = Toolkit.$('cl-hex-out'), rgbOut = Toolkit.$('cl-rgb-out'), hslOut = Toolkit.$('cl-hsl-out'), decOut = Toolkit.$('cl-dec-out');
+    const applyBtn = Toolkit.$('cl-apply'), eyedropBtn = Toolkit.$('cl-eyedrop');
+
     function hexToRgb(hex) {
       hex = hex.replace('#', '');
       if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
@@ -56,8 +60,8 @@ Toolkit.registerTab({
     }
 
     const save = Toolkit.bindState('color', {}, {
-      extra: () => ({ hex: Toolkit.$('cl-hex').value }),
-      onRestore(s) { updateColor((s && s.hex) || Toolkit.$('cl-picker').value); },
+      extra: () => ({ hex: hexEl.value }),
+      onRestore(s) { updateColor((s && s.hex) || pickerEl.value); },
     });
 
     function updateColor(hex) {
@@ -66,24 +70,23 @@ Toolkit.registerTab({
       const { r, g, b } = hexToRgb(hex);
       const { h, s, l } = rgbToHsl(r, g, b);
       const full = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-      Toolkit.$('cl-picker').value = full;
-      Toolkit.$('cl-hex').value = full;
-      Toolkit.$('cl-preview').style.background = full;
-      Toolkit.$('cl-hex-out').textContent = full;
-      Toolkit.$('cl-rgb-out').textContent = `rgb(${r}, ${g}, ${b})`;
-      Toolkit.$('cl-hsl-out').textContent = `hsl(${h}, ${s}%, ${l}%)`;
-      Toolkit.$('cl-dec-out').textContent = `${r}, ${g}, ${b}`;
+      pickerEl.value = full;
+      hexEl.value = full;
+      previewEl.style.background = full;
+      hexOut.textContent = full;
+      rgbOut.textContent = `rgb(${r}, ${g}, ${b})`;
+      hslOut.textContent = `hsl(${h}, ${s}%, ${l}%)`;
+      decOut.textContent = `${r}, ${g}, ${b}`;
       save();
     }
 
-    Toolkit.$('cl-picker').addEventListener('change', e => updateColor(e.target.value));
-    Toolkit.$('cl-apply').addEventListener('click', () =>
-      updateColor(Toolkit.$('cl-hex').value.trim()));
-    Toolkit.$('cl-hex').addEventListener('keydown', e => {
+    pickerEl.addEventListener('change', e => updateColor(e.target.value));
+    applyBtn.addEventListener('click', () => updateColor(hexEl.value.trim()));
+    hexEl.addEventListener('keydown', e => {
       if (e.key === 'Enter') updateColor(e.target.value.trim());
     });
 
-    Toolkit.$('cl-eyedrop').addEventListener('click', async () => {
+    eyedropBtn.addEventListener('click', async () => {
       const tabs = typeof chrome !== 'undefined' && chrome.tabs;
       if (!tabs) {
         Toolkit.showToast('⚠ スポイト機能はこのブラウザに対応していません');

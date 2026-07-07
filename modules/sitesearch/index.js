@@ -181,7 +181,9 @@
       }
       function renderHistory() {
         historyEl.innerHTML = '';
-        history.forEach(q => { const o = document.createElement('option'); o.value = q; historyEl.appendChild(o); });
+        const frag = document.createDocumentFragment();
+        history.forEach(q => { const o = document.createElement('option'); o.value = q; frag.appendChild(o); });
+        historyEl.appendChild(frag);
       }
 
       function save() {
