@@ -95,17 +95,51 @@ Toolkit.registerTab({
       if (e.key === 'Enter') updateColor(e.target.value.trim());
     });
 
-    // スポイト（EyeDropper API）
     Toolkit.$('cl-eyedrop').addEventListener('click', async () => {
-      if (!('EyeDropper' in window)) {
-        alert('このブラウザはスポイト機能（EyeDropper API）に対応していません。\nChrome / Edge をお使いください。');
+      const tabs = typeof chrome !== 'undefined' && chrome.tabs;
+      if (!tabs) {
+        alert('このブラウザはスポイト機能に対応していません。');
         return;
       }
+      let tab;
       try {
-        const result = await new EyeDropper().open();
-        updateColor(result.sRGBHex);
-      } catch (e) { /* cancelled */ }
+        const list = await tabs.query({ active: true, currentWindow: true });
+        tab = list && list[0];
+      } catch (_) {}
+      if (!tab || !/^https?:\/\//.test(tab.url || '')) {
+        alert('このページではスポイト機能を使用できません。\nhttp(s) ページで使用してください。');
+        return;
+      }
+      let dataUrl;
+      try {
+        dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+      } catch (e) {
+        alert('スクリーンショットの取得に失敗しました。\n' + (e.message || e));
+        return;
+      }
+      const picker = window.ColorPicker && window.ColorPicker.run;
+      if (!picker) { alert('スポイトの初期化に失敗しました。'); return; }
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: picker,
+          args: [dataUrl],
+        });
+        window.close();
+      } catch (_) {
+        alert('スポイトの起動に失敗しました。');
+      }
     });
 
+    // スポイトで選んだ色は persistAllowed を経由しない一時キーで受け渡す
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.local.get('tm_eyedrop_result', data => {
+        const hex = data.tm_eyedrop_result;
+        if (hex) {
+          updateColor(hex);
+          chrome.storage.local.remove('tm_eyedrop_result');
+        }
+      });
+    }
   },
 });
