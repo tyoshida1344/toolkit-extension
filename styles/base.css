@@ -188,6 +188,7 @@ body {
   transition: opacity .2s, transform .2s;
 }
 .tm-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.tm-toast.error { background: var(--tm-error); }
 
 /* ── 設定オーバーレイ (ヘッダー⚙️から開く / popup.js コアが構築) ── */
 /* 設定はポップアップ全体を覆う（中央寄せの小モーダルにせず、余白なしの全面表示）。
