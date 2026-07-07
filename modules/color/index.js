@@ -98,7 +98,7 @@ Toolkit.registerTab({
     Toolkit.$('cl-eyedrop').addEventListener('click', async () => {
       const tabs = typeof chrome !== 'undefined' && chrome.tabs;
       if (!tabs) {
-        alert('このブラウザはスポイト機能に対応していません。');
+        Toolkit.showToast('⚠ スポイト機能はこのブラウザに対応していません');
         return;
       }
       let tab;
@@ -107,18 +107,18 @@ Toolkit.registerTab({
         tab = list && list[0];
       } catch (_) {}
       if (!tab || !/^https?:\/\//.test(tab.url || '')) {
-        alert('このページではスポイト機能を使用できません。\nhttp(s) ページで使用してください。');
+        Toolkit.showToast('⚠ このページではスポイト機能を使用できません');
         return;
       }
       let dataUrl;
       try {
         dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
       } catch (e) {
-        alert('スクリーンショットの取得に失敗しました。\n' + (e.message || e));
+        Toolkit.showToast('⚠ スクリーンショットの取得に失敗しました');
         return;
       }
       const picker = window.ColorPicker && window.ColorPicker.run;
-      if (!picker) { alert('スポイトの初期化に失敗しました。'); return; }
+      if (!picker) { Toolkit.showToast('⚠ スポイトの初期化に失敗しました'); return; }
       try {
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
@@ -127,7 +127,7 @@ Toolkit.registerTab({
         });
         window.close();
       } catch (_) {
-        alert('スポイトの起動に失敗しました。');
+        Toolkit.showToast('⚠ スポイトの起動に失敗しました');
       }
     });
 

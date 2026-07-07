@@ -12,6 +12,7 @@ const _TkUtils = (() => {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  const TOAST_DURATION = 1400;
   let toastTimer = null;
   function showToast(message = '📋 コピーしました') {
     let toast = document.getElementById('tm-toast');
@@ -26,7 +27,7 @@ const _TkUtils = (() => {
     void toast.offsetWidth;
     toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), TOAST_DURATION);
   }
 
   const svgIco = (extraClass, inner, sw = 2) =>

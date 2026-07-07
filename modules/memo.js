@@ -2,33 +2,25 @@ Toolkit.registerTab({
   html: `
     <textarea class="tm-textarea tm-notepad-area" id="memo-area"
       placeholder="ここにメモを入力...\nどのサイトでも内容が保存されます。"></textarea>
-    <div class="tm-note-status" id="memo-status">読み込み中...</div>
   `,
   init() {
-    const area = Toolkit.$('memo-area');
-    const status = Toolkit.$('memo-status');
-    let saveTimer = null;
+    const store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
 
-    // 読み込み（入力状態の保持がオフのときは復元しない）
-    if (Toolkit.isPersistEnabled('memo')) {
-      chrome.storage.local.get('tm_toolkit_memo', data => {
-        area.value = data.tm_toolkit_memo || '';
-        status.textContent = '保存済み';
-      });
-    } else {
-      status.textContent = '保持オフ（保存しません）';
+    function setup() {
+      Toolkit.bindState('memo', { 'memo-area': ['value', 'value'] });
     }
 
-    // 自動保存（0.5秒デバウンス。保持オフ時は保存しない）
-    area.addEventListener('input', () => {
-      if (!Toolkit.isPersistEnabled('memo')) { status.textContent = '保持オフ（保存しません）'; return; }
-      status.textContent = '保存中...';
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => {
-        chrome.storage.local.set({ tm_toolkit_memo: area.value }, () => {
-          status.textContent = '保存済み (' + new Date().toLocaleTimeString() + ')';
+    // 旧キー tm_toolkit_memo → tm_state_memo へのワンタイム移行（完了後に bindState）
+    if (store) {
+      store.get('tm_toolkit_memo', data => {
+        if (data.tm_toolkit_memo == null) { setup(); return; }
+        store.set({ tm_state_memo: { value: data.tm_toolkit_memo } }, () => {
+          store.remove('tm_toolkit_memo');
+          setup();
         });
-      }, 500);
-    });
+      });
+    } else {
+      setup();
+    }
   },
 });
