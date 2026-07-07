@@ -14,19 +14,19 @@ Toolkit.registerTab({
     <div class="tm-color-grid">
       <div class="tm-row">
         <label class="tm-label">HEX</label>
-        ${Toolkit.outputRow('cl-hex-out', '#0ea5e9')}
+        ${Toolkit.outputRow('cl-hex-out')}
       </div>
       <div class="tm-row">
         <label class="tm-label">RGB</label>
-        ${Toolkit.outputRow('cl-rgb-out', 'rgb(14, 165, 233)')}
+        ${Toolkit.outputRow('cl-rgb-out')}
       </div>
       <div class="tm-row">
         <label class="tm-label">HSL</label>
-        ${Toolkit.outputRow('cl-hsl-out', 'hsl(199, 89%, 48%)')}
+        ${Toolkit.outputRow('cl-hsl-out')}
       </div>
       <div class="tm-row">
         <label class="tm-label">RGB 10進</label>
-        ${Toolkit.outputRow('cl-dec-out', '14, 165, 233')}
+        ${Toolkit.outputRow('cl-dec-out')}
       </div>
     </div>
   `,
@@ -57,7 +57,7 @@ Toolkit.registerTab({
 
     const save = Toolkit.bindState('color', {}, {
       extra: () => ({ hex: Toolkit.$('cl-hex').value }),
-      onRestore(s) { if (s && s.hex) updateColor(s.hex); },
+      onRestore(s) { updateColor((s && s.hex) || Toolkit.$('cl-picker').value); },
     });
 
     function updateColor(hex) {
