@@ -65,6 +65,9 @@ window.SiteSearchBar = (() => {
     input.value = initialQuery || '';
     host.__tmFocus = () => { input.focus(); input.select(); };
 
+    // ページ側のショートカットキーが発火しないよう伝播を遮断
+    ['keydown', 'keyup'].forEach(ev =>
+      sr.querySelector('.bar').addEventListener(ev, e => e.stopPropagation()));
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1); }
       else if (e.key === 'Escape') { e.preventDefault(); close(); }
