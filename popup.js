@@ -250,16 +250,14 @@ const Toolkit = (() => {
     const content = document.getElementById('tm-content');
     const empty = document.getElementById('tm-tabs-empty');
     if (!sidebar || !content) return;
+    sidebar.querySelector('.tm-tab.active')?.classList.remove('active');
+    content.querySelector('.tm-section.active')?.classList.remove('active');
     if (!entry) {
-      sidebar.querySelector('.tm-tab.active')?.classList.remove('active');
-      content.querySelector('.tm-section.active')?.classList.remove('active');
       document.getElementById('tm-header-title').textContent = '便利ツール';
       if (empty) empty.hidden = false;
       return;
     }
-    sidebar.querySelector('.tm-tab.active')?.classList.remove('active');
     sidebar.querySelector(`[data-tab="${id}"]`)?.classList.add('active');
-    content.querySelector('.tm-section.active')?.classList.remove('active');
     document.getElementById('sec-' + id)?.classList.add('active');
     document.getElementById('tm-header-title').textContent = entry.icon + ' ' + entry.label;
     if (empty) empty.hidden = true;
