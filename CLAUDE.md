@@ -19,7 +19,7 @@ node --check modules/<編集したファイル>.js
 
 `popup.js`（`Toolkit` IIFE）は**機能ロジックを一切持たない**。タブ管理・UI 構築・共通ヘルパーだけを担う。各機能は `modules/*.js` が `Toolkit.registerTab()` で自己登録する。
 
-**モジュール追加手順**: `modules/<name>.js` 作成 → `popup.js` の `TAB_MANIFEST` にエントリ追加 → 機能固有スタイルがあれば `styles/<name>.css` も作成。1 ファイルで収まらない機能は `modules/<name>/` フォルダに分割し、`registerTab` を呼ぶ主ファイルは `index.js` とする。
+**モジュール追加手順**: `modules/<name>.js` 作成 → `popup.js` の `TAB_MANIFEST` にエントリ追加 → 機能固有スタイルがあれば `styles/<name>.css` も作成 → **README の機能一覧にツールの説明を追加**。1 ファイルで収まらない機能は `modules/<name>/` フォルダに分割し、`registerTab` を呼ぶ主ファイルは `index.js` とする。
 
 **守るべきルール**:
 - コピーは `Toolkit.copyButton` のイベント委譲で処理される。モジュール側で独自のコピーハンドラを付けない
