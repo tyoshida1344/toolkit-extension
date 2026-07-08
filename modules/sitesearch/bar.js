@@ -4,7 +4,7 @@
  * window.SiteSearchBar.install で公開。注入時に直列化されるため外側は参照しない。
  */
 window.SiteSearchBar = (() => {
-  function install(initialQuery, regexOn, caseOn) {
+  function install(initialQuery, regexOn, caseOn, btnCSS) {
     const HOST_ID = '__tm_search_bar_host';
     const existing = document.getElementById(HOST_ID);
     if (existing && existing.__tmFocus) { existing.__tmFocus(); return; } // 二度押しは再フォーカス
@@ -35,12 +35,10 @@ window.SiteSearchBar = (() => {
     const sr = host.attachShadow({ mode: 'open' });
     sr.innerHTML =
       '<style>'
-      + ':host{all:initial;}'
+      + btnCSS
       + '.bar{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:6px;font-family:Segoe UI,Hiragino Sans,Meiryo,sans-serif;}'
       + '.q{width:180px;height:28px;border:1px solid #d1d5db;border-radius:6px;padding:0 8px;font-size:13px;outline:none;color:#111;background:#fff;}'
       + '.q:focus{border-color:#0ea5e9;}'
-      + 'button{height:28px;min-width:28px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;font-size:12px;font-weight:600;padding:0 6px;line-height:1;}'
-      + 'button:hover{background:#f3f4f6;}'
       + 'button.on{background:#e0f2fe;color:#0284c7;border-color:#bae6fd;}'
       + '.cnt{min-width:52px;text-align:center;color:#6b7280;font-size:11px;white-space:nowrap;}'
       + '</style>'
