@@ -155,7 +155,7 @@
         if (!tab) return;
         try {
           await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: engine, args: ['ensure'] });
-          await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: bar, args: [patternInput.value || '', regexMode, caseSensitive] });
+          await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: bar, args: [patternInput.value || '', regexMode, caseSensitive, Toolkit.INJECT_BTN_CSS] });
         } catch (e) { setStatus('検索バーを表示できませんでした（' + (e.message || e) + '）', true); return; }
         try {
           await _scripting.executeScript({

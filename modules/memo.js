@@ -4,7 +4,7 @@ Toolkit.registerTab({
       placeholder="ここにメモを入力...\nどのサイトでも内容が保存されます。"></textarea>
   `,
   init() {
-    const store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
+    const store = Toolkit.store;
 
     function setup() {
       Toolkit.bindState('memo', { 'memo-area': ['value', 'value'] });

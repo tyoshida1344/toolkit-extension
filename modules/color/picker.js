@@ -1,4 +1,4 @@
-window.ColorPicker = { run: function tmScreenPicker(imgSrc) {
+window.ColorPicker = { run: function tmScreenPicker(imgSrc, btnCSS) {
   var OV_ID = '__tm_picker__';
   var BAR_ID = '__tm_picker_bar__';
 
@@ -134,12 +134,10 @@ window.ColorPicker = { run: function tmScreenPicker(imgSrc) {
     var sr = host.attachShadow({ mode: 'open' });
     sr.innerHTML =
       '<style>'
-      + ':host{all:initial;}'
+      + btnCSS
       + '.bar{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);padding:6px;font-family:Segoe UI,Hiragino Sans,Meiryo,sans-serif;}'
       + '.swatch{width:24px;height:24px;border-radius:6px;border:1px solid #d1d5db;flex-shrink:0;}'
       + '.hex{font-family:monospace;font-size:14px;color:#111;}'
-      + 'button{height:28px;min-width:28px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;font-size:12px;font-weight:600;padding:0 6px;line-height:1;}'
-      + 'button:hover{background:#f3f4f6;}'
       + '.copy svg{width:16px;height:16px;vertical-align:middle;}'
       + '.copy .done{display:none;}'
       + '.copy.copied{color:#22c55e;border-color:#22c55e;}'

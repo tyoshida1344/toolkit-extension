@@ -156,6 +156,7 @@ const Toolkit = (() => {
 
   const _store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
   const STATE_PREFIX = 'tm_state_';
+  const INJECT_BTN_CSS = ':host{all:initial;}button{height:28px;min-width:28px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;font-size:12px;font-weight:600;padding:0 6px;line-height:1;}button:hover{background:#f3f4f6;}';
   const _saveTimers = {};
 
   // アプリ自身の設定キー。「入力状態の保持」をオフにしても、これらは保存・復元を続ける
@@ -531,9 +532,9 @@ const Toolkit = (() => {
 
   return {
     registerTab, registerSetting, copyText, copyButton, iconButton, showToast, ICONS,
-    escapeHtml, $, qsa, clampInput, onTabShortcut, modal,
+    escapeHtml, $, qsa, clampInput, onTabShortcut, modal, store: _store,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabsById, getTabConfig, setTabConfig, tryRegex, HISTORY_LIMIT, SYMBOLS,
-    checkLabel, outputRow, toggle, settingsRow, modalHtml,
+    checkLabel, outputRow, toggle, settingsRow, modalHtml, INJECT_BTN_CSS,
   };
 })();

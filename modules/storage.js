@@ -42,7 +42,7 @@ Toolkit.registerSetting({
         .map(t => ({ key: t.storageKey, icon: t.icon, label: t.label }));
     }
 
-    const store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
+    const store = Toolkit.store;
     const QUOTA = (store && store.QUOTA_BYTES) || 10485760; // 既定 10MB
 
     const totalEl = Toolkit.$('storage-total');
