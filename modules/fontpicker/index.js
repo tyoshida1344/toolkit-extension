@@ -9,10 +9,23 @@
 
   Toolkit.registerTab({
     html: `
-      <div class="fp-preview" id="fp-preview">あいうえお AaBbCc 123</div>
       <div class="tm-row">
         <label class="tm-label">font-family</label>
-        <input type="text" class="tm-input" id="fp-family" spellcheck="false" placeholder="sans-serif">
+        <select class="tm-input" id="fp-family">
+          <option value="sans-serif">sans-serif</option>
+          <option value="serif">serif</option>
+          <option value="monospace">monospace</option>
+          <option value="cursive">cursive</option>
+          <option value="fantasy">fantasy</option>
+          <option value="'游ゴシック', 'Yu Gothic', sans-serif">游ゴシック</option>
+          <option value="'游明朝', 'Yu Mincho', serif">游明朝</option>
+          <option value="'メイリオ', Meiryo, sans-serif">メイリオ</option>
+          <option value="'Noto Sans JP', sans-serif">Noto Sans JP</option>
+          <option value="'ヒラギノ角ゴ ProN', 'Hiragino Kaku Gothic ProN', sans-serif">ヒラギノ角ゴ</option>
+          <option value="'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', serif">ヒラギノ明朝</option>
+          <option value="'MS ゴシック', 'MS Gothic', monospace">MS ゴシック</option>
+          <option value="'MS 明朝', 'MS Mincho', serif">MS 明朝</option>
+        </select>
       </div>
       <div class="tm-row fp-row-2col">
         <div class="fp-field">
@@ -54,8 +67,9 @@
           </div>
         </div>
       </div>
+      <div class="fp-preview" id="fp-preview" contenteditable="true" spellcheck="false">あいうえお AaBbCc 123</div>
       <div class="tm-row">
-        <button class="tm-btn tm-btn-primary" id="fp-start">フォント取得を開始</button>
+        <button class="tm-btn tm-btn-primary" id="fp-start">ページから取得</button>
       </div>
     `,
     init() {
@@ -93,18 +107,31 @@
       hexEl.addEventListener('change', () => setColor(hexEl.value.trim()));
       hexEl.addEventListener('keydown', e => { if (e.key === 'Enter') setColor(hexEl.value.trim()); });
 
-      [familyEl, sizeEl].forEach(el => el.addEventListener('input', () => { updatePreview(); save(); }));
-      [weightEl, styleEl].forEach(el => el.addEventListener('change', () => { updatePreview(); save(); }));
+      sizeEl.addEventListener('input', () => { updatePreview(); save(); });
+      [familyEl, weightEl, styleEl].forEach(el => el.addEventListener('change', () => { updatePreview(); save(); }));
+      previewEl.addEventListener('input', save);
 
       function save() {
         Toolkit.saveState('fontpicker', {
           family: familyEl.value, size: sizeEl.value, weight: weightEl.value,
-          style: styleEl.value, hex: hexEl.value,
+          style: styleEl.value, hex: hexEl.value, text: previewEl.textContent,
         });
       }
 
+      function setFamily(val) {
+        if (!val) return;
+        familyEl.value = val;
+        if (!familyEl.value) {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val.replace(/'/g, '').split(',')[0].trim();
+          familyEl.appendChild(opt);
+          familyEl.value = val;
+        }
+      }
+
       function applyResult(r) {
-        familyEl.value = r.fontFamily || '';
+        setFamily(r.fontFamily || '');
         sizeEl.value = parseInt(r.fontSize) || '';
         const w = Math.max(100, Math.min(900, Math.round((parseInt(r.fontWeight) || 400) / 100) * 100));
         weightEl.value = String(w);
@@ -114,11 +141,12 @@
 
       Toolkit.loadState('fontpicker', s => {
         if (s) {
-          if (s.family != null) familyEl.value = s.family;
+          if (s.family != null) setFamily(s.family);
           if (s.size != null) sizeEl.value = s.size;
           if (s.weight != null) weightEl.value = s.weight;
           if (s.style != null) styleEl.value = s.style;
           if (s.hex != null) { hexEl.value = s.hex; setColor(s.hex); }
+          if (s.text != null) previewEl.textContent = s.text;
         }
         updatePreview();
       });

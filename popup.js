@@ -28,7 +28,7 @@ const Toolkit = (() => {
     ], styles: ['styles/sitesearch.css'] },
     { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'] },
-    { id: 'fontpicker', icon: 'ℱ', label: 'フォント取得', scripts: ['modules/fontpicker/inspector.js', 'modules/fontpicker/index.js'], styles: ['styles/fontpicker.css'], defaultHidden: true },
+    { id: 'fontpicker', icon: 'ℱ', label: 'フォント', scripts: ['modules/fontpicker/inspector.js', 'modules/fontpicker/index.js'], styles: ['styles/fontpicker.css'], defaultHidden: true },
   ];
   const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
   const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id])));
