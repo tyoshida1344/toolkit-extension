@@ -50,5 +50,13 @@ const _TkUtils = (() => {
     });
   }
 
-  return { $, qsa, escapeHtml, showToast, readText, clampInput };
+  function normalizeHex(hex) {
+    hex = String(hex).trim();
+    if (!hex.startsWith('#')) hex = '#' + hex;
+    if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return null;
+    if (hex.length === 4) hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+    return hex;
+  }
+
+  return { $, qsa, escapeHtml, showToast, readText, clampInput, normalizeHex };
 })();

@@ -1,6 +1,4 @@
 (() => {
-  const INJECTABLE = /^https?:\/\//i;
-
   const FONT_FAMILIES = [
     'sans-serif', 'serif', 'monospace', 'cursive', 'fantasy',
     { value: "'游ゴシック', 'Yu Gothic', sans-serif", label: '游ゴシック' },
@@ -61,14 +59,10 @@
     init() {
       const familyEl = Toolkit.$('fp-family');
       const sizeEl = Toolkit.$('fp-size');
-      const weightEl = Toolkit.$('fp-weight');
-      const styleEl = Toolkit.$('fp-style');
       const colorEl = Toolkit.$('fp-color');
       const hexEl = Toolkit.$('fp-hex');
       const previewEl = Toolkit.$('fp-preview');
       const startBtn = Toolkit.$('fp-start');
-      const _scripting = (typeof chrome !== 'undefined' && chrome.scripting) || null;
-      const _tabs = (typeof chrome !== 'undefined' && chrome.tabs) || null;
 
       const customFonts = [];
 
@@ -93,28 +87,18 @@
       function updatePreview() {
         previewEl.style.fontFamily = familyEl.value || 'sans-serif';
         previewEl.style.fontSize = (sizeEl.value || '16') + 'px';
-        previewEl.style.fontWeight = weightEl.value;
-        previewEl.style.fontStyle = styleEl.value;
+        previewEl.style.fontWeight = Toolkit.$('fp-weight').value;
+        previewEl.style.fontStyle = Toolkit.$('fp-style').value;
         previewEl.style.color = hexEl.value || '#000000';
       }
 
       function setColor(hex) {
-        hex = hex.startsWith('#') ? hex : '#' + hex;
-        if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) {
-          if (hex.length === 4) hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
-          colorEl.value = hex;
-        }
+        const norm = Toolkit.normalizeHex(hex);
+        if (norm) colorEl.value = norm;
         hexEl.value = hex;
         updatePreview();
         save();
       }
-
-      Toolkit.clampInput(sizeEl);
-      colorEl.addEventListener('change', () => { hexEl.value = colorEl.value; updatePreview(); save(); });
-      hexEl.addEventListener('change', () => setColor(hexEl.value.trim()));
-      hexEl.addEventListener('keydown', e => { if (e.key === 'Enter') setColor(hexEl.value.trim()); });
-      familyEl.addEventListener('change', () => { updatePreview(); save(); });
-      previewEl.addEventListener('input', save);
 
       const save = Toolkit.bindState('fontpicker', {
         'fp-size': 'value',
@@ -133,46 +117,34 @@
         },
       });
 
+      Toolkit.clampInput(sizeEl);
+      colorEl.addEventListener('change', () => { hexEl.value = colorEl.value; updatePreview(); save(); });
+      hexEl.addEventListener('change', () => setColor(hexEl.value.trim()));
+      hexEl.addEventListener('keydown', e => { if (e.key === 'Enter') setColor(hexEl.value.trim()); });
+      familyEl.addEventListener('change', () => { updatePreview(); save(); });
+      previewEl.addEventListener('input', () => save());
+
       function applyResult(r) {
         setFamily(r.fontFamily || '');
         sizeEl.value = parseInt(r.fontSize) || '';
         const w = Math.max(100, Math.min(900, Math.round((parseInt(r.fontWeight) || 400) / 100) * 100));
-        weightEl.value = String(w);
-        styleEl.value = r.fontStyle || 'normal';
+        Toolkit.$('fp-weight').value = String(w);
+        Toolkit.$('fp-style').value = r.fontStyle || 'normal';
         setColor(rgbToHex(r.color || ''));
       }
 
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.local.get('tm_fontpick_result', data => {
-          const r = data.tm_fontpick_result;
-          if (r) {
-            applyResult(r);
-            chrome.storage.local.remove('tm_fontpick_result');
-          }
-        });
-      }
+      Toolkit.consumeResult('tm_fontpick_result', applyResult);
 
       startBtn.addEventListener('click', async () => {
-        if (!_scripting || !_tabs) {
-          Toolkit.showToast('⚠ この機能はこのブラウザに対応していません');
-          return;
-        }
-        let tab;
-        try {
-          const list = await _tabs.query({ active: true, currentWindow: true });
-          tab = list && list[0];
-        } catch (_) {}
-        if (!tab || !INJECTABLE.test(tab.url || '')) {
-          Toolkit.showToast('⚠ このページでは使用できません');
-          return;
-        }
+        const tab = await Toolkit.getInjectableTab();
+        if (!tab) return;
         const inspector = window.FontInspector && window.FontInspector.run;
         if (!inspector) {
           Toolkit.showToast('⚠ インスペクターの初期化に失敗しました');
           return;
         }
         try {
-          await _scripting.executeScript({
+          await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: inspector,
             args: ['start', Toolkit.INJECT_BTN_CSS, Toolkit.INJECT_COPY_ICON],

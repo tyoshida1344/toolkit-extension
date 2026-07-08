@@ -65,15 +65,14 @@ Toolkit.registerTab({
     });
 
     function updateColor(hex) {
-      hex = hex.startsWith('#') ? hex : '#' + hex;
-      if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return;
-      const { r, g, b } = hexToRgb(hex);
+      const norm = Toolkit.normalizeHex(hex);
+      if (!norm) return;
+      const { r, g, b } = hexToRgb(norm);
       const { h, s, l } = rgbToHsl(r, g, b);
-      const full = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-      pickerEl.value = full;
-      hexEl.value = full;
-      previewEl.style.background = full;
-      hexOut.textContent = full;
+      pickerEl.value = norm;
+      hexEl.value = norm;
+      previewEl.style.background = norm;
+      hexOut.textContent = norm;
       rgbOut.textContent = `rgb(${r}, ${g}, ${b})`;
       hslOut.textContent = `hsl(${h}, ${s}%, ${l}%)`;
       decOut.textContent = `${r}, ${g}, ${b}`;
@@ -87,20 +86,8 @@ Toolkit.registerTab({
     });
 
     eyedropBtn.addEventListener('click', async () => {
-      const tabs = typeof chrome !== 'undefined' && chrome.tabs;
-      if (!tabs) {
-        Toolkit.showToast('⚠ スポイト機能はこのブラウザに対応していません');
-        return;
-      }
-      let tab;
-      try {
-        const list = await tabs.query({ active: true, currentWindow: true });
-        tab = list && list[0];
-      } catch (_) {}
-      if (!tab || !/^https?:\/\//.test(tab.url || '')) {
-        Toolkit.showToast('⚠ このページではスポイト機能を使用できません');
-        return;
-      }
+      const tab = await Toolkit.getInjectableTab();
+      if (!tab) return;
       let dataUrl;
       try {
         dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
@@ -122,15 +109,6 @@ Toolkit.registerTab({
       }
     });
 
-    // スポイトで選んだ色は persistAllowed を経由しない一時キーで受け渡す
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get('tm_eyedrop_result', data => {
-        const hex = data.tm_eyedrop_result;
-        if (hex) {
-          updateColor(hex);
-          chrome.storage.local.remove('tm_eyedrop_result');
-        }
-      });
-    }
+    Toolkit.consumeResult('tm_eyedrop_result', updateColor);
   },
 });
