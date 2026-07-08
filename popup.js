@@ -6,7 +6,7 @@
  */
 const Toolkit = (() => {
   const { $, qsa, escapeHtml, showToast, readText, clampInput } = _TkUtils;
-  const { ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml } = _TkUI;
+  const { ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml, selectHtml } = _TkUI;
 
   /**
    * タブのメタ情報（表示順 = 配列順）。タブの追加・変更はここだけで行う。
@@ -542,6 +542,6 @@ const Toolkit = (() => {
     escapeHtml, $, qsa, clampInput, onTabShortcut, modal, store: _store,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabsById, getTabConfig, setTabConfig, tryRegex, HISTORY_LIMIT, SYMBOLS,
-    checkLabel, outputRow, toggle, settingsRow, modalHtml, INJECT_BTN_CSS,
+    checkLabel, outputRow, toggle, settingsRow, modalHtml, selectHtml, INJECT_BTN_CSS,
   };
 })();

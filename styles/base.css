@@ -144,6 +144,14 @@ body {
 }
 
 .tm-inline { display: flex; gap: 8px; align-items: center; }
+.tm-row-2col { display: flex; gap: 8px; }
+.tm-field { flex: 1; min-width: 0; }
+.tm-unit { color: var(--tm-text-muted); font-size: 13px; flex-shrink: 0; }
+.tm-color-swatch {
+  width: 34px; height: 34px; padding: 2px; background: none;
+  border: 1px solid var(--tm-border-strong); border-radius: 4px;
+  cursor: pointer; flex-shrink: 0;
+}
 .tm-inline > * { flex-shrink: 0; }
 .tm-inline .tm-input, .tm-inline .tm-select { flex: 1; }
 

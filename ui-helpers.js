@@ -93,5 +93,15 @@ const _TkUI = (() => {
     `</div>`;
   }
 
-  return { svgIco, ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml };
+  function selectHtml(id, options, { selected, cls } = {}) {
+    const opts = options.map(o => {
+      const val = typeof o === 'string' ? o : o.value;
+      const label = typeof o === 'string' ? o : (o.label || val);
+      const sel = val === selected ? ' selected' : '';
+      return `<option value="${val}"${sel}>${label}</option>`;
+    }).join('');
+    return `<select class="tm-input${cls ? ' ' + cls : ''}" id="${id}">${opts}</select>`;
+  }
+
+  return { svgIco, ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml, selectHtml };
 })();

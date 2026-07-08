@@ -1,6 +1,20 @@
 (() => {
   const INJECTABLE = /^https?:\/\//i;
 
+  const FONT_FAMILIES = [
+    'sans-serif', 'serif', 'monospace', 'cursive', 'fantasy',
+    { value: "'游ゴシック', 'Yu Gothic', sans-serif", label: '游ゴシック' },
+    { value: "'游明朝', 'Yu Mincho', serif", label: '游明朝' },
+    { value: "'メイリオ', Meiryo, sans-serif", label: 'メイリオ' },
+    { value: "'Noto Sans JP', sans-serif", label: 'Noto Sans JP' },
+    { value: "'ヒラギノ角ゴ ProN', 'Hiragino Kaku Gothic ProN', sans-serif", label: 'ヒラギノ角ゴ' },
+    { value: "'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', serif", label: 'ヒラギノ明朝' },
+    { value: "'MS ゴシック', 'MS Gothic', monospace", label: 'MS ゴシック' },
+    { value: "'MS 明朝', 'MS Mincho', serif", label: 'MS 明朝' },
+  ];
+  const WEIGHTS = ['100', '200', '300', '400', '500', '600', '700', '800', '900'];
+  const STYLES = ['normal', 'italic', 'oblique'];
+
   function rgbToHex(rgbStr) {
     const m = rgbStr.match(/\d+/g);
     if (!m || m.length < 3) return '#000000';
@@ -11,58 +25,30 @@
     html: `
       <div class="tm-row">
         <label class="tm-label">font-family</label>
-        <select class="tm-input" id="fp-family">
-          <option value="sans-serif">sans-serif</option>
-          <option value="serif">serif</option>
-          <option value="monospace">monospace</option>
-          <option value="cursive">cursive</option>
-          <option value="fantasy">fantasy</option>
-          <option value="'游ゴシック', 'Yu Gothic', sans-serif">游ゴシック</option>
-          <option value="'游明朝', 'Yu Mincho', serif">游明朝</option>
-          <option value="'メイリオ', Meiryo, sans-serif">メイリオ</option>
-          <option value="'Noto Sans JP', sans-serif">Noto Sans JP</option>
-          <option value="'ヒラギノ角ゴ ProN', 'Hiragino Kaku Gothic ProN', sans-serif">ヒラギノ角ゴ</option>
-          <option value="'ヒラギノ明朝 ProN', 'Hiragino Mincho ProN', serif">ヒラギノ明朝</option>
-          <option value="'MS ゴシック', 'MS Gothic', monospace">MS ゴシック</option>
-          <option value="'MS 明朝', 'MS Mincho', serif">MS 明朝</option>
-        </select>
+        ${Toolkit.selectHtml('fp-family', FONT_FAMILIES)}
       </div>
-      <div class="tm-row fp-row-2col">
-        <div class="fp-field">
+      <div class="tm-row tm-row-2col">
+        <div class="tm-field">
           <label class="tm-label">font-size</label>
           <div class="tm-inline">
             <input type="number" class="tm-input fp-size-input" id="fp-size" min="1" max="999" placeholder="16">
-            <span class="fp-unit">px</span>
+            <span class="tm-unit">px</span>
           </div>
         </div>
-        <div class="fp-field">
+        <div class="tm-field">
           <label class="tm-label">font-weight</label>
-          <select class="tm-input" id="fp-weight">
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="300">300</option>
-            <option value="400" selected>400</option>
-            <option value="500">500</option>
-            <option value="600">600</option>
-            <option value="700">700</option>
-            <option value="800">800</option>
-            <option value="900">900</option>
-          </select>
+          ${Toolkit.selectHtml('fp-weight', WEIGHTS, { selected: '400' })}
         </div>
       </div>
-      <div class="tm-row fp-row-2col">
-        <div class="fp-field">
+      <div class="tm-row tm-row-2col">
+        <div class="tm-field">
           <label class="tm-label">font-style</label>
-          <select class="tm-input" id="fp-style">
-            <option value="normal">normal</option>
-            <option value="italic">italic</option>
-            <option value="oblique">oblique</option>
-          </select>
+          ${Toolkit.selectHtml('fp-style', STYLES)}
         </div>
-        <div class="fp-field">
+        <div class="tm-field">
           <label class="tm-label">color</label>
           <div class="tm-inline">
-            <input type="color" id="fp-color" value="#000000" class="fp-color-swatch">
+            <input type="color" id="fp-color" value="#000000" class="tm-color-swatch">
             <input type="text" class="tm-input" id="fp-hex" spellcheck="false" placeholder="#000000" style="flex:1">
           </div>
         </div>
@@ -111,21 +97,30 @@
       [familyEl, weightEl, styleEl].forEach(el => el.addEventListener('change', () => { updatePreview(); save(); }));
       previewEl.addEventListener('input', save);
 
+      const customFonts = [];
+
       function save() {
         Toolkit.saveState('fontpicker', {
           family: familyEl.value, size: sizeEl.value, weight: weightEl.value,
           style: styleEl.value, hex: hexEl.value, text: previewEl.textContent,
+          customFonts,
         });
+      }
+
+      function addCustomFont(val) {
+        const label = val.replace(/'/g, '').split(',')[0].trim();
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = label;
+        familyEl.appendChild(opt);
+        customFonts.push({ value: val, label });
       }
 
       function setFamily(val) {
         if (!val) return;
         familyEl.value = val;
         if (!familyEl.value) {
-          const opt = document.createElement('option');
-          opt.value = val;
-          opt.textContent = val.replace(/'/g, '').split(',')[0].trim();
-          familyEl.appendChild(opt);
+          addCustomFont(val);
           familyEl.value = val;
         }
       }
@@ -141,6 +136,7 @@
 
       Toolkit.loadState('fontpicker', s => {
         if (s) {
+          if (s.customFonts) s.customFonts.forEach(f => addCustomFont(f.value));
           if (s.family != null) setFamily(s.family);
           if (s.size != null) sizeEl.value = s.size;
           if (s.weight != null) weightEl.value = s.weight;
