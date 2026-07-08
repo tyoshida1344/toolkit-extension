@@ -40,36 +40,21 @@
   }
 
   function compute(a, op, b) {
+    const intMode = isInt(a) && isInt(b);
+    const x = intMode ? BigInt(a) : parseFloat(a);
+    const y = intMode ? BigInt(b) : parseFloat(b);
+    if ((op === '/' || op === '%') && y === (intMode ? 0n : 0)) return { ok: false, msg: MSG_DIV0 };
     let value;
-    if (isInt(a) && isInt(b)) {
-      const x = BigInt(a), y = BigInt(b);
-      switch (op) {
-        case '+': value = (x + y).toString(); break;
-        case '-': value = (x - y).toString(); break;
-        case '*': value = (x * y).toString(); break;
-        case '%':
-          if (y === 0n) return { ok: false, msg: MSG_DIV0 };
-          value = (x % y).toString(); break;
-        case '/':
-          if (y === 0n) return { ok: false, msg: MSG_DIV0 };
-          value = (x % y === 0n) ? (x / y).toString() : fmt(Number(x) / Number(y));
-          break;
-        default: value = b;
-      }
-    } else {
-      const x = parseFloat(a), y = parseFloat(b);
-      let res;
-      switch (op) {
-        case '+': res = x + y; break;
-        case '-': res = x - y; break;
-        case '*': res = x * y; break;
-        case '/': if (y === 0) return { ok: false, msg: MSG_DIV0 }; res = x / y; break;
-        case '%': if (y === 0) return { ok: false, msg: MSG_DIV0 }; res = x % y; break;
-        default: return { ok: true, value: b };
-      }
-      if (!isFinite(res)) return { ok: false, msg: MSG_OVERFLOW };
-      value = fmt(res);
+    switch (op) {
+      case '+': value = x + y; break;
+      case '-': value = x - y; break;
+      case '*': value = x * y; break;
+      case '%': value = x % y; break;
+      case '/': value = (intMode && x % y !== 0n) ? Number(x) / Number(y) : x / y; break;
+      default: return { ok: true, value: b };
     }
+    if (typeof value === 'number' && !isFinite(value)) return { ok: false, msg: MSG_OVERFLOW };
+    value = typeof value === 'bigint' ? value.toString() : fmt(value);
     if (overAbs(value, MAX_RESULT_ABS, MAX_RESULT_ABS_NUM)) return { ok: false, msg: MSG_OVERFLOW };
     return { ok: true, value };
   }
@@ -235,52 +220,38 @@
       }
 
       function renderHistory() {
-        histEl.innerHTML = '';
-        if (history.length === 0) {
+        if (!history.length) {
           histEl.innerHTML = '<div class="tm-calc-history-empty">履歴はありません</div>';
           return;
         }
-        history.forEach(h => {
-          const item = document.createElement('button');
-          item.type = 'button';
-          item.className = 'tm-calc-history-item';
-          item.dataset.result = h.result;
-          const expr = document.createElement('span');
-          expr.className = 'tm-calc-history-expr';
-          expr.textContent = h.expr;
-          const res = document.createElement('span');
-          res.className = 'tm-calc-history-result';
-          res.textContent = h.result;
-          item.append(expr, res);
-          histEl.appendChild(item);
-        });
+        histEl.innerHTML = history.map(h =>
+          `<button type="button" class="tm-calc-history-item" data-result="${h.result}">` +
+          `<span class="tm-calc-history-expr">${h.expr}</span>` +
+          `<span class="tm-calc-history-result">${h.result}</span></button>`
+        ).join('');
       }
 
-      function reuse(result) {
-        if (errorState) errorState = false;
-        display = result;
-        waiting = false;
-        if (pendingOp == null) accumulator = result;
-        render(); save();
-      }
-
-      function pasteNumber(raw) {
-        let t = String(raw).trim().replace(/,/g, ''); // 桁区切りカンマは許容
-        if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return; // 数値でなければ無視
-        let val;
-        if (isInt(t)) {
-          val = BigInt(t).toString(); // 大きな整数も桁落ちさせない
-        } else {
-          const n = parseFloat(t);
-          if (!isFinite(n)) return;
-          val = fmt(n);
-        }
-        if (overAbs(val, MAX_INPUT_ABS, MAX_INPUT_ABS_NUM)) return; // 入力上限を超える貼り付けは無視
+      function setDisplay(val) {
         if (errorState) errorState = false;
         display = val;
         waiting = false;
         if (pendingOp == null) accumulator = val;
         render(); save();
+      }
+
+      function pasteNumber(raw) {
+        let t = String(raw).trim().replace(/,/g, '');
+        if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return;
+        let val;
+        if (isInt(t)) {
+          val = BigInt(t).toString();
+        } else {
+          const n = parseFloat(t);
+          if (!isFinite(n)) return;
+          val = fmt(n);
+        }
+        if (overAbs(val, MAX_INPUT_ABS, MAX_INPUT_ABS_NUM)) return;
+        setDisplay(val);
       }
 
       function press(key) {
@@ -311,7 +282,7 @@
       histEl.addEventListener('click', (e) => {
         const item = e.target.closest('.tm-calc-history-item');
         if (!item) return;
-        reuse(item.dataset.result);
+        setDisplay(item.dataset.result);
       });
 
       Toolkit.$('calc-hist-clear').addEventListener('click', () => {
