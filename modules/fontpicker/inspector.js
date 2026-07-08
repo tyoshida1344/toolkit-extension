@@ -22,6 +22,76 @@ window.FontInspector = { run: function tmFontInspector(action, btnCSS, copyIcon)
     return _colorCtx.fillStyle;
   }
 
+  function findFontSrc(fontFamily) {
+    var target = fontFamily.split(',')[0].trim().replace(/['"]/g, '').toLowerCase();
+    function search(rules) {
+      for (var i = 0; i < rules.length; i++) {
+        if (!(rules[i] instanceof CSSFontFaceRule)) continue;
+        var fam = rules[i].style.getPropertyValue('font-family').replace(/['"]/g, '').trim().toLowerCase();
+        if (fam !== target) continue;
+        var m = rules[i].style.getPropertyValue('src').match(/url\(["']?([^"')]+)/);
+        if (m) return { url: m[1], family: rules[i].style.getPropertyValue('font-family') };
+      }
+      return null;
+    }
+    for (var i = 0; i < document.styleSheets.length; i++) {
+      try {
+        var hit = search(document.styleSheets[i].cssRules);
+        if (hit) return Promise.resolve(hit);
+      } catch(_) {}
+    }
+    var hrefs = [];
+    for (var k = 0; k < document.styleSheets.length; k++) {
+      if (!document.styleSheets[k].href) continue;
+      try { document.styleSheets[k].cssRules; } catch(_) { hrefs.push(document.styleSheets[k].href); }
+    }
+    return hrefs.reduce(function(p, href) {
+      return p.then(function(found) {
+        if (found) return found;
+        return fetch(href).then(function(r) { return r.text(); }).then(function(css) {
+          var tmp = document.createElement('style');
+          tmp.textContent = css;
+          document.head.appendChild(tmp);
+          var hit = tmp.sheet ? search(tmp.sheet.cssRules) : null;
+          tmp.remove();
+          if (hit && !/^(https?:|data:)/.test(hit.url)) {
+            hit.url = new URL(hit.url, href).href;
+          }
+          return hit;
+        }).catch(function() { return null; });
+      });
+    }, Promise.resolve(null));
+  }
+
+  function fetchFontDataUrl(url) {
+    return fetch(url).then(function(r) { return r.blob(); }).then(function(blob) {
+      if (blob.size > 512 * 1024) return null;
+      return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = function() { resolve(null); };
+        reader.readAsDataURL(blob);
+      });
+    }).catch(function() { return null; });
+  }
+
+  function sendToPopup() {
+    var result = Object.assign({}, current);
+    findFontSrc(current.fontFamily)
+      .then(function(src) {
+        if (!src) return;
+        return fetchFontDataUrl(src.url).then(function(du) {
+          if (du) result.fontFace = { family: src.family, dataUrl: du };
+        });
+      })
+      .catch(function() {})
+      .then(function() {
+        chrome.storage.local.set({ tm_fontpick_result: result });
+        cleanup();
+        chrome.runtime.sendMessage({ type: 'openPopup' });
+      });
+  }
+
   function cpBtn(key) {
     return '<button class="cp" data-key="' + key + '" title="コピー" aria-label="コピー">' + copyIcon + '</button>';
   }
@@ -107,9 +177,7 @@ window.FontInspector = { run: function tmFontInspector(action, btnCSS, copyIcon)
       return;
     }
     if (e.target.closest('.popup')) {
-      chrome.storage.local.set({ tm_fontpick_result: current });
-      cleanup();
-      chrome.runtime.sendMessage({ type: 'openPopup' });
+      sendToPopup();
       return;
     }
     if (e.target.closest('.close')) {

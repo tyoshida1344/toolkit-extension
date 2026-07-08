@@ -73,6 +73,16 @@
       }
 
       const customFonts = [];
+      let fontStyleEl = null;
+
+      function loadFontFace(face) {
+        if (!fontStyleEl) {
+          fontStyleEl = document.createElement('style');
+          document.head.appendChild(fontStyleEl);
+        }
+        fontStyleEl.textContent = `@font-face { font-family: ${face.family}; src: url("${face.dataUrl}"); }`;
+        document.fonts.ready.then(updatePreview);
+      }
 
       function addCustomFont(val) {
         const label = val.replace(/['"]/g, '').split(',')[0].trim();
@@ -138,6 +148,7 @@
       previewEl.addEventListener('input', () => save());
 
       function applyResult(r) {
+        if (r.fontFace) loadFontFace(r.fontFace);
         setFamily(r.fontFamily || '');
         sizeEl.value = parseInt(r.fontSize) || '';
         const w = Math.max(100, Math.min(900, Math.round((parseInt(r.fontWeight) || 400) / 100) * 100));
