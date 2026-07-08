@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "便利ツール オールインワン",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "文字列生成・エポック変換・カラー変換・翻訳・メモ帳のオールインワンツール",
   "permissions": ["storage", "scripting", "activeTab"],
   "host_permissions": ["https://translate.googleapis.com/*", "http://*/*", "https://*/*"],
