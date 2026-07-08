@@ -16,6 +16,12 @@ window.FontInspector = { run: function tmFontInspector(action, btnCSS, copyIcon)
   var lastEl = null;
   var current = {};
 
+  var _colorCtx = document.createElement('canvas').getContext('2d');
+  function colorToHex(cssColor) {
+    _colorCtx.fillStyle = cssColor;
+    return _colorCtx.fillStyle;
+  }
+
   function cpBtn(key) {
     return '<button class="cp" data-key="' + key + '" title="コピー" aria-label="コピー">' + copyIcon + '</button>';
   }
@@ -172,7 +178,7 @@ window.FontInspector = { run: function tmFontInspector(action, btnCSS, copyIcon)
       fontSize: cs.fontSize,
       fontWeight: cs.fontWeight,
       fontStyle: cs.fontStyle,
-      color: cs.color,
+      color: colorToHex(cs.color),
     });
   });
 

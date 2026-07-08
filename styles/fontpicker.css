@@ -12,3 +12,7 @@
 .fp-size-input {
   width: 80px;
 }
+.fp-font-warn {
+  cursor: help;
+  flex-shrink: 0;
+}

@@ -13,17 +13,15 @@
   const WEIGHTS = ['100', '200', '300', '400', '500', '600', '700', '800', '900'];
   const STYLES = ['normal', 'italic', 'oblique'];
 
-  function rgbToHex(rgbStr) {
-    const m = rgbStr.match(/\d+/g);
-    if (!m || m.length < 3) return '#000000';
-    return '#' + m.slice(0, 3).map(v => parseInt(v).toString(16).padStart(2, '0')).join('');
-  }
 
   Toolkit.registerTab({
     html: `
       <div class="tm-row">
         <label class="tm-label">font-family</label>
-        ${Toolkit.selectHtml('fp-family', FONT_FAMILIES)}
+        <div class="tm-inline">
+          ${Toolkit.selectHtml('fp-family', FONT_FAMILIES)}
+          <span class="fp-font-warn" id="fp-font-warn" title="このフォントはシステムにインストールされていません" hidden>⚠</span>
+        </div>
       </div>
       <div class="tm-row tm-row-2col">
         <div class="tm-field">
@@ -63,11 +61,13 @@
       const hexEl = Toolkit.$('fp-hex');
       const previewEl = Toolkit.$('fp-preview');
       const startBtn = Toolkit.$('fp-start');
+      const warnEl = Toolkit.$('fp-font-warn');
+      const GENERIC = new Set(['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy', 'system-ui']);
 
       const customFonts = [];
 
       function addCustomFont(val) {
-        const label = val.replace(/'/g, '').split(',')[0].trim();
+        const label = val.replace(/['"]/g, '').split(',')[0].trim();
         const opt = document.createElement('option');
         opt.value = val;
         opt.textContent = label;
@@ -90,12 +90,14 @@
         previewEl.style.fontWeight = Toolkit.$('fp-weight').value;
         previewEl.style.fontStyle = Toolkit.$('fp-style').value;
         previewEl.style.color = hexEl.value || '#000000';
+        const first = (familyEl.value || '').split(',')[0].trim().replace(/['"]/g, '');
+        warnEl.hidden = !first || GENERIC.has(first) || document.fonts.check(`16px "${first}"`);
       }
 
       function setColor(hex) {
         const norm = Toolkit.normalizeHex(hex);
         if (norm) colorEl.value = norm;
-        hexEl.value = hex;
+        hexEl.value = norm || hex;
         updatePreview();
         save();
       }
@@ -118,10 +120,13 @@
       });
 
       Toolkit.clampInput(sizeEl);
+      sizeEl.addEventListener('input', updatePreview);
       colorEl.addEventListener('change', () => { hexEl.value = colorEl.value; updatePreview(); save(); });
       hexEl.addEventListener('change', () => setColor(hexEl.value.trim()));
       hexEl.addEventListener('keydown', e => { if (e.key === 'Enter') setColor(hexEl.value.trim()); });
       familyEl.addEventListener('change', () => { updatePreview(); save(); });
+      Toolkit.$('fp-weight').addEventListener('change', updatePreview);
+      Toolkit.$('fp-style').addEventListener('change', updatePreview);
       previewEl.addEventListener('input', () => save());
 
       function applyResult(r) {
@@ -130,7 +135,7 @@
         const w = Math.max(100, Math.min(900, Math.round((parseInt(r.fontWeight) || 400) / 100) * 100));
         Toolkit.$('fp-weight').value = String(w);
         Toolkit.$('fp-style').value = r.fontStyle || 'normal';
-        setColor(rgbToHex(r.color || ''));
+        setColor(r.color || '');
       }
 
       Toolkit.consumeResult('tm_fontpick_result', applyResult);
