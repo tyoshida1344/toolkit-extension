@@ -70,42 +70,7 @@
       const _scripting = (typeof chrome !== 'undefined' && chrome.scripting) || null;
       const _tabs = (typeof chrome !== 'undefined' && chrome.tabs) || null;
 
-      function updatePreview() {
-        previewEl.style.fontFamily = familyEl.value || 'sans-serif';
-        previewEl.style.fontSize = (sizeEl.value || '16') + 'px';
-        previewEl.style.fontWeight = weightEl.value;
-        previewEl.style.fontStyle = styleEl.value;
-        previewEl.style.color = hexEl.value || '#000000';
-      }
-
-      function setColor(hex) {
-        hex = hex.startsWith('#') ? hex : '#' + hex;
-        if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) {
-          if (hex.length === 4) hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
-          colorEl.value = hex;
-        }
-        hexEl.value = hex;
-        updatePreview();
-        save();
-      }
-
-      colorEl.addEventListener('input', () => { hexEl.value = colorEl.value; updatePreview(); save(); });
-      hexEl.addEventListener('change', () => setColor(hexEl.value.trim()));
-      hexEl.addEventListener('keydown', e => { if (e.key === 'Enter') setColor(hexEl.value.trim()); });
-
-      sizeEl.addEventListener('input', () => { updatePreview(); save(); });
-      [familyEl, weightEl, styleEl].forEach(el => el.addEventListener('change', () => { updatePreview(); save(); }));
-      previewEl.addEventListener('input', save);
-
       const customFonts = [];
-
-      function save() {
-        Toolkit.saveState('fontpicker', {
-          family: familyEl.value, size: sizeEl.value, weight: weightEl.value,
-          style: styleEl.value, hex: hexEl.value, text: previewEl.textContent,
-          customFonts,
-        });
-      }
 
       function addCustomFont(val) {
         const label = val.replace(/'/g, '').split(',')[0].trim();
@@ -125,6 +90,49 @@
         }
       }
 
+      function updatePreview() {
+        previewEl.style.fontFamily = familyEl.value || 'sans-serif';
+        previewEl.style.fontSize = (sizeEl.value || '16') + 'px';
+        previewEl.style.fontWeight = weightEl.value;
+        previewEl.style.fontStyle = styleEl.value;
+        previewEl.style.color = hexEl.value || '#000000';
+      }
+
+      function setColor(hex) {
+        hex = hex.startsWith('#') ? hex : '#' + hex;
+        if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) {
+          if (hex.length === 4) hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+          colorEl.value = hex;
+        }
+        hexEl.value = hex;
+        updatePreview();
+        save();
+      }
+
+      Toolkit.clampInput(sizeEl);
+      colorEl.addEventListener('change', () => { hexEl.value = colorEl.value; updatePreview(); save(); });
+      hexEl.addEventListener('change', () => setColor(hexEl.value.trim()));
+      hexEl.addEventListener('keydown', e => { if (e.key === 'Enter') setColor(hexEl.value.trim()); });
+      familyEl.addEventListener('change', () => { updatePreview(); save(); });
+      previewEl.addEventListener('input', save);
+
+      const save = Toolkit.bindState('fontpicker', {
+        'fp-size': 'value',
+        'fp-weight': 'value',
+        'fp-style': 'value',
+      }, {
+        extra: () => ({ family: familyEl.value, hex: hexEl.value, text: previewEl.textContent, customFonts }),
+        onRestore(s) {
+          if (s) {
+            if (s.customFonts) s.customFonts.forEach(f => addCustomFont(f.value));
+            if (s.family != null) setFamily(s.family);
+            if (s.hex != null) setColor(s.hex);
+            if (s.text != null) previewEl.textContent = s.text;
+          }
+          updatePreview();
+        },
+      });
+
       function applyResult(r) {
         setFamily(r.fontFamily || '');
         sizeEl.value = parseInt(r.fontSize) || '';
@@ -133,19 +141,6 @@
         styleEl.value = r.fontStyle || 'normal';
         setColor(rgbToHex(r.color || ''));
       }
-
-      Toolkit.loadState('fontpicker', s => {
-        if (s) {
-          if (s.customFonts) s.customFonts.forEach(f => addCustomFont(f.value));
-          if (s.family != null) setFamily(s.family);
-          if (s.size != null) sizeEl.value = s.size;
-          if (s.weight != null) weightEl.value = s.weight;
-          if (s.style != null) styleEl.value = s.style;
-          if (s.hex != null) { hexEl.value = s.hex; setColor(s.hex); }
-          if (s.text != null) previewEl.textContent = s.text;
-        }
-        updatePreview();
-      });
 
       if (typeof chrome !== 'undefined' && chrome.storage) {
         chrome.storage.local.get('tm_fontpick_result', data => {
