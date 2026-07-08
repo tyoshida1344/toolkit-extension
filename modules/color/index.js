@@ -114,7 +114,7 @@ Toolkit.registerTab({
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: picker,
-          args: [dataUrl, Toolkit.INJECT_BTN_CSS],
+          args: [dataUrl, Toolkit.INJECT_BTN_CSS, Toolkit.INJECT_COPY_ICON],
         });
         window.close();
       } catch (_) {

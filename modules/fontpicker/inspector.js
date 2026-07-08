@@ -1,4 +1,4 @@
-window.FontInspector = { run: function tmFontInspector(action, btnCSS) {
+window.FontInspector = { run: function tmFontInspector(action, btnCSS, copyIcon) {
   var HOST_ID = '__tm_font_host';
   var OV_ID = '__tm_font_ov';
   var HL_ID = '__tm_font_hl';
@@ -16,11 +16,8 @@ window.FontInspector = { run: function tmFontInspector(action, btnCSS) {
   var lastEl = null;
   var current = {};
 
-  var copySVG = '<svg class="default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-  var checkSVG = '<svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-
   function cpBtn(key) {
-    return '<button class="cp" data-key="' + key + '" title="コピー" aria-label="コピー">' + copySVG + checkSVG + '</button>';
+    return '<button class="cp" data-key="' + key + '" title="コピー" aria-label="コピー">' + copyIcon + '</button>';
   }
 
   var hl = document.createElement('div');

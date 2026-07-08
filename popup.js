@@ -158,6 +158,7 @@ const Toolkit = (() => {
   const _store = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) || null;
   const STATE_PREFIX = 'tm_state_';
   const INJECT_BTN_CSS = ':host{all:initial;}button{height:28px;min-width:28px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;font-size:12px;font-weight:600;padding:0 6px;line-height:1;}button:hover{background:#f3f4f6;}';
+  const INJECT_COPY_ICON = '<svg class="default" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
   const _saveTimers = {};
 
   // アプリ自身の設定キー。「入力状態の保持」をオフにしても、これらは保存・復元を続ける
@@ -542,6 +543,6 @@ const Toolkit = (() => {
     escapeHtml, $, qsa, clampInput, onTabShortcut, modal, store: _store,
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabsById, getTabConfig, setTabConfig, tryRegex, HISTORY_LIMIT, SYMBOLS,
-    checkLabel, outputRow, toggle, settingsRow, modalHtml, selectHtml, INJECT_BTN_CSS,
+    checkLabel, outputRow, toggle, settingsRow, modalHtml, selectHtml, INJECT_BTN_CSS, INJECT_COPY_ICON,
   };
 })();

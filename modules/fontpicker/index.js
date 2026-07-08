@@ -180,7 +180,7 @@
           await _scripting.executeScript({
             target: { tabId: tab.id },
             func: inspector,
-            args: ['start', Toolkit.INJECT_BTN_CSS],
+            args: ['start', Toolkit.INJECT_BTN_CSS, Toolkit.INJECT_COPY_ICON],
           });
           window.close();
         } catch (_) {
