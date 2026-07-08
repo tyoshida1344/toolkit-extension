@@ -63,6 +63,14 @@
       const startBtn = Toolkit.$('fp-start');
       const warnEl = Toolkit.$('fp-font-warn');
       const GENERIC = new Set(['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy', 'system-ui']);
+      const _fontCtx = document.createElement('canvas').getContext('2d');
+      function isFontAvailable(name) {
+        const text = 'mmmmmmmmmmlli';
+        _fontCtx.font = '72px monospace';
+        const base = _fontCtx.measureText(text).width;
+        _fontCtx.font = `72px "${name}", monospace`;
+        return _fontCtx.measureText(text).width !== base;
+      }
 
       const customFonts = [];
 
@@ -91,7 +99,7 @@
         previewEl.style.fontStyle = Toolkit.$('fp-style').value;
         previewEl.style.color = hexEl.value || '#000000';
         const first = (familyEl.value || '').split(',')[0].trim().replace(/['"]/g, '');
-        warnEl.hidden = !first || GENERIC.has(first) || document.fonts.check(`16px "${first}"`);
+        warnEl.hidden = !first || GENERIC.has(first) || isFontAvailable(first);
       }
 
       function setColor(hex) {
