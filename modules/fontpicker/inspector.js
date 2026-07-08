@@ -62,7 +62,7 @@ window.FontInspector = { run: function tmFontInspector(action, btnCSS) {
     + '.cp.copied .done{display:inline;}'
     + '</style>'
     + '<div class="panel">'
-    + '<div class="hdr"><span class="el" id="fp-el"></span><button class="close" title="閉じる (Esc)" aria-label="閉じる">✕</button></div>'
+    + '<div class="hdr"><span class="el" id="fp-el"></span><button class="popup" title="ポップアップを開く" aria-label="ポップアップを開く">↗</button><button class="close" title="閉じる (Esc)" aria-label="閉じる">✕</button></div>'
     + '<div class="rows">'
     + '<div class="row"><span class="lbl">font-family</span><span class="val" id="fp-ff"></span>' + cpBtn('ff') + '</div>'
     + '<div class="row"><span class="lbl">font-size</span><span class="val" id="fp-fs"></span>' + cpBtn('fs') + '</div>'
@@ -101,6 +101,12 @@ window.FontInspector = { run: function tmFontInspector(action, btnCSS) {
         cp.classList.add('copied');
         setTimeout(function() { cp.classList.remove('copied'); }, 1500);
       }).catch(function() {});
+      return;
+    }
+    if (e.target.closest('.popup')) {
+      chrome.storage.local.set({ tm_fontpick_result: current });
+      cleanup();
+      chrome.runtime.sendMessage({ type: 'openPopup' });
       return;
     }
     if (e.target.closest('.close')) {
