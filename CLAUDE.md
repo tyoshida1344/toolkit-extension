@@ -22,8 +22,8 @@ node --check modules/<編集したファイル>.js
 **モジュール追加手順**: `modules/<name>.js` 作成 → `popup.js` の `TAB_MANIFEST` にエントリ追加 → 機能固有スタイルがあれば `styles/<name>.css` も作成 → **README の機能一覧にツールの説明を追加**。1 ファイルで収まらない機能は `modules/<name>/` フォルダに分割し、`registerTab` を呼ぶ主ファイルは `index.js` とする。
 
 **守るべきルール**:
+- 実装前に `utils.js`（`_TkUtils`）と `ui-helpers.js`（`_TkUI`）の既存ヘルパーを確認し、再利用できるものは使う。複数ツールで使える汎用ロジックや UI パーツを新たに書く場合は、モジュール内に閉じず `utils.js`（ロジック）または `ui-helpers.js`（HTML 生成）に切り出す。CSS も同様に、1 ツール専用なら `styles/<module>.css`、複数ツールで使うなら `base.css` へ昇格する
 - コピーは `Toolkit.copyButton` のイベント委譲で処理される。モジュール側で独自のコピーハンドラを付けない
-- CSS は 1 ツール専用なら `styles/<module>.css`、複数ツールで使うなら component ファイルへ昇格、の基準で振り分ける。`@import` は使わない
 - `loadState` のコールバックは**非同期**。DOM 構築直後の同期処理に依存しない
 - 独自のストレージキーを使う場合は `TAB_MANIFEST` の `storageKey` に宣言する（ストレージ画面が自動認識する）
 - 既存ツールの機能追加・仕様変更を行った場合は、README の該当セクションも実装に合わせて更新する
