@@ -22,14 +22,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
     return true;
   }
-  if (msg.type === 'elementCaptureComplete') {
+  if (msg.type === 'pickerCaptureComplete') {
     openPreviewTab({
       dataUrl: msg.dataUrl,
       baseName: screenshotBaseName(msg.title),
       truncated: !!msg.truncated,
     });
   }
-  if (msg.type === 'elementCaptureFailed') {
+  if (msg.type === 'pickerCaptureFailed') {
     flashBadgeError();
   }
 });
