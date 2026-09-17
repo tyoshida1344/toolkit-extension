@@ -108,7 +108,7 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
     cleanup();
     captureIndicator = createBanner('📸 要素をキャプチャ中…');
     captureElement(target)
-      .catch(() => { chrome.runtime.sendMessage({ type: 'elementCaptureFailed' }); })
+      .catch(() => { chrome.runtime.sendMessage({ type: 'pickerCaptureFailed' }); })
       .finally(() => captureIndicator.remove());
   }
 
@@ -236,7 +236,7 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
     });
 
     chrome.runtime.sendMessage({
-      type: 'elementCaptureComplete',
+      type: 'pickerCaptureComplete',
       dataUrl: canvas.toDataURL('image/png'),
       title: document.title,
       truncated,

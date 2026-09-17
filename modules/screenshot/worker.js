@@ -2,11 +2,11 @@
  * worker.js — スクリーンショット撮影の Service Worker 側実装（エントリポイント）
  *
  * background.js から importScripts() で読み込まれ、同じグローバルスコープで動作する。
- * モード別のキャプチャ処理は fullpage.js（ページ全体）・element-picker.js（要素選択）に分割し、
+ * モード別のキャプチャ処理は fullpage.js（ページ全体）・element-picker.js（要素選択）・rect-picker.js（矩形選択）に分割し、
  * ここでは共通ヘルパーとモードの振り分け・遅延起動・プレビューへの受け渡しを担う。
  * 保存形式の選択・変換とダウンロードは screenshot-preview.html 側で行う。
  */
-importScripts('modules/screenshot/fullpage.js', 'modules/screenshot/element-picker.js');
+importScripts('modules/screenshot/fullpage.js', 'modules/screenshot/element-picker.js', 'modules/screenshot/rect-picker.js');
 
 const SCREENSHOT_MAX_SHOTS = 40; // 非常に長いページでの無限ループを防ぐ安全上限
 const SCREENSHOT_CAPTURE_INTERVAL_MS = 550; // captureVisibleTab のレート制限（2回/秒）を避けつつ再描画を待つ
@@ -59,6 +59,10 @@ async function runCaptureAndOpenPreview(tabId, mode) {
 async function runModeAction(tabId, mode) {
   if (mode === 'element') {
     await runElementPicker(tabId);
+    return { picking: true };
+  }
+  if (mode === 'rect') {
+    await runRectPicker(tabId);
     return { picking: true };
   }
   await runCaptureAndOpenPreview(tabId, mode);
