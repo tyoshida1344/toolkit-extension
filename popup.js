@@ -28,7 +28,7 @@ const Toolkit = (() => {
     ], styles: ['styles/sitesearch.css'] },
     { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'] },
-    { id: 'screenshot', icon: '📸', label: 'スクリーンショット', scripts: ['modules/screenshot/index.js'] },
+    { id: 'screenshot', icon: '📸', label: 'スクリーンショット', scripts: ['modules/screenshot/index.js'], defaultHidden: true },
   ];
   const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
   const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id])));
@@ -286,8 +286,13 @@ const Toolkit = (() => {
   function getTabConfig() {
     const ids = TAB_MANIFEST.map(entry => entry.id);
     const order = (tabConfig.order || []).filter(id => ids.includes(id));
-    ids.forEach(id => { if (!order.includes(id)) order.push(id); });
     const hidden = (tabConfig.hidden || []).filter(id => ids.includes(id));
+    // 保存済み設定に無い（＝ユーザがまだ見たことのない）タブは、defaultHidden 指定があれば初期状態を非表示にする
+    TAB_MANIFEST.forEach(entry => {
+      if (order.includes(entry.id)) return;
+      order.push(entry.id);
+      if (entry.defaultHidden && !hidden.includes(entry.id)) hidden.push(entry.id);
+    });
     return { order, hidden };
   }
 
