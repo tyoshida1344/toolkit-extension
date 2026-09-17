@@ -28,7 +28,7 @@ const Toolkit = (() => {
     ], styles: ['styles/sitesearch.css'] },
     { id: 'calc', icon: '🔢', label: '電卓', scripts: ['modules/calc.js'], styles: ['styles/calc.css'] },
     { id: 'memo', icon: '📝', label: 'メモ帳', scripts: ['modules/memo.js'], styles: ['styles/memo.css'] },
-    { id: 'screenshot', icon: '📸', label: 'スクリーンショット', scripts: ['modules/screenshot.js'] },
+    { id: 'screenshot', icon: '📸', label: 'スクリーンショット', scripts: ['modules/screenshot/index.js'] },
   ];
   const TAB_MANIFEST_MAP = new Map(TAB_MANIFEST.map(entry => [entry.id, entry]));
   const SCRIPT_TO_TAB_ID = new Map(TAB_MANIFEST.flatMap(e => e.scripts.map(s => [s, e.id])));

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>スクリーンショットプレビュー</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px; min-height: 100vh;
+      background: #f3f4f6; color: #374151;
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .panel { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .toolbar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .title { font-size: 15px; font-weight: 700; color: #111827; }
+    .toolbar button {
+      height: 36px; padding: 0 18px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 600; background: #0ea5e9; color: #fff;
+    }
+    .toolbar button:hover { background: #0284c7; }
+    .toolbar button:disabled { background: #d1d5db; cursor: default; }
+    .warning { color: #dc2626; font-size: 13px; font-weight: 600; }
+    .frame {
+      max-width: 100%; padding: 12px; border: 1px solid #9ca3af; border-radius: 10px;
+      background: #fff; box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
+    }
+    .frame img { display: block; max-width: 100%; }
+    .status { color: #6b7280; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="toolbar">
+      <span class="title">プレビュー</span>
+      <button type="button" id="sp-save">💾 ダウンロード</button>
+    </div>
+    <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
+    <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>
+    <div class="status" id="sp-status">読み込み中…</div>
+  </div>
+  <script src="modules/screenshot/preview.js"></script>
+</body>
+</html>

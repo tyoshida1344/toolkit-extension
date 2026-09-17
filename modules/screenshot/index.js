@@ -8,7 +8,7 @@ Toolkit.registerTab({
       </select>
     </div>
     <div class="tm-row">
-      <button class="tm-btn tm-btn-primary" id="scr-capture">📸 撮影して保存</button>
+      <button class="tm-btn tm-btn-primary" id="scr-capture">📸 撮影</button>
     </div>
     <div class="tm-label" id="scr-status"></div>
   `,
@@ -38,11 +38,7 @@ Toolkit.registerTab({
           Toolkit.showToast('⚠ 撮影に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
           return;
         }
-        if (res.truncated) {
-          Toolkit.showToast('⚠ ページが長すぎるため一部のみ保存しました');
-          return;
-        }
-        Toolkit.showToast('📸 保存しました');
+        Toolkit.showToast('🖼 新しいタブでプレビューを開きました');
       });
     });
   },
