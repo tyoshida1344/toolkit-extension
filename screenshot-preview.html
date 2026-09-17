@@ -30,7 +30,14 @@
   <div class="panel">
     <div class="toolbar">
       <span class="title">プレビュー</span>
-      <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
+      <div class="tm-inline">
+        <select class="tm-select" id="sp-format">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPEG</option>
+          <option value="webp">WebP</option>
+        </select>
+        <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
+      </div>
     </div>
     <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
     <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>

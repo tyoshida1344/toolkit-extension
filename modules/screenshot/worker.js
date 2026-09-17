@@ -2,21 +2,20 @@
  * worker.js — スクリーンショット撮影の Service Worker 側実装
  *
  * background.js から importScripts() で読み込まれ、同じグローバルスコープで動作する。
- * captureScreenshot() が撮影・結合・形式変換まで行い、結果（data URL）を返す。
- * 保存は screenshot-preview.html 側で File System Access API（未対応時は <a download>）により行う。
+ * captureScreenshot() が撮影・結合まで行い、常に PNG の data URL を返す。
+ * 保存形式の選択・変換とダウンロードは screenshot-preview.html 側で行う。
  */
 const SCREENSHOT_MAX_SHOTS = 40; // 非常に長いページでの無限ループを防ぐ安全上限
 const SCREENSHOT_CAPTURE_INTERVAL_MS = 550; // captureVisibleTab のレート制限（2回/秒）を避けつつ再描画を待つ
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function screenshotFilename(title, format) {
+function screenshotBaseName(title) {
   const safe = (title || 'screenshot').replace(/[\\/:*?"<>| -]/g, '_').trim().slice(0, 80) || 'screenshot';
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
   const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-  const ext = format === 'jpeg' ? 'jpg' : (format || 'png');
-  return `${safe}_${stamp}.${ext}`;
+  return `${safe}_${stamp}`;
 }
 
 // Service Worker には URL.createObjectURL が無いため、data URL 化して chrome.storage.session 経由でプレビュータブへ渡す
@@ -29,10 +28,10 @@ function blobToDataUrl(blob) {
   });
 }
 
-async function captureVisibleTabRetry(windowId, format) {
+async function captureVisibleTabRetry(windowId) {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await chrome.tabs.captureVisibleTab(windowId, { format: format || 'png' });
+      return await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
     } catch (e) {
       if (attempt >= 2) throw e;
       await sleep(700);
@@ -43,16 +42,6 @@ async function captureVisibleTabRetry(windowId, format) {
 async function dataUrlToBitmap(dataUrl) {
   const blob = await (await fetch(dataUrl)).blob();
   return createImageBitmap(blob);
-}
-
-// captureVisibleTab は png/jpeg のみネイティブ対応。webp 等それ以外の形式は PNG で取得後にここで再エンコードする
-async function convertPngDataUrl(dataUrl, format) {
-  if (format === 'png') return dataUrl;
-  const bitmap = await dataUrlToBitmap(dataUrl);
-  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-  canvas.getContext('2d').drawImage(bitmap, 0, 0);
-  const outBlob = await canvas.convertToBlob({ type: `image/${format}`, quality: 0.92 });
-  return blobToDataUrl(outBlob);
 }
 
 // executeScript は func を toString() で直列化して注入するため、外側スコープを参照しない自己完結な関数にすること
@@ -93,7 +82,7 @@ async function execOnTab(tabId, func, args = []) {
   return result;
 }
 
-async function captureFullPage(tab, format) {
+async function captureFullPage(tab) {
   const metrics = await execOnTab(tab.id, getPageMetrics);
   const originalY = metrics.scrollY;
   const viewportH = metrics.viewportHeight || 1;
@@ -106,7 +95,7 @@ async function captureFullPage(tab, format) {
     if (actualY === lastY && i > 0) { truncated = false; break; } // これ以上スクロールできない（最下部）
     lastY = actualY;
     await sleep(SCREENSHOT_CAPTURE_INTERVAL_MS);
-    const dataUrl = await captureVisibleTabRetry(tab.windowId, 'png'); // 結合前の各ショットは劣化を避けるため常に PNG
+    const dataUrl = await captureVisibleTabRetry(tab.windowId);
     shots.push({ y: actualY, dataUrl });
     if (actualY + viewportH >= totalH) { truncated = false; break; }
     // 先頭（ページ最上部）のみ固定ヘッダー等を写し、以降のキャプチャでは重複を避けるため非表示にする
@@ -125,23 +114,19 @@ async function captureFullPage(tab, format) {
   const ctx = canvas.getContext('2d');
   shots.forEach((s, i) => ctx.drawImage(bitmaps[i], 0, Math.round(s.y * ratio)));
 
-  const blob = await canvas.convertToBlob({ type: `image/${format}`, quality: format === 'png' ? undefined : 0.92 });
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
   return { url: await blobToDataUrl(blob), truncated };
 }
 
-async function captureScreenshot(tabId, mode, format) {
+async function captureScreenshot(tabId, mode) {
   const tab = await chrome.tabs.get(tabId);
   if (!/^https?:\/\//i.test(tab.url || '')) throw new Error('このページでは撮影できません');
-  const fmt = format || 'png';
-  const filename = screenshotFilename(tab.title, fmt);
+  const baseName = screenshotBaseName(tab.title);
   let dataUrl, truncated = false;
   if (mode === 'fullpage') {
-    ({ url: dataUrl, truncated } = await captureFullPage(tab, fmt));
-  } else if (fmt === 'webp') {
-    const raw = await captureVisibleTabRetry(tab.windowId, 'png');
-    dataUrl = await convertPngDataUrl(raw, 'webp');
+    ({ url: dataUrl, truncated } = await captureFullPage(tab));
   } else {
-    dataUrl = await captureVisibleTabRetry(tab.windowId, fmt); // png/jpeg はネイティブ対応
+    dataUrl = await captureVisibleTabRetry(tab.windowId);
   }
-  return { dataUrl, filename, truncated };
+  return { dataUrl, baseName, truncated };
 }

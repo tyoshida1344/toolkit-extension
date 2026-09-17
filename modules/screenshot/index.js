@@ -8,25 +8,14 @@ Toolkit.registerTab({
       </select>
     </div>
     <div class="tm-row">
-      <label class="tm-label">保存形式</label>
-      <select class="tm-select" id="scr-format">
-        <option value="png">PNG</option>
-        <option value="jpeg">JPEG</option>
-        <option value="webp">WebP</option>
-      </select>
-    </div>
-    <div class="tm-row">
       <button class="tm-btn tm-btn-primary" id="scr-capture">📸 撮影</button>
     </div>
     <div class="tm-label" id="scr-status"></div>
   `,
   init() {
-    const modeEl = Toolkit.$('scr-mode'), formatEl = Toolkit.$('scr-format'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
+    const modeEl = Toolkit.$('scr-mode'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
 
-    Toolkit.bindState('screenshot', {
-      'scr-mode': ['value', 'mode'],
-      'scr-format': ['value', 'format'],
-    });
+    Toolkit.bindState('screenshot', { 'scr-mode': ['value', 'mode'] });
 
     btn.addEventListener('click', async () => {
       const tabsApi = typeof chrome !== 'undefined' && chrome.tabs;
@@ -42,7 +31,7 @@ Toolkit.registerTab({
       }
       btn.disabled = true;
       statusEl.textContent = '撮影中…';
-      chrome.runtime.sendMessage({ type: 'captureScreenshot', tabId: tab.id, mode: modeEl.value, format: formatEl.value }, res => {
+      chrome.runtime.sendMessage({ type: 'captureScreenshot', tabId: tab.id, mode: modeEl.value }, res => {
         btn.disabled = false;
         statusEl.textContent = '';
         if (chrome.runtime.lastError || !res || !res.ok) {
