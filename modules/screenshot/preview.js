@@ -1,6 +1,20 @@
+async function convertPngDataUrl(dataUrl, format) {
+  if (format === 'png') return dataUrl;
+  const blob = await (await fetch(dataUrl)).blob();
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0);
+  return canvas.toDataURL(`image/${format}`, 0.92);
+}
+
+function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
+
 (async () => {
   const img = document.getElementById('sp-img');
   const saveBtn = document.getElementById('sp-save');
+  const formatEl = document.getElementById('sp-format');
   const warningEl = document.getElementById('sp-warning');
   const statusEl = document.getElementById('sp-status');
 
@@ -16,14 +30,31 @@
 
   img.src = pending.dataUrl;
   img.hidden = false;
-  document.title = pending.filename;
-  statusEl.textContent = pending.filename;
   if (pending.truncated) warningEl.hidden = false;
 
-  saveBtn.addEventListener('click', () => {
-    const a = document.createElement('a');
-    a.href = pending.dataUrl;
-    a.download = pending.filename;
-    a.click();
+  function updateFilenamePreview() {
+    const name = `${pending.baseName}.${extFor(formatEl.value)}`;
+    document.title = name;
+    statusEl.textContent = name;
+  }
+  updateFilenamePreview();
+  formatEl.addEventListener('change', updateFilenamePreview);
+
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    try {
+      const format = formatEl.value;
+      const outUrl = await convertPngDataUrl(pending.dataUrl, format);
+      const filename = `${pending.baseName}.${extFor(format)}`;
+      const a = document.createElement('a');
+      a.href = outUrl;
+      a.download = filename;
+      a.click();
+      statusEl.textContent = `${filename} を保存しました`;
+    } catch (e) {
+      statusEl.textContent = '⚠ 保存に失敗しました（' + ((e && e.message) || e) + '）';
+    } finally {
+      saveBtn.disabled = false;
+    }
   });
 })();

@@ -2,20 +2,20 @@
  * worker.js — スクリーンショット撮影の Service Worker 側実装
  *
  * background.js から importScripts() で読み込まれ、同じグローバルスコープで動作する。
- * captureScreenshot() が撮影・結合まで行い、結果（data URL）を返す。
- * 保存（ダウンロード）は screenshot-preview.html 側で <a download> により行う。
+ * captureScreenshot() が撮影・結合まで行い、常に PNG の data URL を返す。
+ * 保存形式の選択・変換とダウンロードは screenshot-preview.html 側で行う。
  */
 const SCREENSHOT_MAX_SHOTS = 40; // 非常に長いページでの無限ループを防ぐ安全上限
 const SCREENSHOT_CAPTURE_INTERVAL_MS = 550; // captureVisibleTab のレート制限（2回/秒）を避けつつ再描画を待つ
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function screenshotFilename(title) {
+function screenshotBaseName(title) {
   const safe = (title || 'screenshot').replace(/[\\/:*?"<>| -]/g, '_').trim().slice(0, 80) || 'screenshot';
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
   const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-  return `${safe}_${stamp}.png`;
+  return `${safe}_${stamp}`;
 }
 
 // Service Worker には URL.createObjectURL が無いため、data URL 化して chrome.storage.session 経由でプレビュータブへ渡す
@@ -37,6 +37,11 @@ async function captureVisibleTabRetry(windowId) {
       await sleep(700);
     }
   }
+}
+
+async function dataUrlToBitmap(dataUrl) {
+  const blob = await (await fetch(dataUrl)).blob();
+  return createImageBitmap(blob);
 }
 
 // executeScript は func を toString() で直列化して注入するため、外側スコープを参照しない自己完結な関数にすること
@@ -100,10 +105,7 @@ async function captureFullPage(tab) {
   if (fixedHidden) await execOnTab(tab.id, restoreFixedElements);
   await execOnTab(tab.id, scrollPageTo, [originalY]);
 
-  const bitmaps = await Promise.all(shots.map(async s => {
-    const blob = await (await fetch(s.dataUrl)).blob();
-    return createImageBitmap(blob);
-  }));
+  const bitmaps = await Promise.all(shots.map(s => dataUrlToBitmap(s.dataUrl)));
   const ratio = bitmaps[0].width / metrics.viewportWidth; // captureVisibleTab は物理ピクセルで返るため CSS px との比率で換算
   const width = bitmaps[0].width;
   const height = Math.ceil(Math.max(...shots.map((s, i) => s.y * ratio + bitmaps[i].height)));
@@ -119,12 +121,12 @@ async function captureFullPage(tab) {
 async function captureScreenshot(tabId, mode) {
   const tab = await chrome.tabs.get(tabId);
   if (!/^https?:\/\//i.test(tab.url || '')) throw new Error('このページでは撮影できません');
-  const filename = screenshotFilename(tab.title);
+  const baseName = screenshotBaseName(tab.title);
   let dataUrl, truncated = false;
   if (mode === 'fullpage') {
     ({ url: dataUrl, truncated } = await captureFullPage(tab));
   } else {
     dataUrl = await captureVisibleTabRetry(tab.windowId);
   }
-  return { dataUrl, filename, truncated };
+  return { dataUrl, baseName, truncated };
 }
