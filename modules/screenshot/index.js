@@ -5,6 +5,7 @@ Toolkit.registerTab({
       <select class="tm-select" id="scr-mode">
         <option value="viewport">表示領域全体</option>
         <option value="fullpage">ページ全体（スクロール含む）</option>
+        <option value="element">要素選択</option>
       </select>
     </div>
     <div class="tm-row tm-inline">
@@ -35,8 +36,9 @@ Toolkit.registerTab({
         return;
       }
       const delaySeconds = parseInt(delayEl.value, 10) || 0;
+      const isElementMode = modeEl.value === 'element';
       btn.disabled = true;
-      statusEl.textContent = '撮影中…';
+      statusEl.textContent = isElementMode ? '要素選択を起動中…' : '撮影中…';
       chrome.runtime.sendMessage({ type: 'captureScreenshot', tabId: tab.id, mode: modeEl.value, delaySeconds }, res => {
         btn.disabled = false;
         statusEl.textContent = '';
@@ -44,9 +46,14 @@ Toolkit.registerTab({
           Toolkit.showToast('⚠ 撮影に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
           return;
         }
-        Toolkit.showToast(res.delayed
-          ? `⏱ ${res.delaySeconds}秒後に撮影します（拡張機能アイコンのバッジでカウントダウン表示）`
-          : '🖼 新しいタブでプレビューを開きました');
+        if (res.delayed) {
+          Toolkit.showToast(isElementMode
+            ? `⏱ ${res.delaySeconds}秒後に要素選択を開始します（拡張機能アイコンのバッジでカウントダウン表示）`
+            : `⏱ ${res.delaySeconds}秒後に撮影します（拡張機能アイコンのバッジでカウントダウン表示）`);
+          return;
+        }
+        if (res.picking) { window.close(); return; }
+        Toolkit.showToast('🖼 新しいタブでプレビューを開きました');
       });
     });
   },
