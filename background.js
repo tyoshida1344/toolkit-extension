@@ -11,7 +11,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
   if (msg.type === 'captureScreenshot') {
-    captureScreenshot(msg.tabId, msg.mode)
+    captureScreenshot(msg.tabId, msg.mode, msg.format)
       .then(async ({ dataUrl, filename, truncated }) => {
         await chrome.storage.session.set({ tm_screenshot_pending: { dataUrl, filename, truncated } });
         await chrome.tabs.create({ url: chrome.runtime.getURL('screenshot-preview.html') });

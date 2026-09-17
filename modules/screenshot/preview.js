@@ -1,3 +1,12 @@
+function sanitizeFolder(name) {
+  return (name || '')
+    .split('/')
+    .map(part => part.replace(/[\\:*?"<>|]/g, '_').trim())
+    .filter(part => part && part !== '.' && part !== '..')
+    .join('/')
+    .slice(0, 100);
+}
+
 (async () => {
   const img = document.getElementById('sp-img');
   const saveBtn = document.getElementById('sp-save');
@@ -21,9 +30,18 @@
   if (pending.truncated) warningEl.hidden = false;
 
   saveBtn.addEventListener('click', () => {
-    const a = document.createElement('a');
-    a.href = pending.dataUrl;
-    a.download = pending.filename;
-    a.click();
+    saveBtn.disabled = true;
+    chrome.storage.local.get('tm_state_screenshot', data => {
+      const folder = sanitizeFolder(data.tm_state_screenshot && data.tm_state_screenshot.folder);
+      const path = folder ? `${folder}/${pending.filename}` : pending.filename;
+      chrome.downloads.download({ url: pending.dataUrl, filename: path, saveAs: false }, id => {
+        saveBtn.disabled = false;
+        if (chrome.runtime.lastError || id == null) {
+          statusEl.textContent = '⚠ 保存に失敗しました（' + ((chrome.runtime.lastError && chrome.runtime.lastError.message) || 'unknown error') + '）';
+          return;
+        }
+        statusEl.textContent = pending.filename + ' を保存しました';
+      });
+    });
   });
 })();
