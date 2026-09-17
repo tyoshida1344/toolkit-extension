@@ -1,0 +1,49 @@
+Toolkit.registerTab({
+  html: `
+    <div class="tm-row">
+      <label class="tm-label">キャプチャ範囲</label>
+      <select class="tm-select" id="scr-mode">
+        <option value="viewport">表示領域全体</option>
+        <option value="fullpage">ページ全体（スクロール含む）</option>
+      </select>
+    </div>
+    <div class="tm-row">
+      <button class="tm-btn tm-btn-primary" id="scr-capture">📸 撮影して保存</button>
+    </div>
+    <div class="tm-label" id="scr-status"></div>
+  `,
+  init() {
+    const modeEl = Toolkit.$('scr-mode'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
+
+    Toolkit.bindState('screenshot', { 'scr-mode': ['value', 'mode'] });
+
+    btn.addEventListener('click', async () => {
+      const tabsApi = typeof chrome !== 'undefined' && chrome.tabs;
+      if (!tabsApi) { Toolkit.showToast('⚠ この環境では撮影できません'); return; }
+      let tab;
+      try {
+        const list = await tabsApi.query({ active: true, currentWindow: true });
+        tab = list && list[0];
+      } catch (_) {}
+      if (!tab || !/^https?:\/\//.test(tab.url || '')) {
+        Toolkit.showToast('⚠ このページでは撮影できません');
+        return;
+      }
+      btn.disabled = true;
+      statusEl.textContent = '撮影中…';
+      chrome.runtime.sendMessage({ type: 'captureScreenshot', tabId: tab.id, mode: modeEl.value }, res => {
+        btn.disabled = false;
+        statusEl.textContent = '';
+        if (chrome.runtime.lastError || !res || !res.ok) {
+          Toolkit.showToast('⚠ 撮影に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
+          return;
+        }
+        if (res.truncated) {
+          Toolkit.showToast('⚠ ページが長すぎるため一部のみ保存しました');
+          return;
+        }
+        Toolkit.showToast('📸 保存しました');
+      });
+    });
+  },
+});
