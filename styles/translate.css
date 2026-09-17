@@ -10,3 +10,30 @@
   font-family: inherit; font-size: 13px; line-height: 1.6;
   white-space: pre-wrap; word-break: normal;
 }
+
+/* 履歴 */
+.tm-tr-history { margin-top: 14px; }
+.tm-tr-history-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.tm-tr-history-list {
+  border-top: 1px solid var(--tm-border);
+  max-height: 140px; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.tm-tr-history-item {
+  padding: 6px 8px; border-bottom: 1px solid var(--tm-border);
+}
+.tm-tr-history-dir { font-size: 11px; color: var(--tm-text-faint); }
+.tm-tr-history-src {
+  font-size: 12px; color: var(--tm-text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tm-tr-history-result {
+  font-size: 13px; color: var(--tm-text-heading);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tm-tr-history-empty {
+  padding: 10px 8px; font-size: 12px; color: var(--tm-text-faint); text-align: center;
+}
