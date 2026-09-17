@@ -130,3 +130,31 @@ async function captureScreenshot(tabId, mode) {
   }
   return { dataUrl, baseName, truncated };
 }
+
+async function runCaptureAndOpenPreview(tabId, mode) {
+  const { dataUrl, baseName, truncated } = await captureScreenshot(tabId, mode);
+  await chrome.storage.session.set({ tm_screenshot_pending: { dataUrl, baseName, truncated } });
+  await chrome.tabs.create({ url: chrome.runtime.getURL('screenshot-preview.html') });
+}
+
+const SCREENSHOT_BADGE_COLOR = '#0ea5e9'; // styles/base.css の --tm-accent と統一
+const SCREENSHOT_BADGE_ERROR_COLOR = '#dc2626'; // styles/base.css の --tm-error と統一
+
+// ポップアップはフォーカスが外れると閉じるため、遅延中は拡張機能アイコンのバッジで残り秒数を知らせる
+async function runDelayedCapture(tabId, mode, delaySeconds) {
+  for (let remaining = delaySeconds; remaining > 0; remaining--) {
+    await chrome.action.setBadgeBackgroundColor({ color: SCREENSHOT_BADGE_COLOR });
+    await chrome.action.setBadgeText({ text: String(remaining) });
+    await sleep(1000);
+  }
+  await chrome.action.setBadgeText({ text: '' });
+  try {
+    await runCaptureAndOpenPreview(tabId, mode);
+  } catch (e) {
+    // ポップアップは既に閉じている想定のため、エラー通知はバッジの一時表示に留める
+    await chrome.action.setBadgeBackgroundColor({ color: SCREENSHOT_BADGE_ERROR_COLOR });
+    await chrome.action.setBadgeText({ text: '!' });
+    await sleep(3000);
+    await chrome.action.setBadgeText({ text: '' });
+  }
+}

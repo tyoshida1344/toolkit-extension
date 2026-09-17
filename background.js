@@ -11,12 +11,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
   if (msg.type === 'captureScreenshot') {
-    captureScreenshot(msg.tabId, msg.mode)
-      .then(async ({ dataUrl, baseName, truncated }) => {
-        await chrome.storage.session.set({ tm_screenshot_pending: { dataUrl, baseName, truncated } });
-        await chrome.tabs.create({ url: chrome.runtime.getURL('screenshot-preview.html') });
-        sendResponse({ ok: true });
-      })
+    const delaySeconds = Math.min(10, Math.max(0, parseInt(msg.delaySeconds, 10) || 0));
+    if (delaySeconds > 0) {
+      runDelayedCapture(msg.tabId, msg.mode, delaySeconds);
+      sendResponse({ ok: true, delayed: true, delaySeconds });
+      return;
+    }
+    runCaptureAndOpenPreview(msg.tabId, msg.mode)
+      .then(() => sendResponse({ ok: true }))
       .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
     return true;
   }
