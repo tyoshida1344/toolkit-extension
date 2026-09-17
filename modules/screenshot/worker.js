@@ -183,6 +183,7 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
 
   // baseEl: カーソル直下の最前面要素（深度0）。depth: ↑キーで広げた祖先の段数
   let baseEl = null, depth = 0, current = null, busy = false;
+  let captureIndicator = null; // ショット撮影の瞬間だけ非表示にする（撮影結果に写り込まないように）
 
   function ancestorAt(el, n) {
     let cur = el;
@@ -263,10 +264,10 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
     busy = true;
     const target = current;
     cleanup();
-    const indicator = createBanner('📸 要素をキャプチャ中…');
+    captureIndicator = createBanner('📸 要素をキャプチャ中…');
     captureElement(target)
       .catch(() => { chrome.runtime.sendMessage({ type: 'elementCaptureFailed' }); })
-      .finally(() => indicator.remove());
+      .finally(() => captureIndicator.remove());
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -353,14 +354,16 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
         window.scrollTo(targetWinX, targetWinY);
 
         if (!fixedHidden) { hideFixedOrSticky(); fixedHidden = true; }
+        captureIndicator.style.display = 'none'; // 撮影結果に写り込まないよう、再描画の時間を確保して隠す
         await sleep(shotIntervalMs);
 
         const r = el.getBoundingClientRect();
         const visLeft = Math.max(r.left, 0), visTop = Math.max(r.top, 0);
         const visRight = Math.min(r.right, window.innerWidth), visBottom = Math.min(r.bottom, window.innerHeight);
-        if (visRight - visLeft < 1 || visBottom - visTop < 1) continue;
+        if (visRight - visLeft < 1 || visBottom - visTop < 1) { captureIndicator.style.display = ''; continue; }
 
         const dataUrl = await requestShot();
+        captureIndicator.style.display = '';
         if (!dataUrl) { truncated = true; break outer; }
         shots.push({
           dataUrl,
