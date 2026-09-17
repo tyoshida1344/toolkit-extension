@@ -124,7 +124,7 @@ async function captureScreenshot(tabId, mode) {
   if (mode === 'fullpage') {
     ({ url: dataUrl, truncated } = await captureFullPage(tab));
   } else {
-    dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    dataUrl = await captureVisibleTabRetry(tab.windowId);
   }
   return { dataUrl, filename, truncated };
 }
