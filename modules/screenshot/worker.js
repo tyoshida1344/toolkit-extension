@@ -179,17 +179,10 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
     return el;
   }
 
-  const hint = createBanner('クリック/Enter で選択　↑↓ で範囲を調整　Esc で終了');
+  const hint = createBanner('クリック/Enter で選択　Esc で終了');
 
-  // baseEl: カーソル直下の最前面要素（深度0）。depth: ↑キーで広げた祖先の段数
-  let baseEl = null, depth = 0, current = null, busy = false;
+  let current = null, busy = false;
   let captureIndicator = null; // ショット撮影の瞬間だけ非表示にする（撮影結果に写り込まないように）
-
-  function ancestorAt(el, n) {
-    let cur = el;
-    for (let i = 0; i < n && cur && cur.parentElement; i++) cur = cur.parentElement;
-    return cur;
-  }
 
   function describe(el) {
     let s = el.tagName.toLowerCase();
@@ -208,13 +201,11 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
     label.style.top = (r.top >= 22 ? r.top - 22 : r.bottom + 4) + 'px';
   }
 
-  // マウス移動のたびに elementFromPoint で深度をリセットする（DevTools 風の拡大操作の基点を更新）
   function onMove(e) {
     if (busy) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (!el || el === box || el === label) return;
-    if (el !== baseEl) { baseEl = el; depth = 0; }
-    current = ancestorAt(baseEl, depth) || baseEl;
+    current = el;
     render();
   }
 
@@ -228,18 +219,6 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
   function onKey(e) {
     if (busy) return;
     if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (!baseEl) return;
-      const next = ancestorAt(baseEl, depth + 1);
-      if (next && next !== document.documentElement) { depth++; current = next; render(); }
-      return;
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (depth > 0) { depth--; current = ancestorAt(baseEl, depth) || baseEl; render(); }
-      return;
-    }
     if (e.key === 'Enter') { e.preventDefault(); confirmSelection(); }
   }
 
