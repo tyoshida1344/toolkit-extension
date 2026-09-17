@@ -3,7 +3,7 @@
  *
  * background.js から importScripts() で読み込まれ、同じグローバルスコープで動作する。
  * captureScreenshot() が撮影・結合・形式変換まで行い、結果（data URL）を返す。
- * 保存（ダウンロード）は screenshot-preview.html 側で chrome.downloads.download により行う。
+ * 保存は screenshot-preview.html 側で File System Access API（未対応時は <a download>）により行う。
  */
 const SCREENSHOT_MAX_SHOTS = 40; // 非常に長いページでの無限ループを防ぐ安全上限
 const SCREENSHOT_CAPTURE_INTERVAL_MS = 550; // captureVisibleTab のレート制限（2回/秒）を避けつつ再描画を待つ

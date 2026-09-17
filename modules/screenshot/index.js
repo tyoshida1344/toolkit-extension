@@ -16,10 +16,6 @@ Toolkit.registerTab({
       </select>
     </div>
     <div class="tm-row">
-      <label class="tm-label">保存先サブフォルダ（省略可）</label>
-      <input type="text" class="tm-input" id="scr-folder" placeholder="例: Screenshots">
-    </div>
-    <div class="tm-row">
       <button class="tm-btn tm-btn-primary" id="scr-capture">📸 撮影</button>
     </div>
     <div class="tm-label" id="scr-status"></div>
@@ -30,7 +26,6 @@ Toolkit.registerTab({
     Toolkit.bindState('screenshot', {
       'scr-mode': ['value', 'mode'],
       'scr-format': ['value', 'format'],
-      'scr-folder': ['value', 'folder'],
     });
 
     btn.addEventListener('click', async () => {

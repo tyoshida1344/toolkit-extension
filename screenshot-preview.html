@@ -17,6 +17,8 @@
     }
     .title { font-size: 15px; font-weight: 700; color: var(--tm-text-heading); }
     #sp-save:disabled { opacity: .4; cursor: default; pointer-events: none; }
+    .folder-row { width: 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tm-text-muted); }
+    .folder-row span { flex: 1; }
     .warning { color: var(--tm-error); font-size: 13px; font-weight: 600; }
     .frame {
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
@@ -31,6 +33,11 @@
     <div class="toolbar">
       <span class="title">プレビュー</span>
       <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
+    </div>
+    <div class="folder-row">
+      <span id="sp-folder-name">既定のダウンロードフォルダ</span>
+      <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="sp-folder-pick">📁 保存先を選択</button>
+      <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="sp-folder-clear" hidden>既定に戻す</button>
     </div>
     <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
     <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>
