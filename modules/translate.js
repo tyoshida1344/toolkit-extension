@@ -17,6 +17,13 @@ Toolkit.registerTab({
     <div class="tm-row">
       <div class="tm-output tm-tr-result" id="tr-result"></div>
     </div>
+    <div class="tm-tr-history">
+      <div class="tm-tr-history-head">
+        <span class="tm-label" style="margin:0">履歴</span>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="tr-hist-clear">クリア</button>
+      </div>
+      <div class="tm-tr-history-list" id="tr-hist"></div>
+    </div>
   `,
   init() {
     let src = 'ja', tgt = 'en';
@@ -31,12 +38,34 @@ Toolkit.registerTab({
 
     const input = Toolkit.$('tr-input');
     const result = Toolkit.$('tr-result');
+    const histEl = Toolkit.$('tr-hist');
+    const history = [];
+
+    function renderHistory() {
+      if (!history.length) {
+        histEl.innerHTML = '<div class="tm-tr-history-empty">履歴はありません</div>';
+        return;
+      }
+      histEl.innerHTML = history.map(h =>
+        `<div class="tm-tr-history-item">` +
+        `<div class="tm-tr-history-dir">${Toolkit.escapeHtml(LABELS[h.src])}→${Toolkit.escapeHtml(LABELS[h.tgt])}</div>` +
+        `<div class="tm-tr-history-src" title="${Toolkit.escapeHtml(h.input)}">${Toolkit.escapeHtml(h.input)}</div>` +
+        `<div class="tm-tr-history-result" title="${Toolkit.escapeHtml(h.result)}">${Toolkit.escapeHtml(h.result)}</div>` +
+        `</div>`
+      ).join('');
+    }
+
+    function addHistory(entry) {
+      history.unshift(entry);
+      if (history.length > Toolkit.HISTORY_LIMIT) history.pop();
+      renderHistory();
+    }
 
     const save = Toolkit.bindState('translate', {
       'tr-input': ['value', 'input'],
       'tr-result': ['textContent', 'result'],
     }, {
-      extra: () => ({ src, tgt }),
+      extra: () => ({ src, tgt, history }),
       onRestore(s) {
         if (!s) return;
         if (s.src && s.tgt && LABELS[s.src] && LABELS[s.tgt]) {
@@ -44,18 +73,25 @@ Toolkit.registerTab({
           Toolkit.$('tr-src-label').textContent = LABELS[src];
           Toolkit.$('tr-tgt-label').textContent = LABELS[tgt];
         }
+        if (Array.isArray(s.history)) {
+          history.push(...s.history.slice(0, Toolkit.HISTORY_LIMIT));
+          renderHistory();
+        }
       },
     });
+
+    Toolkit.$('tr-hist-clear').addEventListener('click', () => {
+      history.length = 0;
+      renderHistory();
+      save();
+    });
+
+    renderHistory();
 
     Toolkit.$('tr-swap').addEventListener('click', () => {
       [src, tgt] = [tgt, src];
       Toolkit.$('tr-src-label').textContent = LABELS[src];
       Toolkit.$('tr-tgt-label').textContent = LABELS[tgt];
-      const resultText = result.textContent;
-      if (resultText) {
-        input.value = resultText;
-        result.textContent = '';
-      }
       save();
     });
 
@@ -66,8 +102,10 @@ Toolkit.registerTab({
       status.textContent = '翻訳中...';
       result.textContent = '';
       try {
-        result.textContent = await translateText(text, src, tgt);
+        const translated = await translateText(text, src, tgt);
+        result.textContent = translated;
         status.textContent = '';
+        addHistory({ src, tgt, input: text, result: translated });
       } catch (e) {
         result.textContent = '⚠ 翻訳に失敗しました';
         status.textContent = '';
