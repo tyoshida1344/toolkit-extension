@@ -3,40 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <title>スクリーンショットプレビュー</title>
+  <link rel="stylesheet" href="styles/base.css">
   <style>
-    * { box-sizing: border-box; }
     body {
-      margin: 0; padding: 24px; min-height: 100vh;
-      background: #f3f4f6; color: #374151;
-      font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
+      width: auto; height: auto; min-height: 100vh; overflow: visible; padding: 24px;
+      background: var(--tm-bg-sunken);
       display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
     .panel { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
     .toolbar {
       width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-      position: sticky; top: 0; z-index: 1; padding: 8px 0; background: #f3f4f6;
+      position: sticky; top: 0; z-index: 1; padding: 8px 0; background: var(--tm-bg-sunken);
     }
-    .title { font-size: 15px; font-weight: 700; color: #111827; }
-    .toolbar button {
-      height: 36px; padding: 0 18px; border: none; border-radius: 6px; cursor: pointer;
-      font-size: 13px; font-weight: 600; background: #0ea5e9; color: #fff;
-    }
-    .toolbar button:hover { background: #0284c7; }
-    .toolbar button:disabled { background: #d1d5db; cursor: default; }
-    .warning { color: #dc2626; font-size: 13px; font-weight: 600; }
+    .title { font-size: 15px; font-weight: 700; color: var(--tm-text-heading); }
+    #sp-save:disabled { opacity: .4; cursor: default; pointer-events: none; }
+    .warning { color: var(--tm-error); font-size: 13px; font-weight: 600; }
     .frame {
-      max-width: 100%; padding: 12px; border: 1px solid #9ca3af; border-radius: 10px;
-      background: #fff; box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
+      max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
+      background: var(--tm-bg); box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
     }
     .frame img { display: block; max-width: 100%; }
-    .status { color: #6b7280; font-size: 13px; }
+    .status { color: var(--tm-text-muted); font-size: 13px; }
   </style>
 </head>
 <body>
   <div class="panel">
     <div class="toolbar">
       <span class="title">プレビュー</span>
-      <button type="button" id="sp-save">💾 ダウンロード</button>
+      <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
     </div>
     <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
     <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>
