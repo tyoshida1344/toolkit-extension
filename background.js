@@ -17,9 +17,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       sendResponse({ ok: true, delayed: true, delaySeconds });
       return;
     }
-    runCaptureAndOpenPreview(msg.tabId, msg.mode)
-      .then(() => sendResponse({ ok: true }))
+    runModeAction(msg.tabId, msg.mode)
+      .then(res => sendResponse({ ok: true, ...res }))
       .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
     return true;
+  }
+  if (msg.type === 'elementCaptureComplete') {
+    openPreviewTab({
+      dataUrl: msg.dataUrl,
+      baseName: screenshotBaseName(msg.title),
+      truncated: !!msg.truncated,
+    });
+  }
+  if (msg.type === 'elementCaptureFailed') {
+    flashBadgeError();
   }
 });

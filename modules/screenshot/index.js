@@ -5,9 +5,10 @@ Toolkit.registerTab({
       <select class="tm-select" id="scr-mode">
         <option value="viewport">表示領域全体</option>
         <option value="fullpage">ページ全体（スクロール含む）</option>
+        <option value="element">要素選択</option>
       </select>
     </div>
-    <div class="tm-row tm-inline">
+    <div class="tm-row tm-inline" id="scr-delay-row">
       <label class="tm-label" style="white-space:nowrap;margin:0">遅延（秒）</label>
       <input type="number" class="tm-input" id="scr-delay" value="0" min="0" max="10" step="1" style="width:80px">
     </div>
@@ -17,10 +18,19 @@ Toolkit.registerTab({
     <div class="tm-label" id="scr-status"></div>
   `,
   init() {
-    const modeEl = Toolkit.$('scr-mode'), delayEl = Toolkit.$('scr-delay'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
+    const modeEl = Toolkit.$('scr-mode'), delayEl = Toolkit.$('scr-delay'), delayRow = Toolkit.$('scr-delay-row'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
 
-    Toolkit.bindState('screenshot', { 'scr-mode': ['value', 'mode'], 'scr-delay': ['value', 'delaySeconds'] });
+    // 要素選択はクリックでの選択操作自体が前提のため、ページ状態を整えて自動撮影する「遅延」とは相性が悪く無効化する
+    function syncDelayAvailability() {
+      const disabled = modeEl.value === 'element';
+      delayEl.disabled = disabled;
+      delayRow.style.opacity = disabled ? '0.5' : '';
+    }
+
+    Toolkit.bindState('screenshot', { 'scr-mode': ['value', 'mode'], 'scr-delay': ['value', 'delaySeconds'] }, { onRestore: syncDelayAvailability });
     Toolkit.clampInput(delayEl);
+    modeEl.addEventListener('change', syncDelayAvailability);
+    syncDelayAvailability();
 
     btn.addEventListener('click', async () => {
       const tabsApi = typeof chrome !== 'undefined' && chrome.tabs;
@@ -34,9 +44,10 @@ Toolkit.registerTab({
         Toolkit.showToast('⚠ このページでは撮影できません');
         return;
       }
-      const delaySeconds = parseInt(delayEl.value, 10) || 0;
+      const isElementMode = modeEl.value === 'element';
+      const delaySeconds = isElementMode ? 0 : (parseInt(delayEl.value, 10) || 0);
       btn.disabled = true;
-      statusEl.textContent = '撮影中…';
+      statusEl.textContent = isElementMode ? '要素選択を起動中…' : '撮影中…';
       chrome.runtime.sendMessage({ type: 'captureScreenshot', tabId: tab.id, mode: modeEl.value, delaySeconds }, res => {
         btn.disabled = false;
         statusEl.textContent = '';
@@ -44,9 +55,12 @@ Toolkit.registerTab({
           Toolkit.showToast('⚠ 撮影に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
           return;
         }
-        Toolkit.showToast(res.delayed
-          ? `⏱ ${res.delaySeconds}秒後に撮影します（拡張機能アイコンのバッジでカウントダウン表示）`
-          : '🖼 新しいタブでプレビューを開きました');
+        if (res.delayed) {
+          Toolkit.showToast(`⏱ ${res.delaySeconds}秒後に撮影します（拡張機能アイコンのバッジでカウントダウン表示）`);
+          return;
+        }
+        if (res.picking) { window.close(); return; }
+        Toolkit.showToast('🖼 新しいタブでプレビューを開きました');
       });
     });
   },
