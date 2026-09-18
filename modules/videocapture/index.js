@@ -29,17 +29,12 @@ Toolkit.registerTab({
     const elapsedEl = Toolkit.$('vc-elapsed'), statusEl = Toolkit.$('vc-status');
     Toolkit.bindState('videocapture', { 'vc-mode': ['value', 'mode'] });
 
-    function formatElapsed(ms) {
-      const s = Math.floor(ms / 1000);
-      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
-    }
-
     let tickTimer = null;
     function showRecording(startedAt) {
       idleView.hidden = true;
       recordingView.hidden = false;
       clearInterval(tickTimer);
-      const tick = () => { elapsedEl.textContent = formatElapsed(Date.now() - startedAt); };
+      const tick = () => { elapsedEl.textContent = formatMmSs((Date.now() - startedAt) / 1000); };
       tick();
       tickTimer = setInterval(tick, 1000);
     }

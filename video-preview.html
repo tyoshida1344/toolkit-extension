@@ -25,6 +25,25 @@
     /* .tm-inline は display:flex を持つため、[hidden] だけでは隠れない（screenshot-preview.html と同じ対処） */
     #vp-actions[hidden] { display: none; }
     .status { color: var(--tm-text-muted); font-size: 13px; }
+    .vp-trim { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 8px; }
+    .vp-trim[hidden] { display: none; }
+    .vp-timeline {
+      position: relative; height: 36px; border-radius: 6px; background: var(--tm-bg-sunken);
+      border: 1px solid var(--tm-border); cursor: pointer;
+    }
+    .vp-timeline-selected {
+      position: absolute; top: 0; bottom: 0;
+      background: var(--tm-accent-surface); border-top: 2px solid var(--tm-accent); border-bottom: 2px solid var(--tm-accent);
+      box-sizing: border-box;
+    }
+    .vp-timeline-handle {
+      position: absolute; top: 0; bottom: 0; width: 10px; margin-left: -5px;
+      background: var(--tm-accent); border-radius: 3px; cursor: ew-resize;
+    }
+    .vp-timeline-playhead {
+      position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--tm-text-heading); pointer-events: none;
+    }
+    .vp-trim-times { display: flex; justify-content: space-between; font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
   </style>
 </head>
 <body>
@@ -32,6 +51,14 @@
     <div class="toolbar">
       <span class="title">プレビュー</span>
       <div class="tm-inline" id="vp-actions">
+        <select class="tm-select" id="vp-speed">
+          <option value="0.5">0.5倍</option>
+          <option value="1" selected>1倍</option>
+          <option value="1.25">1.25倍</option>
+          <option value="1.5">1.5倍</option>
+          <option value="2">2倍</option>
+          <option value="4">4倍</option>
+        </select>
         <select class="tm-select" id="vp-format"></select>
         <button type="button" class="tm-btn tm-btn-primary" id="vp-save">💾 ダウンロード</button>
       </div>
@@ -39,10 +66,32 @@
     <div class="frame">
       <video id="vp-video" controls hidden></video>
     </div>
+    <div class="vp-trim" id="vp-trim" hidden>
+      <div class="tm-inline">
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-start-btn">▶| 開始点に</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-end-btn">|◀ 終了点に</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-reset">↺ リセット</button>
+      </div>
+      <div class="vp-timeline" id="vp-timeline">
+        <div class="vp-timeline-selected" id="vp-timeline-selected"></div>
+        <div class="vp-timeline-handle" id="vp-timeline-handle-start" tabindex="0" role="slider" aria-label="トリム開始位置"></div>
+        <div class="vp-timeline-handle" id="vp-timeline-handle-end" tabindex="0" role="slider" aria-label="トリム終了位置"></div>
+        <div class="vp-timeline-playhead" id="vp-timeline-playhead"></div>
+      </div>
+      <div class="vp-trim-times">
+        <span id="vp-trim-start-label">00:00</span>
+        <span id="vp-trim-duration-label">尺 00:00</span>
+        <span id="vp-trim-end-label">00:00</span>
+      </div>
+    </div>
     <div class="status" id="vp-status">読み込み中…</div>
   </div>
+  <video id="vp-export-video" style="display:none" muted></video>
   <script src="utils.js"></script>
   <script src="modules/videocapture/blob-store.js"></script>
+  <script src="modules/videocapture/time-format.js"></script>
+  <script src="modules/videocapture/trim-timeline.js"></script>
+  <script src="modules/videocapture/trim-export.js"></script>
   <script src="modules/videocapture/preview.js"></script>
 </body>
 </html>
