@@ -180,6 +180,7 @@ function onCanvasMouseDown(state, evt) {
     type: state.currentTool, color: state.currentColor, opacity: state.currentOpacity, lineWidth: state.currentLineWidth,
     fill: state.currentTool === 'rect' ? state.currentFill : undefined,
     fillColor: state.currentTool === 'rect' ? state.currentFillColor : undefined,
+    fillOpacity: state.currentTool === 'rect' ? state.currentFillOpacity : undefined,
     x1: p.x, y1: p.y, x2: p.x, y2: p.y,
   };
   startDrag(state);

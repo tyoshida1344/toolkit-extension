@@ -10,7 +10,14 @@ function textLines(s) { return (s.text || '').split('\n'); }
 function drawRectShape(c, s) {
   const x = Math.min(s.x1, s.x2), y = Math.min(s.y1, s.y2);
   const w = Math.abs(s.x2 - s.x1), h = Math.abs(s.y2 - s.y1);
-  if (s.fill) { c.fillStyle = s.fillColor || s.color; c.fillRect(x, y, w, h); }
+  if (s.fill) {
+    // 塗りつぶしは枠線とは別の不透明度を持てるので、fillRect の間だけ globalAlpha を差し替える
+    const strokeAlpha = c.globalAlpha;
+    c.globalAlpha = s.fillOpacity != null ? s.fillOpacity : strokeAlpha;
+    c.fillStyle = s.fillColor || s.color;
+    c.fillRect(x, y, w, h);
+    c.globalAlpha = strokeAlpha;
+  }
   c.strokeStyle = s.color; c.lineWidth = s.lineWidth;
   c.strokeRect(x, y, w, h);
 }

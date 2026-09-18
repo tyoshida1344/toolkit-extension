@@ -29,6 +29,7 @@ function targetGet(state, target, field) {
     case 'fontSize': return state.currentFontSize;
     case 'fill': return state.currentFill;
     case 'fillColor': return state.currentFillColor;
+    case 'fillOpacity': return state.currentFillOpacity;
     default: return undefined;
   }
 }
@@ -41,11 +42,13 @@ function targetSet(state, target, field, value) {
   else if (field === 'fontSize') state.currentFontSize = value;
   else if (field === 'fill') state.currentFill = value;
   else if (field === 'fillColor') state.currentFillColor = value;
+  else if (field === 'fillOpacity') state.currentFillOpacity = value;
 }
 
 function syncStyleInputs(state) {
   const target = getStyleTarget(state);
   state.styleFieldsEl.hidden = !target;
+  state.styleHintEl.hidden = !!target;
   state.deleteBtn.hidden = !(target && target.shape);
   if (!target) return;
 
@@ -63,11 +66,17 @@ function syncStyleInputs(state) {
   state.opacityInput.value = String(Math.round(targetGet(state, target, 'opacity') * 100));
   state.opacityLabel.textContent = `${state.opacityInput.value}%`;
 
-  state.fillRow.hidden = type !== 'rect';
+  state.fillGroupEl.hidden = type !== 'rect';
   const filled = type === 'rect' && !!targetGet(state, target, 'fill');
   if (type === 'rect') state.fillCheckbox.checked = filled;
   state.fillColorInput.hidden = !filled;
-  if (filled) state.fillColorInput.value = targetGet(state, target, 'fillColor');
+  state.fillOpacityInput.hidden = !filled;
+  state.fillOpacityLabel.hidden = !filled;
+  if (filled) {
+    state.fillColorInput.value = targetGet(state, target, 'fillColor');
+    state.fillOpacityInput.value = String(Math.round(targetGet(state, target, 'fillOpacity') * 100));
+    state.fillOpacityLabel.textContent = `${state.fillOpacityInput.value}%`;
+  }
 }
 
 function selectShape(state, id) {
@@ -97,14 +106,17 @@ function wireToolbar(state) {
   toolButtons.forEach(btn => { btn.innerHTML = _TkUI.ICONS[btn.dataset.tool] || ''; });
   state.toolButtons = toolButtons;
   state.styleFieldsEl = document.getElementById('ann-style-fields');
+  state.styleHintEl = document.getElementById('ann-style-hint');
   state.colorInput = document.getElementById('ann-color');
   state.opacityInput = document.getElementById('ann-opacity');
   state.opacityLabel = document.getElementById('ann-opacity-label');
   state.sizeInput = document.getElementById('ann-size');
   state.sizeLabel = document.getElementById('ann-size-label');
-  state.fillRow = document.getElementById('ann-fill-row');
+  state.fillGroupEl = document.getElementById('ann-fill-group');
   state.fillCheckbox = document.getElementById('ann-fill');
   state.fillColorInput = document.getElementById('ann-fill-color');
+  state.fillOpacityInput = document.getElementById('ann-fill-opacity');
+  state.fillOpacityLabel = document.getElementById('ann-fill-opacity-label');
   state.deleteBtn = document.getElementById('ann-delete');
   state.deleteBtn.insertAdjacentHTML('afterbegin', _TkUI.ICONS.trash);
 
@@ -139,6 +151,12 @@ function wireToolbar(state) {
   state.fillColorInput.addEventListener('input', () => {
     const target = getStyleTarget(state);
     if (target) targetSet(state, target, 'fillColor', state.fillColorInput.value);
+  });
+
+  state.fillOpacityInput.addEventListener('input', () => {
+    const target = getStyleTarget(state);
+    state.fillOpacityLabel.textContent = `${state.fillOpacityInput.value}%`;
+    if (target) targetSet(state, target, 'fillOpacity', parseInt(state.fillOpacityInput.value, 10) / 100);
   });
 
   state.deleteBtn.addEventListener('click', () => {
