@@ -31,6 +31,7 @@ const TkVideoRecorder = (() => {
     const canvas = document.getElementById('vc-canvas');
     const ratioX = videoEl.videoWidth / innerWidth;
     const ratioY = videoEl.videoHeight / innerHeight;
+    console.log('[videocapture] composite', { rect, innerWidth, innerHeight, videoWidth: videoEl.videoWidth, videoHeight: videoEl.videoHeight, ratioX, ratioY });
     const insetX = rect.width * CROP_INSET_RATIO, insetY = rect.height * CROP_INSET_RATIO;
     const cropLeft = rect.left + insetX;
     const cropTop = rect.top + insetY;
