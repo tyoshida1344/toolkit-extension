@@ -28,6 +28,19 @@
       padding: 8px 12px; background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 8px;
     }
     .ann-tool-btn.active { background: var(--tm-accent-surface); color: var(--tm-accent); border-color: var(--tm-accent); }
+    /* ツールバーアイコンのホバーツールチップ（.tm-tab のサイドバー版と同じ仕組みを、上部ツールバー向けに下方向表示にしたもの） */
+    .ann-tool-btn, .ann-tip-btn { position: relative; }
+    .ann-tool-btn::after, .ann-tip-btn::after {
+      content: attr(data-tip); position: absolute; top: 100%; left: 50%; margin-top: 6px;
+      transform: translateX(-50%); white-space: nowrap;
+      background: var(--tm-text-heading); color: var(--tm-on-accent); padding: 4px 8px;
+      border-radius: 4px; font-size: 11px; font-weight: 600;
+      pointer-events: none; opacity: 0; transition: opacity .15s;
+      z-index: 10;
+    }
+    .ann-tool-btn:hover::after, .ann-tip-btn:hover::after { opacity: 1; }
+    .ann-delete-ico { width: 14px; height: 14px; }
+    #ann-delete { gap: 6px; }
     .ann-color-input {
       width: 34px; height: 34px; padding: 2px; flex-shrink: 0;
       border: 1px solid var(--tm-border-strong); border-radius: 6px; background: var(--tm-bg); cursor: pointer;
@@ -59,17 +72,30 @@
     </div>
     <div class="ann-toolbar" id="ann-toolbar" hidden>
       <div class="tm-inline">
-        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-select" data-tool="select" title="選択" aria-label="選択">🖱</button>
-        <button type="button" class="tm-icon-btn ann-tool-btn active" id="ann-tool-rect" data-tool="rect" title="四角形（枠線）" aria-label="四角形（枠線）">⬜</button>
-        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" title="矢印" aria-label="矢印">➡️</button>
-        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" title="吹き出し" aria-label="吹き出し">💬</button>
-        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" title="テキスト" aria-label="テキスト">🔤</button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-select" data-tool="select" data-tip="選択" aria-label="選択">
+          <svg class="tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path></svg>
+        </button>
+        <button type="button" class="tm-icon-btn ann-tool-btn active" id="ann-tool-rect" data-tool="rect" data-tip="四角形（枠線）" aria-label="四角形（枠線）">
+          <svg class="tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
+        </button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" data-tip="矢印" aria-label="矢印">
+          <svg class="tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="19" x2="19" y2="5"></line><polyline points="9 5 19 5 19 15"></polyline></svg>
+        </button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" data-tip="吹き出し" aria-label="吹き出し">
+          <svg class="tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" data-tip="テキスト" aria-label="テキスト">
+          <svg class="tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+        </button>
       </div>
       <div class="tm-inline">
         <input type="color" class="ann-color-input" id="ann-color" value="#ff3b30" title="色" aria-label="色">
         <input type="number" class="tm-input ann-size-input" id="ann-size" min="1" max="20" value="3" title="太さ" aria-label="太さ">
         <span class="ann-size-label" id="ann-size-label">太さ</span>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="ann-delete" disabled>🗑 削除</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中の図形を削除（Delete / Backspace）" disabled>
+          <svg class="ann-delete-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          削除
+        </button>
       </div>
     </div>
     <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
