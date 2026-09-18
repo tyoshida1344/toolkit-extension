@@ -21,27 +21,31 @@ function loadImage(src) {
 }
 
 const ANN_FONT_FAMILY = "'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif";
+const HANDLE_SIZE_CSS = 10; // リサイズハンドルの一辺（CSS px）。当たり判定もこれを基準にする
 
 /**
  * 注釈エディタ本体。canvas に撮影結果を描画し、四角形・矢印・吹き出し・テキストの
- * 追加/選択/移動/削除を扱う。エクスポート（保存・コピー）用に注釈込みの
+ * 追加/選択/移動/リサイズ/削除を扱う。エクスポート（保存・コピー）用に注釈込みの
  * dataURL / Blob を取得する API を返す。
  */
 function createAnnotationEditor(canvas, canvasWrap, baseImage) {
   const ctx = canvas.getContext('2d');
-  // 選択中図形の枠線は base.css の --tm-accent と揃える（ハードコードによる二重管理を避ける）
+  // 選択中図形の枠線・ハンドルは base.css の --tm-accent と揃える（ハードコードによる二重管理を避ける）
   const ACCENT_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--tm-accent').trim() || '#0ea5e9';
   const shapes = [];
   let nextId = 1;
   let currentTool = 'rect';
   let currentColor = '#ff3b30';
+  let currentOpacity = 1; // 0-1
   let currentLineWidth = 3;
   let currentFontSize = 20;
+  let currentFill = false; // 四角形の塗りつぶし既定値
   let selectedId = null;
   let draft = null; // 描画中の一時図形（確定前のプレビュー）
   let bubbleAwaitingTail = null; // 吹き出し本体を確定し、尻尾の位置待ちの状態 { x1, y1, x2, y2 }
   let tailPreviewPoint = null;
   let dragMove = null; // 選択中の図形をドラッグ移動中の状態 { id, origin, startPoint }
+  let resizeDrag = null; // 選択中の図形をハンドルでリサイズ中の状態 { id, handleId, original, startPoint }
   let textEditorEl = null;
 
   // getBoundingClientRect() は1回にまとめ、キャンバス内座標と CSS 表示倍率を同時に返す
@@ -51,13 +55,21 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     return { scale, x: (evt.clientX - rect.left) / scale, y: (evt.clientY - rect.top) / scale };
   }
 
+  function getScale() {
+    const rect = canvas.getBoundingClientRect();
+    return rect.width ? rect.width / canvas.width : 1;
+  }
+
   function findShape(id) { return shapes.find(s => s.id === id) || null; }
   function textLines(s) { return (s.text || '').split('\n'); }
 
   // ── 図形の描画 ──
   function drawRectShape(c, s) {
+    const x = Math.min(s.x1, s.x2), y = Math.min(s.y1, s.y2);
+    const w = Math.abs(s.x2 - s.x1), h = Math.abs(s.y2 - s.y1);
+    if (s.fill) { c.fillStyle = s.color; c.fillRect(x, y, w, h); }
     c.strokeStyle = s.color; c.lineWidth = s.lineWidth;
-    c.strokeRect(Math.min(s.x1, s.x2), Math.min(s.y1, s.y2), Math.abs(s.x2 - s.x1), Math.abs(s.y2 - s.y1));
+    c.strokeRect(x, y, w, h);
   }
 
   function drawArrowShape(c, s) {
@@ -141,14 +153,18 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     }
   }
 
+  // 図形単位で不透明度をまとめて適用する（各描画関数は色をそのまま使い、透明度を意識しなくてよい）
   function drawShape(c, s) {
+    c.save();
+    c.globalAlpha = s.opacity != null ? s.opacity : 1;
     if (s.type === 'rect') drawRectShape(c, s);
     else if (s.type === 'arrow') drawArrowShape(c, s);
     else if (s.type === 'text') drawTextShape(c, s);
     else if (s.type === 'bubble') drawBubbleShape(c, s);
+    c.restore();
   }
 
-  // ── 当たり判定 ──
+  // ── 当たり判定・リサイズハンドル ──
   function shapeBounds(s) {
     if (s.type === 'rect' || s.type === 'arrow') {
       return { x: Math.min(s.x1, s.x2), y: Math.min(s.y1, s.y2), w: Math.abs(s.x2 - s.x1), h: Math.abs(s.y2 - s.y1) };
@@ -187,6 +203,60 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     return null;
   }
 
+  // 選択中図形のリサイズハンドル位置（矢印は両端、四角形／吹き出しは4隅。テキストは対象外）
+  function getHandles(s) {
+    if (s.type === 'arrow') return [{ id: 'start', x: s.x1, y: s.y1 }, { id: 'end', x: s.x2, y: s.y2 }];
+    if (s.type === 'rect' || s.type === 'bubble') {
+      const b = shapeBounds(s);
+      return [
+        { id: 'nw', x: b.x, y: b.y }, { id: 'ne', x: b.x + b.w, y: b.y },
+        { id: 'sw', x: b.x, y: b.y + b.h }, { id: 'se', x: b.x + b.w, y: b.y + b.h },
+      ];
+    }
+    return [];
+  }
+
+  function findHandleAt(handles, px, py, scale) {
+    const tol = HANDLE_SIZE_CSS / scale;
+    return handles.find(h => Math.hypot(px - h.x, py - h.y) <= tol) || null;
+  }
+
+  function captureResizeOriginal(s) {
+    if (s.type === 'arrow') return { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 };
+    const b = shapeBounds(s);
+    return { left: b.x, top: b.y, right: b.x + b.w, bottom: b.y + b.h };
+  }
+
+  const RESIZE_MIN = 8; // これ未満には縮小できない（キャンバス内座標）
+
+  function applyResize(s, handleId, original, dx, dy) {
+    if (s.type === 'arrow') {
+      if (handleId === 'start') { s.x1 = original.x1 + dx; s.y1 = original.y1 + dy; }
+      else { s.x2 = original.x2 + dx; s.y2 = original.y2 + dy; }
+      return;
+    }
+    let { left, top, right, bottom } = original;
+    if (handleId.includes('w')) left = Math.min(original.right - RESIZE_MIN, original.left + dx);
+    if (handleId.includes('e')) right = Math.max(original.left + RESIZE_MIN, original.right + dx);
+    if (handleId.includes('n')) top = Math.min(original.bottom - RESIZE_MIN, original.top + dy);
+    if (handleId.includes('s')) bottom = Math.max(original.top + RESIZE_MIN, original.bottom + dy);
+    s.x1 = left; s.y1 = top; s.x2 = right; s.y2 = bottom;
+  }
+
+  function drawHandles(c, handles, scale) {
+    const size = HANDLE_SIZE_CSS / scale;
+    c.save();
+    c.setLineDash([]);
+    handles.forEach(h => {
+      c.fillStyle = '#ffffff';
+      c.strokeStyle = ACCENT_COLOR;
+      c.lineWidth = 1.5;
+      c.fillRect(h.x - size / 2, h.y - size / 2, size, size);
+      c.strokeRect(h.x - size / 2, h.y - size / 2, size, size);
+    });
+    c.restore();
+  }
+
   // ── 全体描画 ──
   function renderScene() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -200,13 +270,13 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
       ctx.restore();
     }
     if (bubbleAwaitingTail && tailPreviewPoint) {
-      const rect = bubbleRect(bubbleAwaitingTail);
-      const base = bubbleTailBase(rect, tailPreviewPoint.x, tailPreviewPoint.y);
+      // 本体ドラッグ確定後も実際の吹き出し（本体＋尻尾）をそのまま点線でプレビューし、完成形が分かるようにする
       ctx.save();
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = currentColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(tailPreviewPoint.x, tailPreviewPoint.y); ctx.stroke();
+      ctx.setLineDash([6, 4]);
+      drawShape(ctx, {
+        type: 'bubble', ...bubbleAwaitingTail, color: currentColor, opacity: currentOpacity,
+        fontSize: currentFontSize, text: '', tailX: tailPreviewPoint.x, tailY: tailPreviewPoint.y,
+      });
       ctx.restore();
     }
     if (selectedId != null) {
@@ -219,6 +289,8 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8);
         ctx.restore();
+        const handles = getHandles(s);
+        if (handles.length) drawHandles(ctx, handles, getScale());
       }
     }
   }
@@ -248,26 +320,74 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
 
   // ── ツールバー ──
   const toolButtons = _TkUtils.qsa('.ann-tool-btn');
+  const styleFieldsEl = document.getElementById('ann-style-fields');
   const colorInput = document.getElementById('ann-color');
+  const opacityInput = document.getElementById('ann-opacity');
+  const opacityLabel = document.getElementById('ann-opacity-label');
   const sizeInput = document.getElementById('ann-size');
   const sizeLabel = document.getElementById('ann-size-label');
+  const fillRow = document.getElementById('ann-fill-row');
+  const fillCheckbox = document.getElementById('ann-fill');
   const deleteBtn = document.getElementById('ann-delete');
 
-  function isFontSizeTool(tool) { return tool === 'text' || tool === 'bubble'; }
+  function isFontSizeType(type) { return type === 'text' || type === 'bubble'; }
+
+  // 編集対象（選択中の図形 / 未選択なら次に描く図形の既定値）を1つの入口にまとめる。
+  // これにより「選択ツールで色を変えても何も起きない」を防ぎ、選択時は実図形を直接編集できる。
+  function getStyleTarget() {
+    if (currentTool === 'select') {
+      if (selectedId == null) return null;
+      const shape = findShape(selectedId);
+      return shape ? { shape } : null;
+    }
+    return { tool: currentTool };
+  }
+
+  function targetType(target) { return target.shape ? target.shape.type : target.tool; }
+
+  function targetGet(target, field) {
+    if (target.shape) return target.shape[field];
+    switch (field) {
+      case 'color': return currentColor;
+      case 'opacity': return currentOpacity;
+      case 'lineWidth': return currentLineWidth;
+      case 'fontSize': return currentFontSize;
+      case 'fill': return currentFill;
+      default: return undefined;
+    }
+  }
+
+  function targetSet(target, field, value) {
+    if (target.shape) { target.shape[field] = value; renderScene(); return; }
+    if (field === 'color') currentColor = value;
+    else if (field === 'opacity') currentOpacity = value;
+    else if (field === 'lineWidth') currentLineWidth = value;
+    else if (field === 'fontSize') currentFontSize = value;
+    else if (field === 'fill') currentFill = value;
+  }
 
   function syncStyleInputs() {
-    const isSelect = currentTool === 'select';
-    colorInput.disabled = isSelect;
-    sizeInput.disabled = isSelect;
-    const label = isFontSizeTool(currentTool) ? '文字サイズ' : '太さ';
+    const target = getStyleTarget();
+    styleFieldsEl.hidden = !target;
+    deleteBtn.hidden = !(target && target.shape);
+    if (!target) return;
+
+    const type = targetType(target);
+    const isFontType = isFontSizeType(type);
+    const label = isFontType ? '文字サイズ' : '太さ';
     sizeLabel.textContent = label;
     sizeInput.title = label;
     sizeInput.setAttribute('aria-label', label);
-    if (isFontSizeTool(currentTool)) {
-      sizeInput.min = '10'; sizeInput.max = '72'; sizeInput.value = String(currentFontSize);
-    } else {
-      sizeInput.min = '1'; sizeInput.max = '20'; sizeInput.value = String(currentLineWidth);
-    }
+    sizeInput.min = isFontType ? '10' : '1';
+    sizeInput.max = isFontType ? '72' : '20';
+    sizeInput.value = String(isFontType ? targetGet(target, 'fontSize') : targetGet(target, 'lineWidth'));
+
+    colorInput.value = targetGet(target, 'color');
+    opacityInput.value = String(Math.round(targetGet(target, 'opacity') * 100));
+    opacityLabel.textContent = `${opacityInput.value}%`;
+
+    fillRow.hidden = type !== 'rect';
+    if (type === 'rect') fillCheckbox.checked = !!targetGet(target, 'fill');
   }
 
   function cancelBubbleAwaitingTail() { bubbleAwaitingTail = null; tailPreviewPoint = null; }
@@ -284,7 +404,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
 
   function selectShape(id) {
     selectedId = id;
-    deleteBtn.disabled = id == null;
+    syncStyleInputs();
     renderScene();
   }
 
@@ -293,23 +413,40 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     draft = null;
     cancelBubbleAwaitingTail();
     dragMove = null;
+    resizeDrag = null;
     currentTool = tool;
     selectedId = null;
     toolButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
     canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
-    deleteBtn.disabled = true;
     syncStyleInputs();
     renderScene();
   }
 
   toolButtons.forEach(btn => btn.addEventListener('click', () => setTool(btn.dataset.tool)));
 
-  colorInput.addEventListener('input', () => { currentColor = colorInput.value; });
+  colorInput.addEventListener('input', () => {
+    const target = getStyleTarget();
+    if (target) targetSet(target, 'color', colorInput.value);
+  });
+
+  opacityInput.addEventListener('input', () => {
+    const target = getStyleTarget();
+    opacityLabel.textContent = `${opacityInput.value}%`;
+    if (target) targetSet(target, 'opacity', parseInt(opacityInput.value, 10) / 100);
+  });
+
   _TkUtils.clampInput(sizeInput);
   sizeInput.addEventListener('input', () => {
+    const target = getStyleTarget();
+    if (!target) return;
     const n = parseInt(sizeInput.value, 10);
     if (isNaN(n)) return;
-    if (isFontSizeTool(currentTool)) currentFontSize = n; else currentLineWidth = n;
+    targetSet(target, isFontSizeType(targetType(target)) ? 'fontSize' : 'lineWidth', n);
+  });
+
+  fillCheckbox.addEventListener('change', () => {
+    const target = getStyleTarget();
+    if (target) targetSet(target, 'fill', fillCheckbox.checked);
   });
 
   deleteBtn.addEventListener('click', () => {
@@ -349,6 +486,8 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
       }
     });
     el.addEventListener('blur', () => { if (textEditorEl === el) closeTextEditor(true); });
+    // mousedown 側で preventDefault 済みのため、ここでの focus() がブラウザのデフォルト
+    // フォーカス処理に奪われずに効く（奪われるとテキストが1文字も入力できなくなる）
     el.focus();
   }
 
@@ -371,6 +510,13 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
       const s = findShape(dragMove.id);
       if (s) applyMoveDelta(s, dragMove.origin, dx, dy);
       renderScene();
+      return;
+    }
+    if (resizeDrag) {
+      const dx = x - resizeDrag.startPoint.x, dy = y - resizeDrag.startPoint.y;
+      const s = findShape(resizeDrag.id);
+      if (s) applyResize(s, resizeDrag.handleId, resizeDrag.original, dx, dy);
+      renderScene();
     }
   }
 
@@ -381,20 +527,29 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     if (draft) {
       const finished = draft;
       draft = null;
-      const w = Math.abs(finished.x2 - finished.x1), h = Math.abs(finished.y2 - finished.y1);
       if (finished.type === 'bubble') {
+        const w = Math.abs(finished.x2 - finished.x1), h = Math.abs(finished.y2 - finished.y1);
         if (w < 8 || h < 8) { renderScene(); return; }
         bubbleAwaitingTail = { x1: finished.x1, y1: finished.y1, x2: finished.x2, y2: finished.y2 };
         tailPreviewPoint = { x, y };
         renderScene();
         return;
       }
+      if (finished.type === 'arrow') {
+        // 水平・垂直の矢印は幅か高さのどちらかが0になるため、縦横どちらか一方の判定ではなく線の長さで見る
+        if (Math.hypot(finished.x2 - finished.x1, finished.y2 - finished.y1) < 4) { renderScene(); return; }
+        shapes.push({ ...finished, id: nextId++ });
+        renderScene();
+        return;
+      }
+      const w = Math.abs(finished.x2 - finished.x1), h = Math.abs(finished.y2 - finished.y1);
       if (w < 4 || h < 4) { renderScene(); return; }
       shapes.push({ ...finished, id: nextId++ });
       renderScene();
       return;
     }
-    if (dragMove) { dragMove = null; renderScene(); }
+    if (dragMove) { dragMove = null; renderScene(); return; }
+    if (resizeDrag) { resizeDrag = null; renderScene(); }
   }
 
   function startDrag() {
@@ -404,6 +559,9 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
 
   function onCanvasMouseDown(evt) {
     if (evt.button !== 0) return;
+    // これが無いと、mousedown ハンドラ内で textarea を生成して focus() しても
+    // ブラウザ既定のフォーカス処理に直後に奪われ、テキストが入力できなくなる
+    evt.preventDefault();
     const { x, y, scale } = measurePointer(evt);
     const p = { x, y };
 
@@ -412,7 +570,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
       cancelBubbleAwaitingTail();
       const rect = bubbleRect(body);
       shapes.push({
-        id: nextId++, type: 'bubble', color: currentColor, fontSize: currentFontSize,
+        id: nextId++, type: 'bubble', color: currentColor, opacity: currentOpacity, fontSize: currentFontSize,
         x1: body.x1, y1: body.y1, x2: body.x2, y2: body.y2, tailX: p.x, tailY: p.y, text: '',
       });
       const shape = shapes[shapes.length - 1];
@@ -427,6 +585,17 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     }
 
     if (currentTool === 'select') {
+      if (selectedId != null) {
+        const selected = findShape(selectedId);
+        if (selected) {
+          const handle = findHandleAt(getHandles(selected), p.x, p.y, scale);
+          if (handle) {
+            resizeDrag = { id: selected.id, handleId: handle.id, original: captureResizeOriginal(selected), startPoint: p };
+            startDrag();
+            return;
+          }
+        }
+      }
       const hit = hitTest(p.x, p.y);
       if (!hit) { selectShape(null); return; }
       selectShape(hit.id);
@@ -445,7 +614,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
         color: currentColor, fontSize: currentFontSize, scale, resizable: true, autoGrow: true,
         onCommit: text => {
           if (!text.trim()) return;
-          shapes.push({ id: nextId++, type: 'text', color: currentColor, fontSize: currentFontSize, x: p.x, y: p.y, text });
+          shapes.push({ id: nextId++, type: 'text', color: currentColor, opacity: currentOpacity, fontSize: currentFontSize, x: p.x, y: p.y, text });
           renderScene();
         },
       });
@@ -453,7 +622,10 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     }
 
     // rect / arrow / bubble（本体のドラッグ描画）
-    draft = { type: currentTool, color: currentColor, lineWidth: currentLineWidth, x1: p.x, y1: p.y, x2: p.x, y2: p.y };
+    draft = {
+      type: currentTool, color: currentColor, opacity: currentOpacity, lineWidth: currentLineWidth,
+      fill: currentTool === 'rect' ? currentFill : undefined, x1: p.x, y1: p.y, x2: p.x, y2: p.y,
+    };
     startDrag();
   }
 
