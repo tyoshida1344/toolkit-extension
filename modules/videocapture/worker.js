@@ -111,9 +111,9 @@ async function startVideoCapture(tabId, mode) {
 
 // ページ側の矩形選択オーバーレイからの矩形確定を受けて、実際の録画を開始する。
 // この時点でポップアップは既に閉じているため、失敗時のフィードバックはバッジの一時表示で行う
-async function handleVcRectSelected(rect, innerWidth) {
+async function handleVcRectSelected(rect, innerWidth, innerHeight) {
   try {
-    const startRes = await chrome.runtime.sendMessage({ type: 'vcStartRecording', rect, innerWidth, baseName: vcBaseName });
+    const startRes = await chrome.runtime.sendMessage({ type: 'vcStartRecording', rect, innerWidth, innerHeight, baseName: vcBaseName });
     if (!startRes || !startRes.ok) throw new Error((startRes && startRes.error) || '録画の開始に失敗しました');
     vcStartedAt = Date.now();
     vcArmAutoStop();

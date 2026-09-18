@@ -63,7 +63,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'vcStartRecording') {
     try {
       vcBaseName = msg.baseName || 'video';
-      TkVideoRecorder.start(vcMediaStream, vcVideoEl, msg.rect, msg.innerWidth);
+      TkVideoRecorder.start(vcMediaStream, vcVideoEl, msg.rect, msg.innerWidth, msg.innerHeight);
       sendResponse({ ok: true });
     } catch (e) {
       sendResponse({ ok: false, error: String((e && e.message) || e) });

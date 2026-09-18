@@ -42,7 +42,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse(getVideoCaptureStatus());
   }
   if (msg.type === 'vcRectSelected') {
-    handleVcRectSelected(msg.rect, msg.innerWidth);
+    handleVcRectSelected(msg.rect, msg.innerWidth, msg.innerHeight);
   }
   if (msg.type === 'vcRectCancelled') {
     abortVideoCapture();

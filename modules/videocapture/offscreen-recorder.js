@@ -19,14 +19,17 @@ const TkVideoRecorder = (() => {
 
   const COMPOSITE_FPS = 30;
 
-  // captureVisibleTab 系と同じく、物理px（video の実サイズ）と CSS px（rect の座標系）の比率で換算する
+  // captureVisibleTab 系と同じく、物理px（video の実サイズ）と CSS px（rect の座標系）の比率で換算する。
+  // 動画ストリームの縦横比とページの縦横比が完全一致するとは限らないため、幅・高さそれぞれ独立に比率を求める
+  // （片方の比率だけを縦横共通で使うと、ずれの分だけクロップ位置が実際の矩形からずれてしまう）。
   // offscreen document は画面に描画されず requestAnimationFrame が正常に発火しないため、setInterval で明示的に駆動する
-  function startCompositing(videoEl, rect, innerWidth) {
+  function startCompositing(videoEl, rect, innerWidth, innerHeight) {
     const canvas = document.getElementById('vc-canvas');
-    const ratio = videoEl.videoWidth / innerWidth;
-    canvas.width = Math.round(rect.width * ratio);
-    canvas.height = Math.round(rect.height * ratio);
-    const sx = Math.round(rect.left * ratio), sy = Math.round(rect.top * ratio);
+    const ratioX = videoEl.videoWidth / innerWidth;
+    const ratioY = videoEl.videoHeight / innerHeight;
+    canvas.width = Math.round(rect.width * ratioX);
+    canvas.height = Math.round(rect.height * ratioY);
+    const sx = Math.round(rect.left * ratioX), sy = Math.round(rect.top * ratioY);
     const ctx = canvas.getContext('2d');
     const intervalId = setInterval(() => {
       ctx.drawImage(videoEl, sx, sy, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
@@ -44,9 +47,9 @@ const TkVideoRecorder = (() => {
     recorders[format] = { recorder, mimeType: type };
   }
 
-  function start(mediaStream, videoEl, rect, innerWidth) {
+  function start(mediaStream, videoEl, rect, innerWidth, innerHeight) {
     const recordStream = rect ? (() => {
-      const canvasStream = startCompositing(videoEl, rect, innerWidth);
+      const canvasStream = startCompositing(videoEl, rect, innerWidth, innerHeight);
       mediaStream.getAudioTracks().forEach(t => canvasStream.addTrack(t));
       return canvasStream;
     })() : mediaStream;
