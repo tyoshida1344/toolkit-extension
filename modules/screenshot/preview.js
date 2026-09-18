@@ -320,6 +320,8 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
 
   // ── ツールバー ──
   const toolButtons = _TkUtils.qsa('.ann-tool-btn');
+  // アイコンは ui-helpers.js の _TkUI.ICONS（他機能とも共有する SVG 置き場）から流用する
+  toolButtons.forEach(btn => { btn.innerHTML = _TkUI.ICONS[btn.dataset.tool] || ''; });
   const styleFieldsEl = document.getElementById('ann-style-fields');
   const colorInput = document.getElementById('ann-color');
   const opacityInput = document.getElementById('ann-opacity');
@@ -329,6 +331,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
   const fillRow = document.getElementById('ann-fill-row');
   const fillCheckbox = document.getElementById('ann-fill');
   const deleteBtn = document.getElementById('ann-delete');
+  deleteBtn.insertAdjacentHTML('afterbegin', _TkUI.ICONS.trash);
 
   function isFontSizeType(type) { return type === 'text' || type === 'bubble'; }
 
