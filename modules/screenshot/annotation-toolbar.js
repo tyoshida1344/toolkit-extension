@@ -1,3 +1,9 @@
+/**
+ * annotation-toolbar.js — 注釈ツールバーの DOM 配線とスタイル編集
+ *
+ * ツール切替・色/太さ/不透明度/塗りつぶしの入力欄・削除ボタンを state に配線する。
+ */
+
 // ── 編集対象のスタイル取得・変更 ──
 function isFontSizeType(type) { return type === 'text' || type === 'bubble'; }
 

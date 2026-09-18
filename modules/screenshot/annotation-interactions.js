@@ -1,3 +1,9 @@
+/**
+ * annotation-interactions.js — マウス/キーボード操作とテキスト入力 UI
+ *
+ * canvas 上での描画・選択・移動・リサイズ操作、Escape/Delete のショートカット、
+ * テキスト注釈の入力欄（textarea）の生成・確定を扱う。
+ */
 function cancelBubbleAwaitingTail(state) { state.bubbleAwaitingTail = null; state.tailPreviewPoint = null; }
 
 function closeTextEditor(state, commit) {

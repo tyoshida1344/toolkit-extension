@@ -1,4 +1,9 @@
-// preview.js から呼び出される注釈エディタのエントリポイント。state を組み立て、各ファイルの配線を行う
+/**
+ * annotation-editor.js — 注釈エディタのエントリポイント
+ *
+ * state を組み立て、annotation-shapes / annotation-geometry / annotation-render /
+ * annotation-toolbar / annotation-interactions の配線を行う。preview.js から呼び出される。
+ */
 function createAnnotationEditor(canvas, canvasWrap, baseImage) {
   const state = {
     canvas, canvasWrap, baseImage,

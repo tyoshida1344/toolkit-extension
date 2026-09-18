@@ -1,3 +1,8 @@
+/**
+ * annotation-shapes.js — 注釈図形（四角形・矢印・テキスト・吹き出し）の描画
+ *
+ * canvas 2D コンテキストと図形データを受け取って描画するだけの純粋関数群。state には依存しない。
+ */
 const ANN_FONT_FAMILY = "'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif";
 
 function textLines(s) { return (s.text || '').split('\n'); }

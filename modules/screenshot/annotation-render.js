@@ -1,3 +1,9 @@
+/**
+ * annotation-render.js — 注釈エディタの全体描画とエクスポート
+ *
+ * state を丸ごと受け取り、canvas に撮影結果＋図形群を再描画する。保存・コピー用の
+ * dataURL / Blob もここで生成する。
+ */
 function renderScene(state) {
   const { ctx, canvas, baseImage, shapes } = state;
   ctx.clearRect(0, 0, canvas.width, canvas.height);

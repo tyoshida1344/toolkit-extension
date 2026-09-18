@@ -1,3 +1,8 @@
+/**
+ * annotation-geometry.js — 座標変換・当たり判定・リサイズ計算
+ *
+ * canvas / ctx / 図形データを明示的に受け取る純粋関数群。state には依存しない。
+ */
 const HANDLE_SIZE_CSS = 10; // リサイズハンドルの一辺（CSS px）。当たり判定もこれを基準にする
 const RESIZE_MIN = 8; // これ未満には縮小できない（キャンバス内座標）
 
