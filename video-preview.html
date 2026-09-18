@@ -39,17 +39,28 @@
       box-sizing: border-box;
     }
     .vp-timeline-selected.active { background: var(--tm-accent); }
+    /* クリックで掴む実際の当たり判定は見た目より広くする（細い線のままだと掴みにくいため）。
+       ::after の細いバーだけを見た目として表示し、.vp-timeline-handle 自体は透明な広いヒット領域にする */
     .vp-timeline-handle {
-      position: absolute; top: 0; bottom: 0; width: 10px; margin-left: -5px;
-      background: var(--tm-accent); border-radius: 3px; cursor: ew-resize;
-      z-index: 1;
+      position: absolute; top: 0; bottom: 0; width: 24px; margin-left: -12px;
+      cursor: ew-resize; z-index: 1;
+      display: flex; justify-content: center;
+    }
+    .vp-timeline-handle::after {
+      content: ''; width: 6px; background: var(--tm-accent); border-radius: 3px;
+    }
+    .vp-timeline-handle:hover::after, .vp-timeline-handle:focus-visible::after {
+      background: var(--tm-accent-hover);
     }
     /* 分割位置（接しているクリップ同士の共有境界）は単独のハンドルより幅広・別色にして掴みやすくする */
-    .vp-timeline-split-handle {
-      width: 16px; margin-left: -8px;
+    .vp-timeline-split-handle::after {
+      width: 10px;
       background: var(--tm-text-heading);
       border: 2px solid var(--tm-bg);
       box-sizing: border-box;
+    }
+    .vp-timeline-split-handle:hover::after, .vp-timeline-split-handle:focus-visible::after {
+      background: var(--tm-text-muted);
     }
     .vp-timeline-playhead {
       position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--tm-text-heading); pointer-events: none;
