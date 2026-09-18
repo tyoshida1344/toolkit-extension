@@ -1,11 +1,13 @@
 /**
- * trim-export.js — トリム/速度変更を反映した動画の再エンコード
+ * trim-export.js — カット・クリップ単位の速度変更を反映した動画の再エンコード
  *
- * 画角の変換は不要（範囲と速度の変更のみ）なため、#89 の矩形選択録画のような canvas 合成は行わず、
- * HTMLVideoElement.captureStream() で再生中の動画から直接 MediaStream（映像+音声）を取得し、
- * そのまま MediaRecorder に渡す。音声ピッチはブラウザ既定（preservesPitch）のまま維持する。
+ * 画角の変換は不要（残すクリップの再生範囲と速度の変更のみ）なため、#89 の矩形選択録画のような
+ * canvas 合成は行わず、HTMLVideoElement.captureStream() で再生中の動画から直接 MediaStream
+ * （映像+音声）を取得し、そのまま MediaRecorder に渡す。クリップを順に再生・録画し、カットされた
+ * 区間（クリップ間の隙間）は再生位置を次クリップの開始点へシークして読み飛ばす。
+ * 音声ピッチはブラウザ既定（preservesPitch）のまま維持する。
  */
-async function exportTrimmedVideo({ blob, mimeType, start, end, speed, onProgress }) {
+async function exportTrimmedVideo({ blob, mimeType, clips, onProgress }) {
   const video = document.getElementById('vp-export-video');
   const url = URL.createObjectURL(blob);
   video.src = url;
@@ -15,14 +17,22 @@ async function exportTrimmedVideo({ blob, mimeType, start, end, speed, onProgres
       video.onerror = () => reject(new Error('動画の読み込みに失敗しました'));
     });
 
-    video.playbackRate = speed;
-    video.currentTime = start;
-    // start が読み込み直後の再生位置（0）と同じ場合、seeked が発火しないブラウザがあり得るため、
-    // タイムアウトで必ず先に進めるようにする
-    await Promise.race([
-      new Promise(resolve => { video.onseeked = resolve; }),
-      new Promise(resolve => setTimeout(resolve, 1000)),
-    ]);
+    async function seekTo(time) {
+      video.currentTime = time;
+      // 読み込み直後の再生位置と一致する場合など、seeked が発火しないブラウザがあり得るため、
+      // タイムアウトで必ず先に進めるようにする
+      await Promise.race([
+        new Promise(resolve => { video.onseeked = resolve; }),
+        new Promise(resolve => setTimeout(resolve, 1000)),
+      ]);
+    }
+
+    const totalOutputDuration = clips.reduce((sum, c) => sum + (c.end - c.start) / c.speed, 0);
+    let elapsedOutput = 0;
+    let clipIndex = 0;
+
+    video.playbackRate = clips[0].speed;
+    await seekTo(clips[0].start);
 
     const stream = video.captureStream();
     const recorder = new MediaRecorder(stream, { mimeType });
@@ -40,9 +50,27 @@ async function exportTrimmedVideo({ blob, mimeType, start, end, speed, onProgres
       video.pause();
       if (recorder.state !== 'inactive') recorder.stop();
     }
-    function onTimeUpdate() {
-      if (onProgress) onProgress(Math.min(1, (video.currentTime - start) / (end - start)));
-      if (video.currentTime >= end) finish();
+
+    let advancing = false;
+    async function onTimeUpdate() {
+      if (advancing) return;
+      const clip = clips[clipIndex];
+      if (video.currentTime >= clip.end) {
+        advancing = true;
+        elapsedOutput += (clip.end - clip.start) / clip.speed;
+        clipIndex++;
+        const next = clips[clipIndex];
+        if (!next) { finish(); advancing = false; return; }
+        video.playbackRate = next.speed;
+        await seekTo(next.start);
+        if (onProgress) onProgress(Math.min(1, elapsedOutput / totalOutputDuration));
+        advancing = false;
+        return;
+      }
+      if (onProgress) {
+        const clipProgress = (video.currentTime - clip.start) / clip.speed;
+        onProgress(Math.min(1, (elapsedOutput + clipProgress) / totalOutputDuration));
+      }
     }
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', finish);
