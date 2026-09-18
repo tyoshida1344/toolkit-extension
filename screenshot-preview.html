@@ -21,8 +21,26 @@
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
       background: var(--tm-bg); box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
     }
-    .frame img { display: block; max-width: 100%; }
+    .frame canvas { display: block; max-width: 100%; }
     .status { color: var(--tm-text-muted); font-size: 13px; }
+    .ann-toolbar {
+      width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 8px 12px; background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 8px;
+    }
+    .ann-tool-btn.active { background: var(--tm-accent-surface); color: var(--tm-accent); border-color: var(--tm-accent); }
+    .ann-color-input {
+      width: 34px; height: 34px; padding: 2px; flex-shrink: 0;
+      border: 1px solid var(--tm-border-strong); border-radius: 6px; background: var(--tm-bg); cursor: pointer;
+    }
+    .ann-size-input { width: 60px; flex: none; }
+    .ann-size-label { font-size: 12px; color: var(--tm-text-muted); white-space: nowrap; }
+    .ann-canvas-wrap { position: relative; width: 100%; }
+    .ann-canvas-wrap canvas { cursor: crosshair; }
+    .ann-text-editor {
+      position: absolute; box-sizing: border-box; overflow: hidden;
+      border: 1px dashed var(--tm-accent); background: rgba(255, 255, 255, .85);
+      padding: 2px 4px; outline: none; font-family: inherit; line-height: 1.3;
+    }
   </style>
 </head>
 <body>
@@ -39,8 +57,27 @@
         <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
       </div>
     </div>
+    <div class="ann-toolbar" id="ann-toolbar" hidden>
+      <div class="tm-inline">
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-select" data-tool="select" title="選択" aria-label="選択">🖱</button>
+        <button type="button" class="tm-icon-btn ann-tool-btn active" id="ann-tool-rect" data-tool="rect" title="四角形（枠線）" aria-label="四角形（枠線）">⬜</button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" title="矢印" aria-label="矢印">➡️</button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" title="吹き出し" aria-label="吹き出し">💬</button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" title="テキスト" aria-label="テキスト">🔤</button>
+      </div>
+      <div class="tm-inline">
+        <input type="color" class="ann-color-input" id="ann-color" value="#ff3b30" title="色" aria-label="色">
+        <input type="number" class="tm-input ann-size-input" id="ann-size" min="1" max="20" value="3" title="太さ" aria-label="太さ">
+        <span class="ann-size-label" id="ann-size-label">太さ</span>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="ann-delete" disabled>🗑 削除</button>
+      </div>
+    </div>
     <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
-    <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>
+    <div class="frame">
+      <div class="ann-canvas-wrap" id="ann-canvas-wrap">
+        <canvas id="sp-canvas" role="img" aria-label="撮影結果プレビュー（注釈編集可能）" hidden></canvas>
+      </div>
+    </div>
     <div class="status" id="sp-status">読み込み中…</div>
   </div>
   <script src="utils.js"></script>
