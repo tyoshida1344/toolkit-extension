@@ -2,16 +2,19 @@
  * dual-video-player.js — カット区間をまたぐプレビュー再生を滞りなく行うための2要素プレイヤー
  *
  * 単一の <video> で clip の境界ごとに currentTime をシークすると、ブラウザのデコード待ちで
- * 一瞬再生が止まって見える。カット地点に近づいたら裏で待機している側の <video> を次クリップの
- * 開始位置へあらかじめシークしておき、実際にカット地点へ達した瞬間にその要素へ即座に表示を
- * 切り替える（先読み・瞬時スワップ方式）ことで体感の滞りを無くす。
+ * 一瞬再生が止まって見える。そこで、あるクリップの再生を始めた直後から（カット地点の
+ * 何秒か手前、ではなく）ただちに裏で待機している側の <video> を次クリップの開始位置へ
+ * 先読みシークしておく。先読みに使える時間がクリップの尺いっぱいになるため、よほど短い
+ * クリップでない限りブラウザのシーク処理が確実に間に合い、カット地点では単に表示先の
+ * <video> 要素を瞬時に入れ替えるだけで済む（先読み・瞬時スワップ方式）。
  * 2要素は同じ動画ソースを指す。呼び出し側からは getEl() が返す「今表示中の要素」だけを見ればよい。
  */
 function createDualVideoPlayer(elA, elB, model) {
-  const PREP_LEAD = 0.35; // 秒。カット地点よりこれだけ手前から次クリップの先読みシークを始める
   const EPS = 0.05;
   let active = elA, standby = elB;
-  let preparedIndex = -1;
+  // 先読み中/済みのクリップの内容のスナップショット。index だけでなく start/speed も保持し、
+  // 編集で同じ index のクリップの中身（範囲・速度）が変わったら自動的に先読みをやり直す
+  let preparedTarget = null; // { index, start, speed } | null
   let standbyReady = false;
   const tickListeners = [];
   const seekedListeners = [];
@@ -34,13 +37,15 @@ function createDualVideoPlayer(elA, elB, model) {
     standby.muted = true;
     standby.controls = false;
     standby.style.display = 'none';
-    preparedIndex = -1;
+    preparedTarget = null;
     standbyReady = false;
   }
 
   function prepareStandby(nextIndex, nextClip) {
-    if (preparedIndex === nextIndex) return;
-    preparedIndex = nextIndex;
+    const same = preparedTarget && preparedTarget.index === nextIndex
+      && preparedTarget.start === nextClip.start && preparedTarget.speed === nextClip.speed;
+    if (same) return;
+    preparedTarget = { index: nextIndex, start: nextClip.start, speed: nextClip.speed };
     standbyReady = false;
     standby.playbackRate = nextClip.speed;
     standby.currentTime = nextClip.start;
@@ -54,10 +59,11 @@ function createDualVideoPlayer(elA, elB, model) {
     const clip = clips[idx];
     if (!clip || el.paused) return;
     const next = clips[idx + 1];
-    if (next && el.currentTime >= clip.end - PREP_LEAD) prepareStandby(idx + 1, next);
+    // クリップの再生を始めた直後からただちに次クリップの先読みに着手する（詳細はファイル冒頭コメント参照）
+    if (next) prepareStandby(idx + 1, next);
     if (el.currentTime < clip.end - EPS) return;
     if (!next) { el.pause(); return; }
-    if (standbyReady && preparedIndex === idx + 1) {
+    if (standbyReady && preparedTarget && preparedTarget.index === idx + 1) {
       standby.play().catch(() => {});
       swap();
       seekedListeners.forEach(fn => fn());
@@ -68,8 +74,7 @@ function createDualVideoPlayer(elA, elB, model) {
 
   function handleSeeked(el) {
     if (isActive(el)) { seekedListeners.forEach(fn => fn()); return; }
-    const target = model.getClips()[preparedIndex];
-    if (target && Math.abs(el.currentTime - target.start) < EPS) standbyReady = true;
+    if (preparedTarget && Math.abs(el.currentTime - preparedTarget.start) < EPS) standbyReady = true;
   }
 
   elA.addEventListener('timeupdate', () => handleTick(elA));
@@ -83,13 +88,13 @@ function createDualVideoPlayer(elA, elB, model) {
     onSeeked: fn => seekedListeners.push(fn),
     seekTo(time) {
       active.currentTime = time;
-      preparedIndex = -1;
+      preparedTarget = null;
       standbyReady = false;
     },
     setSource(url) {
       elA.src = url;
       elB.src = url;
-      preparedIndex = -1;
+      preparedTarget = null;
       standbyReady = false;
     },
   };
