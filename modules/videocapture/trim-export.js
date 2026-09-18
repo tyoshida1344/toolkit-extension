@@ -4,7 +4,8 @@
  * 画角の変換は不要（残すクリップの再生範囲と速度の変更のみ）なため、#89 の矩形選択録画のような
  * canvas 合成は行わず、HTMLVideoElement.captureStream() で再生中の動画から直接 MediaStream
  * （映像+音声）を取得し、そのまま MediaRecorder に渡す。クリップを順に再生・録画し、カットされた
- * 区間（クリップ間の隙間）は再生位置を次クリップの開始点へシークして読み飛ばす。
+ * 区間（クリップ間の隙間）は再生位置を次クリップの開始点へシークして読み飛ばす。シーク中は
+ * MediaRecorder を一時停止し、シークの待ち時間（コマ止まり）が書き出し結果に写り込まないようにする。
  * 音声ピッチはブラウザ既定（preservesPitch）のまま維持する。
  */
 async function exportTrimmedVideo({ blob, mimeType, clips, onProgress }) {
@@ -61,8 +62,11 @@ async function exportTrimmedVideo({ blob, mimeType, clips, onProgress }) {
         clipIndex++;
         const next = clips[clipIndex];
         if (!next) { finish(); advancing = false; return; }
+        // シーク中の待ち時間（コマ止まり）を書き出し結果に含めないよう、シーク前後で録画を一時停止する
+        if (recorder.state === 'recording') recorder.pause();
         video.playbackRate = next.speed;
         await seekTo(next.start);
+        if (recorder.state === 'paused') recorder.resume();
         if (onProgress) onProgress(Math.min(1, elapsedOutput / totalOutputDuration));
         advancing = false;
         return;

@@ -3,16 +3,20 @@
  *
  * clip-model.js が持つ「残すクリップ」の配列を画面に描画し、両端ハンドルのドラッグ／
  * 「開始・終了点に」ボタンでのクリップ範囲調整、「ここで分割」での中間カット、クリップ削除、
- * クリップ単位の速度変更を提供する。プレビュー再生はカットされた区間を自動スキップし、
- * クリップごとの速度で再生する。
+ * クリップ単位の速度変更を提供する。再生・カット区間の自動スキップは dual-video-player.js が担う。
+ *
+ * 「編集対象クリップ」（editIndex）は、タイムライン上のクリップをクリックするか再生位置が
+ * シークされたときに切り替わる。再生中の自動的なクリップ送りは対象にしない（再生に合わせて
+ * 選択がちらつくのを防ぐため。カット地点を通過した際は seek 相当として追従する）。
  */
 function createTrimTimeline({
-  videoEl, timelineEl, playheadEl, splitIconEl,
+  videoElA, videoElB, timelineEl, playheadEl, splitIconEl,
   startLabelEl, endLabelEl, durationLabelEl,
   startBtn, endBtn, splitBtn, deleteBtn, resetBtn, speedEl, duration,
 }) {
   const model = createClipModel(duration);
-  let currentIndex = 0;
+  const player = createDualVideoPlayer(videoElA, videoElB, model);
+  let editIndex = 0;
   let dragging = null; // { clipIndex, edge: 'start' | 'end' } | null
 
   function render() {
@@ -20,6 +24,7 @@ function createTrimTimeline({
     model.getClips().forEach((clip, i) => {
       const selected = document.createElement('div');
       selected.className = 'vp-timeline-selected';
+      selected.dataset.clip = String(i);
       selected.style.left = (clip.start / duration * 100) + '%';
       selected.style.width = ((clip.end - clip.start) / duration * 100) + '%';
       timelineEl.appendChild(selected);
@@ -59,23 +64,23 @@ function createTrimTimeline({
   }
 
   function renderPlayhead() {
-    const pct = (videoEl.currentTime / duration) * 100 + '%';
+    const pct = (player.getEl().currentTime / duration) * 100 + '%';
     playheadEl.style.left = pct;
     splitIconEl.style.left = pct;
   }
 
   function refreshUi() {
     const clips = model.getClips();
-    const clip = clips[currentIndex];
+    const clip = clips[editIndex];
     startLabelEl.textContent = formatMmSs(clip.start);
     endLabelEl.textContent = formatMmSs(clip.end);
     const total = clips.reduce((sum, c) => sum + (c.end - c.start) / c.speed, 0);
     durationLabelEl.textContent = '合計 ' + formatMmSs(total);
     speedEl.value = String(clip.speed);
     deleteBtn.disabled = clips.length <= 1;
-    splitBtn.disabled = !model.canSplitAt(videoEl.currentTime);
+    splitBtn.disabled = !model.canSplitAt(player.getEl().currentTime);
     timelineEl.querySelectorAll('.vp-timeline-selected').forEach((el, i) => {
-      el.classList.toggle('active', i === currentIndex);
+      el.classList.toggle('active', i === editIndex);
     });
   }
 
@@ -83,11 +88,11 @@ function createTrimTimeline({
 
   function resyncToCurrentTime() {
     const clips = model.getClips();
-    currentIndex = model.indexAt(videoEl.currentTime);
-    const clip = clips[currentIndex];
-    if (videoEl.currentTime < clip.start) videoEl.currentTime = clip.start;
-    else if (videoEl.currentTime > clip.end) videoEl.currentTime = clip.end;
-    videoEl.playbackRate = clip.speed;
+    editIndex = model.indexAt(player.getEl().currentTime);
+    const clip = clips[editIndex];
+    if (player.getEl().currentTime < clip.start) player.seekTo(clip.start);
+    else if (player.getEl().currentTime > clip.end) player.seekTo(clip.end);
+    player.getEl().playbackRate = clip.speed;
     refreshUi();
   }
 
@@ -109,7 +114,7 @@ function createTrimTimeline({
     const clip = model.getClips()[dragging.clipIndex];
     if (dragging.edge === 'start') model.setRange(dragging.clipIndex, t, clip.end);
     else model.setRange(dragging.clipIndex, clip.start, t);
-    currentIndex = dragging.clipIndex;
+    editIndex = dragging.clipIndex;
     refresh();
   });
   document.addEventListener('mouseup', () => { dragging = null; });
@@ -124,30 +129,36 @@ function createTrimTimeline({
     const clip = model.getClips()[i];
     if (edge === 'start') model.setRange(i, clip.start + delta, clip.end);
     else model.setRange(i, clip.start, clip.end + delta);
-    currentIndex = i;
+    editIndex = i;
     refresh();
   });
 
   timelineEl.addEventListener('click', e => {
     if (dragging || e.target.closest('.vp-timeline-handle') || e.target.closest('.vp-timeline-split-icon')) return;
-    videoEl.currentTime = posToTime(e.clientX);
+    const clipBlock = e.target.closest('.vp-timeline-selected');
+    if (clipBlock) {
+      editIndex = Number(clipBlock.dataset.clip);
+      refreshUi();
+      return;
+    }
+    player.seekTo(posToTime(e.clientX));
   });
 
   startBtn.addEventListener('click', () => {
-    const clip = model.getClips()[currentIndex];
-    model.setRange(currentIndex, videoEl.currentTime, clip.end);
+    const clip = model.getClips()[editIndex];
+    model.setRange(editIndex, player.getEl().currentTime, clip.end);
     refresh();
   });
   endBtn.addEventListener('click', () => {
-    const clip = model.getClips()[currentIndex];
-    model.setRange(currentIndex, clip.start, videoEl.currentTime);
+    const clip = model.getClips()[editIndex];
+    model.setRange(editIndex, clip.start, player.getEl().currentTime);
     refresh();
   });
 
   function splitAtPlayhead() {
-    const idx = model.splitAt(videoEl.currentTime);
+    const idx = model.splitAt(player.getEl().currentTime);
     if (idx === -1) return;
-    currentIndex = idx;
+    editIndex = idx;
     render();
     refreshUi();
   }
@@ -160,7 +171,7 @@ function createTrimTimeline({
   });
 
   deleteBtn.addEventListener('click', () => {
-    if (!model.removeAt(currentIndex)) return;
+    if (!model.removeAt(editIndex)) return;
     render();
     resyncToCurrentTime();
   });
@@ -173,25 +184,21 @@ function createTrimTimeline({
 
   speedEl.addEventListener('change', () => {
     const speed = parseFloat(speedEl.value);
-    model.setSpeed(currentIndex, speed);
-    videoEl.playbackRate = speed;
+    model.setSpeed(editIndex, speed);
+    if (model.indexAt(player.getEl().currentTime) === editIndex) player.getEl().playbackRate = speed;
     refreshUi();
   });
 
-  videoEl.addEventListener('timeupdate', () => {
-    renderPlayhead();
-    const clip = model.getClips()[currentIndex];
-    if (clip && !videoEl.paused && videoEl.currentTime >= clip.end - 0.005) {
-      const next = model.getClips()[currentIndex + 1];
-      if (next) videoEl.currentTime = next.start;
-      else videoEl.pause();
-    }
-  });
-  videoEl.addEventListener('seeked', resyncToCurrentTime);
+  player.onTick(renderPlayhead);
+  player.onSeeked(resyncToCurrentTime);
 
   render();
   resyncToCurrentTime();
   renderPlayhead();
 
-  return { getClips: model.getClips, isEdited: model.isEdited };
+  return {
+    getClips: model.getClips,
+    isEdited: model.isEdited,
+    setSource: url => player.setSource(url),
+  };
 }

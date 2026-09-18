@@ -20,7 +20,7 @@
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
       background: var(--tm-bg); box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
     }
-    #vp-video { display: block; max-width: 100%; max-height: 70vh; }
+    #vp-video, #vp-video-b { display: block; max-width: 100%; max-height: 70vh; }
     #vp-video[hidden] { display: none; }
     /* .tm-inline は display:flex を持つため、[hidden] だけでは隠れない（screenshot-preview.html と同じ対処） */
     #vp-actions[hidden] { display: none; }
@@ -42,13 +42,16 @@
     .vp-timeline-handle {
       position: absolute; top: 0; bottom: 0; width: 10px; margin-left: -5px;
       background: var(--tm-accent); border-radius: 3px; cursor: ew-resize;
+      z-index: 1;
     }
     .vp-timeline-playhead {
       position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--tm-text-heading); pointer-events: none;
+      z-index: 2;
     }
     .vp-timeline-split-icon {
       position: absolute; top: -18px; width: 16px; height: 16px; margin-left: -8px;
       font-size: 12px; line-height: 16px; text-align: center; cursor: pointer;
+      z-index: 3;
     }
     .vp-trim-times { display: flex; justify-content: space-between; font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
   </style>
@@ -64,6 +67,7 @@
     </div>
     <div class="frame">
       <video id="vp-video" controls hidden></video>
+      <video id="vp-video-b" muted style="display:none"></video>
     </div>
     <div class="vp-trim" id="vp-trim" hidden>
       <div class="tm-inline">
@@ -101,6 +105,7 @@
   <script src="modules/videocapture/blob-store.js"></script>
   <script src="modules/videocapture/time-format.js"></script>
   <script src="modules/videocapture/clip-model.js"></script>
+  <script src="modules/videocapture/dual-video-player.js"></script>
   <script src="modules/videocapture/trim-timeline.js"></script>
   <script src="modules/videocapture/trim-export.js"></script>
   <script src="modules/videocapture/preview.js"></script>

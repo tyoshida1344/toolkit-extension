@@ -1,5 +1,6 @@
 (async () => {
-  const videoEl = document.getElementById('vp-video');
+  const videoElA = document.getElementById('vp-video');
+  const videoElB = document.getElementById('vp-video-b');
   const formatEl = document.getElementById('vp-format');
   const actionsEl = document.getElementById('vp-actions');
   const saveBtn = document.getElementById('vp-save');
@@ -34,8 +35,9 @@
     if (!f) return;
     if (currentUrl) URL.revokeObjectURL(currentUrl);
     currentUrl = URL.createObjectURL(f.blob);
-    videoEl.src = currentUrl;
-    videoEl.hidden = false;
+    if (timeline) timeline.setSource(currentUrl);
+    else videoElA.src = currentUrl;
+    videoElA.hidden = false;
     const name = `${record.baseName}.${f.key}`;
     document.title = name;
     statusEl.textContent = name;
@@ -45,11 +47,12 @@
   showFormat(formats[0].key);
   formatEl.addEventListener('change', () => showFormat(formatEl.value));
 
-  videoEl.addEventListener('loadedmetadata', () => {
+  videoElA.addEventListener('loadedmetadata', () => {
     if (timeline) return;
     trimEl.hidden = false;
     timeline = createTrimTimeline({
-      videoEl,
+      videoElA,
+      videoElB,
       timelineEl: document.getElementById('vp-timeline'),
       playheadEl: document.getElementById('vp-timeline-playhead'),
       splitIconEl: document.getElementById('vp-timeline-split-icon'),
@@ -62,14 +65,14 @@
       deleteBtn: document.getElementById('vp-trim-delete'),
       resetBtn: document.getElementById('vp-trim-reset'),
       speedEl: document.getElementById('vp-speed'),
-      duration: videoEl.duration,
+      duration: videoElA.duration,
     });
   });
 
   saveBtn.addEventListener('click', async () => {
     const f = formats.find(x => x.key === formatEl.value);
     if (!f) return;
-    const clips = timeline ? timeline.getClips() : [{ start: 0, end: videoEl.duration, speed: 1 }];
+    const clips = timeline ? timeline.getClips() : [{ start: 0, end: videoElA.duration, speed: 1 }];
     const isEdited = timeline ? timeline.isEdited() : false;
 
     let outBlob = f.blob;
