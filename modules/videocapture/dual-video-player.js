@@ -19,6 +19,12 @@ function createDualVideoPlayer(elA, elB, model) {
   const tickListeners = [];
   const seekedListeners = [];
 
+  // ネイティブのシークバードラッグ中は el.seeking が途中で瞬間的に false へ戻る場合があるため、
+  // マウスボタンが押されている間も併せて抑止することでより確実にドラッグ操作を保護する
+  let pointerDown = false;
+  document.addEventListener('mousedown', () => { pointerDown = true; });
+  document.addEventListener('mouseup', () => { pointerDown = false; });
+
   standby.muted = true;
   standby.controls = false;
   standby.style.display = 'none';
@@ -54,6 +60,10 @@ function createDualVideoPlayer(elA, elB, model) {
   function handleTick(el) {
     if (!isActive(el)) return;
     tickListeners.forEach(fn => fn());
+    // ネイティブのシークバーをドラッグ中は el.seeking が true になり続ける。この間にスワップすると
+    // ブラウザ側がドラッグを追跡している要素そのものが差し替わってしまいドラッグ操作が壊れるため、
+    // シーク中・マウス操作中（＝ユーザーが能動的に位置を操作している間）はカット判定・先読み・スワップを行わない
+    if (el.seeking || pointerDown) return;
     const clips = model.getClips();
     const idx = model.indexAt(el.currentTime);
     const clip = clips[idx];
