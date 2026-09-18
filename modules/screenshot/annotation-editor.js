@@ -18,6 +18,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     currentLineWidth: 3,
     currentFontSize: 20,
     currentFill: false, // 四角形の塗りつぶし既定値
+    currentFillColor: '#ff3b30', // 四角形の塗りつぶし色既定値（枠線の色とは独立に変更できる）
     selectedId: null,
     draft: null, // 描画中の一時図形（確定前のプレビュー）
     bubbleAwaitingTail: null, // 吹き出し本体を確定し、尻尾の位置待ちの状態 { x1, y1, x2, y2 }

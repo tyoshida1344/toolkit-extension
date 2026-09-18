@@ -28,6 +28,7 @@ function targetGet(state, target, field) {
     case 'lineWidth': return state.currentLineWidth;
     case 'fontSize': return state.currentFontSize;
     case 'fill': return state.currentFill;
+    case 'fillColor': return state.currentFillColor;
     default: return undefined;
   }
 }
@@ -39,6 +40,7 @@ function targetSet(state, target, field, value) {
   else if (field === 'lineWidth') state.currentLineWidth = value;
   else if (field === 'fontSize') state.currentFontSize = value;
   else if (field === 'fill') state.currentFill = value;
+  else if (field === 'fillColor') state.currentFillColor = value;
 }
 
 function syncStyleInputs(state) {
@@ -62,7 +64,10 @@ function syncStyleInputs(state) {
   state.opacityLabel.textContent = `${state.opacityInput.value}%`;
 
   state.fillRow.hidden = type !== 'rect';
-  if (type === 'rect') state.fillCheckbox.checked = !!targetGet(state, target, 'fill');
+  const filled = type === 'rect' && !!targetGet(state, target, 'fill');
+  if (type === 'rect') state.fillCheckbox.checked = filled;
+  state.fillColorInput.hidden = !filled;
+  if (filled) state.fillColorInput.value = targetGet(state, target, 'fillColor');
 }
 
 function selectShape(state, id) {
@@ -99,6 +104,7 @@ function wireToolbar(state) {
   state.sizeLabel = document.getElementById('ann-size-label');
   state.fillRow = document.getElementById('ann-fill-row');
   state.fillCheckbox = document.getElementById('ann-fill');
+  state.fillColorInput = document.getElementById('ann-fill-color');
   state.deleteBtn = document.getElementById('ann-delete');
   state.deleteBtn.insertAdjacentHTML('afterbegin', _TkUI.ICONS.trash);
 
@@ -127,6 +133,12 @@ function wireToolbar(state) {
   state.fillCheckbox.addEventListener('change', () => {
     const target = getStyleTarget(state);
     if (target) targetSet(state, target, 'fill', state.fillCheckbox.checked);
+    syncStyleInputs(state); // 塗りつぶし色ピッカーの表示/非表示を切り替える
+  });
+
+  state.fillColorInput.addEventListener('input', () => {
+    const target = getStyleTarget(state);
+    if (target) targetSet(state, target, 'fillColor', state.fillColorInput.value);
   });
 
   state.deleteBtn.addEventListener('click', () => {

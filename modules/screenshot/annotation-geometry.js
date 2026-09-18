@@ -58,15 +58,17 @@ function hitTest(ctx, shapes, px, py) {
   return null;
 }
 
-// 選択中図形のリサイズハンドル位置（矢印は両端、四角形／吹き出しは4隅。テキストは対象外）
+// 選択中図形のリサイズハンドル位置（矢印は両端、四角形／吹き出しは4隅。吹き出しはさらに尻尾の先端も。テキストは対象外）
 function getHandles(ctx, s) {
   if (s.type === 'arrow') return [{ id: 'start', x: s.x1, y: s.y1 }, { id: 'end', x: s.x2, y: s.y2 }];
   if (s.type === 'rect' || s.type === 'bubble') {
     const b = shapeBounds(ctx, s);
-    return [
+    const handles = [
       { id: 'nw', x: b.x, y: b.y }, { id: 'ne', x: b.x + b.w, y: b.y },
       { id: 'sw', x: b.x, y: b.y + b.h }, { id: 'se', x: b.x + b.w, y: b.y + b.h },
     ];
+    if (s.type === 'bubble' && s.tailX != null) handles.push({ id: 'tail', x: s.tailX, y: s.tailY });
+    return handles;
   }
   return [];
 }
@@ -79,13 +81,21 @@ function findHandleAt(handles, px, py, scale) {
 function captureResizeOriginal(ctx, s) {
   if (s.type === 'arrow') return { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2 };
   const b = shapeBounds(ctx, s);
-  return { left: b.x, top: b.y, right: b.x + b.w, bottom: b.y + b.h };
+  const original = { left: b.x, top: b.y, right: b.x + b.w, bottom: b.y + b.h };
+  if (s.type === 'bubble') { original.tailX = s.tailX; original.tailY = s.tailY; }
+  return original;
 }
 
 function applyResize(s, handleId, original, dx, dy) {
   if (s.type === 'arrow') {
     if (handleId === 'start') { s.x1 = original.x1 + dx; s.y1 = original.y1 + dy; }
     else { s.x2 = original.x2 + dx; s.y2 = original.y2 + dy; }
+    return;
+  }
+  if (handleId === 'tail') {
+    // 尻尾の先端だけを動かす（本体はそのまま）。位置を変えれば「太さ」の代わりに指す方向・長さが変わる
+    s.tailX = original.tailX + dx;
+    s.tailY = original.tailY + dy;
     return;
   }
   let { left, top, right, bottom } = original;

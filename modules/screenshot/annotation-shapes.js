@@ -10,7 +10,7 @@ function textLines(s) { return (s.text || '').split('\n'); }
 function drawRectShape(c, s) {
   const x = Math.min(s.x1, s.x2), y = Math.min(s.y1, s.y2);
   const w = Math.abs(s.x2 - s.x1), h = Math.abs(s.y2 - s.y1);
-  if (s.fill) { c.fillStyle = s.color; c.fillRect(x, y, w, h); }
+  if (s.fill) { c.fillStyle = s.fillColor || s.color; c.fillRect(x, y, w, h); }
   c.strokeStyle = s.color; c.lineWidth = s.lineWidth;
   c.strokeRect(x, y, w, h);
 }
