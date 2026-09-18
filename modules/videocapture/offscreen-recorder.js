@@ -18,10 +18,7 @@ const TkVideoRecorder = (() => {
   let compositeStop = null; // 矩形合成用の描画ループの停止関数（表示領域全体モードでは null）
 
   const COMPOSITE_FPS = 30;
-  // 小数の devicePixelRatio（1.5倍など）の環境では、tabCapture のフレームサイズと CSS px の換算比率に
-  // 選択範囲の大きさに比例した誤差（実測で数%程度）が生じることがある。固定px単位のマージンでは矩形が
-  // 大きいほど不足するため、矩形のサイズに対する割合でクロップ範囲を内側に絞る
-  const CROP_INSET_RATIO = 0.06;
+  const CROP_INSET = 2; // Math.round() の丸め誤差を吸収する程度の最小限のマージン（px）
 
   // captureVisibleTab 系と同じく、物理px（video の実サイズ）と CSS px（rect の座標系）の比率で換算する。
   // 動画ストリームの縦横比とページの縦横比が完全一致するとは限らないため、幅・高さそれぞれ独立に比率を求める
@@ -31,12 +28,10 @@ const TkVideoRecorder = (() => {
     const canvas = document.getElementById('vc-canvas');
     const ratioX = videoEl.videoWidth / innerWidth;
     const ratioY = videoEl.videoHeight / innerHeight;
-    console.log('[videocapture] composite', { rect, innerWidth, innerHeight, videoWidth: videoEl.videoWidth, videoHeight: videoEl.videoHeight, ratioX, ratioY });
-    const insetX = rect.width * CROP_INSET_RATIO, insetY = rect.height * CROP_INSET_RATIO;
-    const cropLeft = rect.left + insetX;
-    const cropTop = rect.top + insetY;
-    const cropWidth = Math.max(1, rect.width - insetX * 2);
-    const cropHeight = Math.max(1, rect.height - insetY * 2);
+    const cropLeft = rect.left + CROP_INSET;
+    const cropTop = rect.top + CROP_INSET;
+    const cropWidth = Math.max(1, rect.width - CROP_INSET * 2);
+    const cropHeight = Math.max(1, rect.height - CROP_INSET * 2);
     canvas.width = Math.round(cropWidth * ratioX);
     canvas.height = Math.round(cropHeight * ratioY);
     const sx = Math.round(cropLeft * ratioX), sy = Math.round(cropTop * ratioY);
