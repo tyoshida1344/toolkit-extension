@@ -60,6 +60,21 @@ function createTrimTimeline({
     return ratio * duration;
   }
 
+  const GRAB_RADIUS_PX = 14; // ハンドル中心からこの距離（px）以内ならクリック/ドラッグ開始とみなす
+  // クリップ矩形（.vp-timeline-selected）とハンドルが同じ座標に重なる場面があり、DOM の
+  // e.target ベースの当たり判定だとブラウザ側のヒットテストで意図せず矩形側が優先されることが
+  // あるため使わず、クリック位置とハンドル中心の距離で判定する（見た目より広い掴みやすさも兼ねる）
+  function findHandleNear(clientX) {
+    const rect = timelineEl.getBoundingClientRect();
+    let closest = null, closestDist = Infinity;
+    timelineEl.querySelectorAll('.vp-timeline-handle').forEach(handle => {
+      const centerX = rect.left + (parseFloat(handle.style.left) / 100) * rect.width;
+      const dist = Math.abs(clientX - centerX);
+      if (dist <= GRAB_RADIUS_PX && dist < closestDist) { closest = handle; closestDist = dist; }
+    });
+    return closest;
+  }
+
   function handleValue(handle) {
     if (handle.dataset.type === 'split') return model.getClips()[Number(handle.dataset.left)].end;
     const clip = model.getClips()[Number(handle.dataset.clip)];
@@ -89,10 +104,11 @@ function createTrimTimeline({
   }
 
   timelineEl.addEventListener('mousedown', e => {
-    const handle = e.target.closest('.vp-timeline-handle');
+    const handle = findHandleNear(e.clientX);
     if (!handle) return;
     e.preventDefault();
     dragging = handle;
+    document.body.style.cursor = 'grabbing';
   });
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
@@ -100,7 +116,11 @@ function createTrimTimeline({
     refresh();
   });
   document.addEventListener('mouseup', () => {
-    if (dragging) { dragging = null; render(); refreshUi(); } // 接触/分離の変化に応じてハンドル構成を作り直す
+    if (!dragging) return;
+    dragging = null;
+    document.body.style.cursor = '';
+    render();
+    refreshUi(); // 接触/分離の変化に応じてハンドル構成を作り直す
   });
 
   const NUDGE_STEP = 0.5; // 矢印キーでの移動幅（秒）
@@ -120,7 +140,7 @@ function createTrimTimeline({
   });
 
   timelineEl.addEventListener('click', e => {
-    if (dragging || e.target.closest('.vp-timeline-handle') || e.target.closest('.vp-timeline-split-icon')) return;
+    if (dragging || findHandleNear(e.clientX) || e.target.closest('.vp-timeline-split-icon')) return;
     const clipBlock = e.target.closest('.vp-timeline-selected');
     if (clipBlock) {
       editIndex = Number(clipBlock.dataset.clip);
