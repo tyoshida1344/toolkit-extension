@@ -130,7 +130,7 @@ function showVideoRectMarker(rect) {
   const ATTR = 'data-tm-video-rect-marker';
   const existing = document.querySelector(`[${ATTR}]`);
   if (existing) existing.remove();
-  const GAP = 2, BORDER = 2, OFFSET = GAP + BORDER;
+  const GAP = 10, BORDER = 3, OFFSET = GAP + BORDER; // px換算の誤差を吸収できるよう、矩形との間に十分な隙間を空ける
   const marker = document.createElement('div');
   marker.setAttribute(ATTR, '1');
   marker.style.cssText = `

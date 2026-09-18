@@ -9,11 +9,22 @@ let vcAudioCtx = null;
 let vcBaseName = 'video';
 const vcVideoEl = document.getElementById('vc-source');
 
-async function vcOpenStream(streamId) {
-  vcMediaStream = await navigator.mediaDevices.getUserMedia({
-    audio: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } },
-    video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } },
-  });
+// 解像度を明示指定しないと Chrome 側の暗黙の解像度選択に委ねることになり、矩形合成時の px 換算比率が
+// 不正確になりうる（録画にわずかに余分な範囲が写り込む原因になっていた）ため、タブの実ピクセルサイズに固定する。
+// 環境によっては厳密指定が通らないことがあるため、失敗時は指定なしにフォールバックする
+async function vcOpenStream(streamId, width, height) {
+  const audioConstraint = { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } };
+  try {
+    vcMediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: audioConstraint,
+      video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId, minWidth: width, maxWidth: width, minHeight: height, maxHeight: height } },
+    });
+  } catch (e) {
+    vcMediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: audioConstraint,
+      video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } },
+    });
+  }
 
   // 録画中もタブの音声をユーザーに聞かせ続けるため、AudioContext 経由で出力に戻す（Chrome 公式サンプルと同じ方式）
   vcAudioCtx = new AudioContext();

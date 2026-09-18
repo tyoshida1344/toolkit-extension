@@ -80,14 +80,29 @@ async function vcCloseOffscreenDocument() {
   if (await chrome.offscreen.hasDocument()) await chrome.offscreen.closeDocument();
 }
 
+// タブの実ピクセルサイズを取得する（tabCapture ストリームの解像度をこれに固定し、矩形合成の px 換算を正確にするため）
+async function readTabViewport(tabId) {
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => ({ innerWidth: window.innerWidth, innerHeight: window.innerHeight, devicePixelRatio: window.devicePixelRatio || 1 }),
+  });
+  return result;
+}
+
 async function startVideoCapture(tabId, mode) {
   if (vcRecordingTabId !== null) throw new Error('既に録画中です');
   const tab = await chrome.tabs.get(tabId);
   if (!/^https?:\/\//i.test(tab.url || '')) throw new Error('このページでは録画できません');
 
   const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
+  const viewport = await readTabViewport(tabId);
   await vcEnsureOffscreenDocument();
-  const openRes = await chrome.runtime.sendMessage({ type: 'vcOpenStream', streamId });
+  const openRes = await chrome.runtime.sendMessage({
+    type: 'vcOpenStream',
+    streamId,
+    width: Math.round(viewport.innerWidth * viewport.devicePixelRatio),
+    height: Math.round(viewport.innerHeight * viewport.devicePixelRatio),
+  });
   if (!openRes || !openRes.ok) throw new Error((openRes && openRes.error) || 'ストリームの取得に失敗しました');
 
   vcRecordingTabId = tabId;
