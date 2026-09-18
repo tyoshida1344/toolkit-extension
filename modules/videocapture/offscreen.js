@@ -14,15 +14,12 @@ const vcVideoEl = document.getElementById('vc-source');
 // 環境によっては厳密指定が通らないことがあるため、失敗時は指定なしにフォールバックする
 async function vcOpenStream(streamId, width, height) {
   const audioConstraint = { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } };
-  let exact = true;
   try {
     vcMediaStream = await navigator.mediaDevices.getUserMedia({
       audio: audioConstraint,
       video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId, minWidth: width, maxWidth: width, minHeight: height, maxHeight: height } },
     });
   } catch (e) {
-    exact = false;
-    console.warn('[videocapture] 解像度の厳密指定に失敗、指定なしにフォールバック', e);
     vcMediaStream = await navigator.mediaDevices.getUserMedia({
       audio: audioConstraint,
       video: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } },
@@ -36,7 +33,6 @@ async function vcOpenStream(streamId, width, height) {
   vcVideoEl.srcObject = vcMediaStream;
   vcVideoEl.muted = true; // 音声は AudioContext 側で再生するため、<video> 自体は無音にする（矩形合成用の映像ソースとしてのみ使う）
   await vcVideoEl.play();
-  console.log('[videocapture] requested', { width, height, exact }, 'actual', { videoWidth: vcVideoEl.videoWidth, videoHeight: vcVideoEl.videoHeight });
 
   // タブの移動・終了等でキャプチャが強制終了した場合も、手動停止と同じ経路で保存・後片付けする
   vcMediaStream.getVideoTracks()[0].onended = () => { chrome.runtime.sendMessage({ type: 'vcStopClicked' }); };
