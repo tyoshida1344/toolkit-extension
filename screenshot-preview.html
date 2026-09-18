@@ -29,12 +29,15 @@
       padding: 8px 12px; background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 8px;
     }
     /* 幅に応じて1行⇔2行が切り替わったり、行内の要素の表示/非表示で高さが変わったりすると
-       キャンバスの位置がガタつくため、常に固定2段・各行は最小高さを確保して安定させる */
+       キャンバスの位置がガタつくため、常に固定2段・各行は最小高さを確保して安定させる。
+       2行目はスタイル枠（44px、下記 .ann-field-group）に合わせる */
     .ann-toolbar > .tm-inline { min-height: 34px; }
+    .ann-toolbar > .tm-inline:nth-child(2) { min-height: 44px; }
     /* .tm-inline / .tm-btn / .tm-check-label は display:flex 系を持つため、[hidden] だけでは隠れない（.tm-tab[hidden] 等と同じ対処） */
     #ann-toolbar[hidden], #ann-style-fields[hidden], #ann-delete[hidden], #ann-fill-group[hidden] { display: none; }
+    /* 中身の量（色スウォッチ有無等）に関わらず3つの枠の高さを揃える */
     .ann-field-group {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 44px;
       border: 1px solid var(--tm-border); border-radius: 6px; padding: 4px 8px;
     }
     .ann-tool-btn.active { background: var(--tm-accent-surface); color: var(--tm-accent); border-color: var(--tm-accent); }
