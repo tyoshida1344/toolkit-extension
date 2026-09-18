@@ -20,8 +20,6 @@ const _TkUI = (() => {
       '<polyline points="23 4 23 10 17 10"></polyline>' +
       '<polyline points="1 20 1 14 7 14"></polyline>' +
       '<path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>'),
-    // 以下、スクリーンショットの注釈ツールバー（modules/screenshot/preview.js）向け。
-    // 他機能でも使えるようここに置く。
     select: svgIco('',
       '<path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path>'),
     rect: svgIco('', '<rect x="4" y="4" width="16" height="16" rx="2"></rect>'),
