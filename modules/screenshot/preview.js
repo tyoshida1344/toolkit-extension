@@ -14,6 +14,7 @@ function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
 (async () => {
   const img = document.getElementById('sp-img');
   const saveBtn = document.getElementById('sp-save');
+  const copyBtn = document.getElementById('sp-copy');
   const formatEl = document.getElementById('sp-format');
   const warningEl = document.getElementById('sp-warning');
   const statusEl = document.getElementById('sp-status');
@@ -25,6 +26,7 @@ function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
   if (!pending || !pending.dataUrl) {
     statusEl.textContent = '⚠ プレビューを読み込めませんでした。ポップアップから撮影しなおしてください。';
     saveBtn.disabled = true;
+    copyBtn.disabled = true;
     return;
   }
 
@@ -55,6 +57,21 @@ function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
       statusEl.textContent = '⚠ 保存に失敗しました（' + ((e && e.message) || e) + '）';
     } finally {
       saveBtn.disabled = false;
+    }
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    copyBtn.disabled = true;
+    try {
+      // クリップボードへの画像書き込みは実質 PNG のみ安定して動作するため、選択中の保存形式に関わらず元画像（PNG）をコピーする
+      const blob = await (await fetch(pending.dataUrl)).blob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      _TkUtils.showToast('📋 クリップボードにコピーしました');
+      statusEl.textContent = 'スプレッドシートのセルで貼り付け（Ctrl+V / Cmd+V）できます';
+    } catch (e) {
+      _TkUtils.showToast('⚠ コピーに失敗しました（' + ((e && e.message) || e) + '）');
+    } finally {
+      copyBtn.disabled = false;
     }
   });
 })();

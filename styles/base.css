@@ -124,6 +124,7 @@ body {
   transition: background .15s, color .15s, transform .1s;
 }
 .tm-btn:active { transform: scale(.96); }
+.tm-btn:disabled { opacity: .4; cursor: default; pointer-events: none; }
 .tm-btn-primary { background: var(--tm-accent); color: var(--tm-on-accent); }
 .tm-btn-primary:hover { background: var(--tm-accent-hover); }
 .tm-btn-secondary {
