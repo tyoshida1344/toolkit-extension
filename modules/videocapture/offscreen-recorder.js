@@ -18,6 +18,8 @@ const TkVideoRecorder = (() => {
   let compositeStop = null; // 矩形合成用の描画ループの停止関数（表示領域全体モードでは null）
 
   const COMPOSITE_FPS = 30;
+  const CROP_INSET = 4; // px換算のわずかな誤差（丸め・エンコーダ側のパディング等）を吸収し、選択範囲の外側が
+                         // 録画に映り込まないよう、実際にクロップする範囲を選択した矩形より少し内側に絞る
 
   // captureVisibleTab 系と同じく、物理px（video の実サイズ）と CSS px（rect の座標系）の比率で換算する。
   // 動画ストリームの縦横比とページの縦横比が完全一致するとは限らないため、幅・高さそれぞれ独立に比率を求める
@@ -27,9 +29,13 @@ const TkVideoRecorder = (() => {
     const canvas = document.getElementById('vc-canvas');
     const ratioX = videoEl.videoWidth / innerWidth;
     const ratioY = videoEl.videoHeight / innerHeight;
-    canvas.width = Math.round(rect.width * ratioX);
-    canvas.height = Math.round(rect.height * ratioY);
-    const sx = Math.round(rect.left * ratioX), sy = Math.round(rect.top * ratioY);
+    const cropLeft = rect.left + CROP_INSET;
+    const cropTop = rect.top + CROP_INSET;
+    const cropWidth = Math.max(1, rect.width - CROP_INSET * 2);
+    const cropHeight = Math.max(1, rect.height - CROP_INSET * 2);
+    canvas.width = Math.round(cropWidth * ratioX);
+    canvas.height = Math.round(cropHeight * ratioY);
+    const sx = Math.round(cropLeft * ratioX), sy = Math.round(cropTop * ratioY);
     const ctx = canvas.getContext('2d');
     const intervalId = setInterval(() => {
       ctx.drawImage(videoEl, sx, sy, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
