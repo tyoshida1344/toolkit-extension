@@ -123,19 +123,23 @@ async function runVideoRectPicker(tabId) {
 }
 
 // 録画対象の範囲が分かるよう、選択確定後も枠線だけをページに残す。
-// outline-offset で矩形の外側に隙間を空けて描画するため、録画（矩形の内側だけを合成）には映り込まない
-// executeScript は func を toString() で直列化して注入するため、外側スコープを参照しない自己完結な関数にすること
+// 矩形より一回り大きい透明な箱に border を付け、矩形の外側に隙間を空けて描画するため、
+// 録画（矩形の内側だけを合成）には映り込まない。outline は `* { outline: none }` 等のページ側CSSで
+// 打ち消されやすいため使わず、border + !important でページ側CSSの影響を受けにくくする
 function showVideoRectMarker(rect) {
   const ATTR = 'data-tm-video-rect-marker';
   const existing = document.querySelector(`[${ATTR}]`);
   if (existing) existing.remove();
+  const GAP = 2, BORDER = 2, OFFSET = GAP + BORDER;
   const marker = document.createElement('div');
   marker.setAttribute(ATTR, '1');
-  Object.assign(marker.style, {
-    position: 'fixed', zIndex: '2147483647', pointerEvents: 'none', boxSizing: 'border-box',
-    left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px',
-    outline: '2px solid #0ea5e9', outlineOffset: '2px',
-  });
+  marker.style.cssText = `
+    position: fixed !important; z-index: 2147483647 !important; pointer-events: none !important;
+    box-sizing: border-box !important; background: transparent !important; margin: 0 !important; padding: 0 !important;
+    left: ${rect.left - OFFSET}px !important; top: ${rect.top - OFFSET}px !important;
+    width: ${rect.width + OFFSET * 2}px !important; height: ${rect.height + OFFSET * 2}px !important;
+    border: ${BORDER}px solid #0ea5e9 !important;
+  `;
   document.documentElement.appendChild(marker);
 }
 
