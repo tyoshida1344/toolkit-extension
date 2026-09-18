@@ -11,8 +11,19 @@ async function convertPngDataUrl(dataUrl, format) {
 
 function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
 
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+    image.src = src;
+  });
+}
+
 (async () => {
-  const img = document.getElementById('sp-img');
+  const canvas = document.getElementById('sp-canvas');
+  const canvasWrap = document.getElementById('ann-canvas-wrap');
+  const annToolbar = document.getElementById('ann-toolbar');
   const saveBtn = document.getElementById('sp-save');
   const copyBtn = document.getElementById('sp-copy');
   const formatEl = document.getElementById('sp-format');
@@ -30,9 +41,23 @@ function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
     return;
   }
 
-  img.src = pending.dataUrl;
-  img.hidden = false;
+  let baseImage;
+  try {
+    baseImage = await loadImage(pending.dataUrl);
+  } catch (e) {
+    statusEl.textContent = '⚠ プレビューを読み込めませんでした。ポップアップから撮影しなおしてください。';
+    saveBtn.disabled = true;
+    copyBtn.disabled = true;
+    return;
+  }
+
+  canvas.width = baseImage.naturalWidth;
+  canvas.height = baseImage.naturalHeight;
+  canvas.hidden = false;
+  annToolbar.hidden = false;
   if (pending.truncated) warningEl.hidden = false;
+
+  const editor = createAnnotationEditor(canvas, canvasWrap, baseImage);
 
   function updateFilenamePreview() {
     const name = `${pending.baseName}.${extFor(formatEl.value)}`;
@@ -46,7 +71,7 @@ function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
     saveBtn.disabled = true;
     try {
       const format = formatEl.value;
-      const outUrl = await convertPngDataUrl(pending.dataUrl, format);
+      const outUrl = await convertPngDataUrl(editor.getExportDataUrl(), format);
       const filename = `${pending.baseName}.${extFor(format)}`;
       const a = document.createElement('a');
       a.href = outUrl;
@@ -63,8 +88,8 @@ function extFor(format) { return format === 'jpeg' ? 'jpg' : format; }
   copyBtn.addEventListener('click', async () => {
     copyBtn.disabled = true;
     try {
-      // クリップボードへの画像書き込みは実質 PNG のみ安定して動作するため、選択中の保存形式に関わらず元画像（PNG）をコピーする
-      const blob = await (await fetch(pending.dataUrl)).blob();
+      // クリップボードへの画像書き込みは実質 PNG のみ安定して動作するため、選択中の保存形式に関わらず PNG（注釈込み）をコピーする
+      const blob = await editor.getExportBlob();
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       _TkUtils.showToast('📋 クリップボードにコピーしました');
       statusEl.textContent = 'スプレッドシートのセルで貼り付け（Ctrl+V / Cmd+V）できます';

@@ -21,8 +21,54 @@
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
       background: var(--tm-bg); box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
     }
-    .frame img { display: block; max-width: 100%; }
+    .frame canvas { display: block; max-width: 100%; }
+    #sp-canvas[hidden] { display: none; }
     .status { color: var(--tm-text-muted); font-size: 13px; }
+    .ann-toolbar {
+      width: 100%; display: flex; flex-direction: column; gap: 8px;
+      padding: 8px 12px; background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 8px;
+    }
+    /* 幅に応じて1行⇔2行が切り替わったり、行内の要素の表示/非表示で高さが変わったりすると
+       キャンバスの位置がガタつくため、常に固定2段・各行は最小高さを確保して安定させる。
+       2行目はスタイル枠（44px、下記 .ann-field-group）に合わせる */
+    .ann-toolbar > .tm-inline { min-height: 34px; }
+    .ann-toolbar > .tm-inline:nth-child(2) { min-height: 44px; }
+    /* .tm-inline / .tm-btn / .tm-check-label は display:flex 系を持つため、[hidden] だけでは隠れない（.tm-tab[hidden] 等と同じ対処） */
+    #ann-toolbar[hidden], #ann-style-fields[hidden], #ann-delete[hidden], #ann-fill-group[hidden] { display: none; }
+    /* 中身の量（色スウォッチ有無等）に関わらず3つの枠の高さを揃える */
+    .ann-field-group {
+      display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 44px;
+      border: 1px solid var(--tm-border); border-radius: 6px; padding: 4px 8px;
+    }
+    .ann-tool-btn.active { background: var(--tm-accent-surface); color: var(--tm-accent); border-color: var(--tm-accent); }
+    /* ツールバーアイコンのホバーツールチップ（.tm-tab のサイドバー版と同じ仕組みを、上部ツールバー向けに下方向表示にしたもの） */
+    .ann-tool-btn, .ann-tip-btn { position: relative; }
+    .ann-tool-btn::after, .ann-tip-btn::after {
+      content: attr(data-tip); position: absolute; top: 100%; left: 50%; margin-top: 6px;
+      transform: translateX(-50%); white-space: nowrap;
+      background: var(--tm-text-heading); color: var(--tm-on-accent); padding: 4px 8px;
+      border-radius: 4px; font-size: 11px; font-weight: 600;
+      pointer-events: none; opacity: 0; transition: opacity .15s;
+      z-index: 10;
+    }
+    .ann-tool-btn:hover::after, .ann-tip-btn:hover::after { opacity: 1; }
+    #ann-delete { gap: 6px; }
+    #ann-delete .tm-ico { width: 14px; height: 14px; }
+    .ann-color-input {
+      width: 34px; height: 34px; padding: 2px; flex-shrink: 0;
+      border: 1px solid var(--tm-border-strong); border-radius: 6px; background: var(--tm-bg); cursor: pointer;
+    }
+    /* .tm-inline .tm-input { flex: 1 } (base.css) より詳細度を上げて固定幅を効かせる */
+    #ann-size.ann-size-input { width: 60px; flex: none; }
+    .ann-size-label { font-size: 12px; color: var(--tm-text-muted); white-space: nowrap; }
+    .ann-opacity-input { width: 70px; flex: none; }
+    .ann-canvas-wrap { position: relative; width: 100%; }
+    .ann-canvas-wrap canvas { cursor: crosshair; }
+    .ann-text-editor {
+      position: absolute; box-sizing: border-box; overflow: hidden;
+      border: 1px dashed var(--tm-accent); background: rgba(255, 255, 255, .85);
+      padding: 2px 4px; outline: none; font-family: inherit; line-height: 1.3;
+    }
   </style>
 </head>
 <body>
@@ -39,11 +85,52 @@
         <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
       </div>
     </div>
+    <div class="ann-toolbar" id="ann-toolbar" hidden>
+      <div class="tm-inline">
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-select" data-tool="select" data-tip="選択" aria-label="選択"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn active" id="ann-tool-rect" data-tool="rect" data-tip="四角形（枠線）" aria-label="四角形（枠線）"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" data-tip="矢印" aria-label="矢印"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" data-tip="吹き出し" aria-label="吹き出し"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" data-tip="テキスト" aria-label="テキスト"></button>
+      </div>
+      <div class="tm-inline">
+        <span class="tm-inline" id="ann-style-fields">
+          <span class="ann-field-group">
+            <input type="color" class="ann-color-input" id="ann-color" value="#ff3b30" title="色" aria-label="色">
+            <input type="range" class="ann-opacity-input" id="ann-opacity" min="0" max="100" value="100" title="不透明度" aria-label="不透明度">
+            <span class="ann-size-label" id="ann-opacity-label">100%</span>
+          </span>
+          <span class="ann-field-group">
+            <input type="number" class="tm-input ann-size-input" id="ann-size" min="1" max="20" value="3" title="太さ" aria-label="太さ">
+            <span class="ann-size-label" id="ann-size-label">太さ</span>
+          </span>
+          <span class="ann-field-group" id="ann-fill-group" hidden>
+            <label class="tm-check-label"><input type="checkbox" id="ann-fill">塗りつぶし</label>
+            <input type="color" class="ann-color-input" id="ann-fill-color" value="#ff3b30" title="塗りつぶし色" aria-label="塗りつぶし色" hidden>
+            <input type="range" class="ann-opacity-input" id="ann-fill-opacity" min="0" max="100" value="100" title="塗りつぶし不透明度" aria-label="塗りつぶし不透明度" hidden>
+            <span class="ann-size-label" id="ann-fill-opacity-label" hidden>100%</span>
+          </span>
+        </span>
+        <span class="ann-size-label" id="ann-style-hint">オブジェクトをクリックすると編集できます</span>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中のオブジェクトを削除（Delete / Backspace）" hidden>削除</button>
+      </div>
+    </div>
     <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
-    <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>
+    <div class="frame">
+      <div class="ann-canvas-wrap" id="ann-canvas-wrap">
+        <canvas id="sp-canvas" role="img" aria-label="撮影結果プレビュー（注釈編集可能）" hidden></canvas>
+      </div>
+    </div>
     <div class="status" id="sp-status">読み込み中…</div>
   </div>
   <script src="utils.js"></script>
+  <script src="ui-helpers.js"></script>
+  <script src="modules/screenshot/annotation-shapes.js"></script>
+  <script src="modules/screenshot/annotation-geometry.js"></script>
+  <script src="modules/screenshot/annotation-render.js"></script>
+  <script src="modules/screenshot/annotation-toolbar.js"></script>
+  <script src="modules/screenshot/annotation-interactions.js"></script>
+  <script src="modules/screenshot/annotation-editor.js"></script>
   <script src="modules/screenshot/preview.js"></script>
 </body>
 </html>
