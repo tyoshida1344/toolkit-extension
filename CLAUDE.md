@@ -22,6 +22,7 @@ node --check modules/<編集したファイル>.js
 **モジュール追加手順**: `modules/<name>.js` 作成 → `popup.js` の `TAB_MANIFEST` にエントリ追加 → 機能固有スタイルがあれば `styles/<name>.css` も作成 → **README の機能一覧にツールの説明を追加**。1 ファイルで収まらない機能は `modules/<name>/` フォルダに分割し、`registerTab` を呼ぶ主ファイルは `index.js` とする。
 
 **守るべきルール**:
+- 1 ファイルは多くても 250 行程度に収める。超えそうな場合は関心事（描画・当たり判定・DOM配線・イベント処理 等）ごとにファイルを分割する
 - コピーは `Toolkit.copyButton` のイベント委譲で処理される。モジュール側で独自のコピーハンドラを付けない
 - CSS は 1 ツール専用なら `styles/<module>.css`、複数ツールで使うなら component ファイルへ昇格、の基準で振り分ける。`@import` は使わない
 - `loadState` のコールバックは**非同期**。DOM 構築直後の同期処理に依存しない
