@@ -1,9 +1,10 @@
 /**
- * trim-timeline.js — プレビュー画面の複数クリップ編集タイムラインUI
+ * trim-timeline.js — プレビュー画面の複数クリップ編集タイムラインの操作ロジック
  *
- * clip-model.js が持つ「残すクリップ」の配列を画面に描画し、両端ハンドルのドラッグ／
- * 「開始・終了点に」ボタンでのクリップ範囲調整、「ここで分割」での中間カット、クリップ削除、
- * クリップ単位の速度変更を提供する。再生・カット区間の自動スキップは dual-video-player.js が担う。
+ * clip-model.js が持つ「残すクリップ」の配列を、両端ハンドルのドラッグ／「開始・終了点に」
+ * ボタンでのクリップ範囲調整、「ここで分割」での中間カット、クリップ削除、クリップ単位の
+ * 速度変更で編集する。DOM描画は timeline-render.js、再生・カット区間の自動スキップは
+ * dual-video-player.js が担う。
  *
  * 「編集対象クリップ」（editIndex）は、タイムライン上のクリップをクリックするか再生位置が
  * シークされたときに切り替わる。再生中の自動的なクリップ送りは対象にしない（再生に合わせて
@@ -16,52 +17,9 @@ function createTrimTimeline({
 }) {
   const model = createClipModel(duration);
   const player = createDualVideoPlayer(videoElA, videoElB, model);
+  const { render, updatePositions } = createTimelineRenderer({ timelineEl, duration, model });
   let editIndex = 0;
-  let dragging = null; // { clipIndex, edge: 'start' | 'end' } | null
-
-  function render() {
-    timelineEl.querySelectorAll('.vp-timeline-selected, .vp-timeline-handle').forEach(el => el.remove());
-    model.getClips().forEach((clip, i) => {
-      const selected = document.createElement('div');
-      selected.className = 'vp-timeline-selected';
-      selected.dataset.clip = String(i);
-      selected.style.left = (clip.start / duration * 100) + '%';
-      selected.style.width = ((clip.end - clip.start) / duration * 100) + '%';
-      timelineEl.appendChild(selected);
-
-      [['start', clip.start], ['end', clip.end]].forEach(([edge, t]) => {
-        const handle = document.createElement('div');
-        handle.className = 'vp-timeline-handle';
-        handle.dataset.clip = String(i);
-        handle.dataset.edge = edge;
-        handle.tabIndex = 0;
-        handle.setAttribute('role', 'slider');
-        handle.setAttribute('aria-label', `クリップ${i + 1} ${edge === 'start' ? '開始' : '終了'}位置`);
-        handle.setAttribute('aria-valuemin', '0');
-        handle.setAttribute('aria-valuemax', String(duration));
-        handle.setAttribute('aria-valuenow', String(t));
-        handle.style.left = (t / duration * 100) + '%';
-        timelineEl.appendChild(handle);
-      });
-    });
-  }
-
-  // クリップ数が変わらない範囲調整（ドラッグ・矢印キー・開始/終了点にボタン）では、
-  // DOM ノードを作り直さず既存要素の位置だけを更新する（render() はクリップ数が変わる操作でのみ使う）
-  function updatePositions() {
-    const clips = model.getClips();
-    const selectedEls = timelineEl.querySelectorAll('.vp-timeline-selected');
-    clips.forEach((clip, i) => {
-      selectedEls[i].style.left = (clip.start / duration * 100) + '%';
-      selectedEls[i].style.width = ((clip.end - clip.start) / duration * 100) + '%';
-    });
-    timelineEl.querySelectorAll('.vp-timeline-handle').forEach(handle => {
-      const clip = clips[Number(handle.dataset.clip)];
-      const t = handle.dataset.edge === 'start' ? clip.start : clip.end;
-      handle.style.left = (t / duration * 100) + '%';
-      handle.setAttribute('aria-valuenow', String(t));
-    });
-  }
+  let dragging = null; // ドラッグ中の .vp-timeline-handle 要素 | null
 
   function renderPlayhead() {
     const pct = (player.getEl().currentTime / duration) * 100 + '%';
@@ -102,35 +60,63 @@ function createTrimTimeline({
     return ratio * duration;
   }
 
+  function handleValue(handle) {
+    if (handle.dataset.type === 'split') return model.getClips()[Number(handle.dataset.left)].end;
+    const clip = model.getClips()[Number(handle.dataset.clip)];
+    return handle.dataset.edge === 'start' ? clip.start : clip.end;
+  }
+
+  // このハンドルが担う境界の boundary index（clips[i] と clips[i+1] の間）。
+  // 分割ハンドルはそのまま、端ハンドルは隣接クリップとの境界を指す（先頭/末尾側は隣接クリップがないため常に接触判定なし）
+  function boundaryIndexOf(handle) {
+    if (handle.dataset.type === 'split') return Number(handle.dataset.left);
+    const clipIndex = Number(handle.dataset.clip);
+    return handle.dataset.edge === 'end' ? clipIndex : clipIndex - 1;
+  }
+
+  function applyHandleMove(handle, t) {
+    if (handle.dataset.type === 'split') {
+      const leftIndex = Number(handle.dataset.left);
+      model.moveBoundary(leftIndex, t);
+      editIndex = leftIndex;
+    } else {
+      const i = Number(handle.dataset.clip), edge = handle.dataset.edge;
+      const clip = model.getClips()[i];
+      if (edge === 'start') model.setRange(i, t, clip.end);
+      else model.setRange(i, clip.start, t);
+      editIndex = i;
+    }
+  }
+
   timelineEl.addEventListener('mousedown', e => {
     const handle = e.target.closest('.vp-timeline-handle');
     if (!handle) return;
     e.preventDefault();
-    dragging = { clipIndex: Number(handle.dataset.clip), edge: handle.dataset.edge };
+    dragging = handle;
   });
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
-    const t = posToTime(e.clientX);
-    const clip = model.getClips()[dragging.clipIndex];
-    if (dragging.edge === 'start') model.setRange(dragging.clipIndex, t, clip.end);
-    else model.setRange(dragging.clipIndex, clip.start, t);
-    editIndex = dragging.clipIndex;
+    applyHandleMove(dragging, posToTime(e.clientX));
     refresh();
   });
-  document.addEventListener('mouseup', () => { dragging = null; });
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = null; render(); refreshUi(); } // 接触/分離の変化に応じてハンドル構成を作り直す
+  });
 
   const NUDGE_STEP = 0.5; // 矢印キーでの移動幅（秒）
   timelineEl.addEventListener('keydown', e => {
     const handle = e.target.closest('.vp-timeline-handle');
     if (!handle || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     e.preventDefault();
-    const i = Number(handle.dataset.clip), edge = handle.dataset.edge;
     const delta = e.key === 'ArrowRight' ? NUDGE_STEP : -NUDGE_STEP;
-    const clip = model.getClips()[i];
-    if (edge === 'start') model.setRange(i, clip.start + delta, clip.end);
-    else model.setRange(i, clip.start, clip.end + delta);
-    editIndex = i;
-    refresh();
+    applyHandleMove(handle, handleValue(handle) + delta);
+    // 接触状態が変わった場合のみハンドル構成を作り直す。それ以外は位置だけ更新してフォーカスを保つ
+    if (handle.dataset.type !== 'split' && model.isTouching(boundaryIndexOf(handle))) {
+      render();
+      refreshUi();
+    } else {
+      refresh();
+    }
   });
 
   timelineEl.addEventListener('click', e => {

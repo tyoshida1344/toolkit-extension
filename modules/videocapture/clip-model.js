@@ -66,6 +66,20 @@ function createClipModel(duration) {
     clips[i].end = Math.min(nextStart, newEnd);
   }
 
+  // clips[i] と clips[i+1] が接している（間に隙間がない = 1つの分割点として扱える）か
+  function isTouching(i) {
+    return i >= 0 && i < clips.length - 1 && clips[i + 1].start - clips[i].end < EPS;
+  }
+
+  // 接している clips[i]/clips[i+1] の境界（分割点）を newTime へ移動する。双方の端を同時に動かす
+  function moveBoundary(i, newTime) {
+    if (!isTouching(i)) return;
+    const left = clips[i], right = clips[i + 1];
+    newTime = Math.min(Math.max(left.start + MIN_GAP, newTime), right.end - MIN_GAP);
+    left.end = newTime;
+    right.start = newTime;
+  }
+
   function reset() {
     clips = [{ start: 0, end: duration, speed: 1 }];
   }
@@ -76,5 +90,8 @@ function createClipModel(duration) {
     return c.speed !== 1 || c.start > EPS || c.end < duration - EPS;
   }
 
-  return { getClips, indexAt, splitAt, canSplitAt, removeAt, setSpeed, setRange, reset, isEdited, MIN_GAP };
+  return {
+    getClips, indexAt, splitAt, canSplitAt, removeAt, setSpeed, setRange, reset, isEdited,
+    isTouching, moveBoundary, MIN_GAP,
+  };
 }
