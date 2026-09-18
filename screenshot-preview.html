@@ -16,7 +16,7 @@
       position: sticky; top: 0; z-index: 1; padding: 8px 0; background: var(--tm-bg-sunken);
     }
     .title { font-size: 15px; font-weight: 700; color: var(--tm-text-heading); }
-    #sp-save:disabled { opacity: .4; cursor: default; pointer-events: none; }
+    #sp-save:disabled, #sp-copy:disabled { opacity: .4; cursor: default; pointer-events: none; }
     .warning { color: var(--tm-error); font-size: 13px; font-weight: 600; }
     .frame {
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
@@ -36,6 +36,7 @@
           <option value="jpeg">JPEG</option>
           <option value="webp">WebP</option>
         </select>
+        <button type="button" class="tm-btn tm-btn-primary" id="sp-copy">📋 コピー</button>
         <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
       </div>
     </div>
@@ -43,6 +44,7 @@
     <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>
     <div class="status" id="sp-status">読み込み中…</div>
   </div>
+  <script src="utils.js"></script>
   <script src="modules/screenshot/preview.js"></script>
 </body>
 </html>
