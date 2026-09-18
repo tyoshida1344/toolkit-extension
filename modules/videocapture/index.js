@@ -1,23 +1,57 @@
 Toolkit.registerTab({
   html: `
-    <div class="tm-row">
-      <label class="tm-label">キャプチャ範囲</label>
-      <select class="tm-select" id="vc-mode">
-        <option value="viewport">表示領域全体</option>
-        <option value="rect">矩形選択</option>
-      </select>
+    <div id="vc-idle-view">
+      <div class="tm-row">
+        <label class="tm-label">キャプチャ範囲</label>
+        <select class="tm-select" id="vc-mode">
+          <option value="viewport">表示領域全体</option>
+          <option value="rect">矩形選択</option>
+        </select>
+      </div>
+      <div class="tm-row">
+        <button class="tm-btn tm-btn-primary" id="vc-record">🎥 録画開始</button>
+      </div>
+      <div class="tm-label">タブの音声を含めて録画します。最大10分で自動的に停止します</div>
     </div>
-    <div class="tm-row">
-      <button class="tm-btn tm-btn-primary" id="vc-record">🎥 録画開始</button>
+    <div id="vc-recording-view" hidden>
+      <div class="tm-row">
+        <span class="tm-label">⏺ 録画中（<span id="vc-elapsed">00:00</span>）</span>
+      </div>
+      <div class="tm-row">
+        <button class="tm-btn tm-btn-primary" id="vc-stop">⏹ 録画終了</button>
+      </div>
     </div>
-    <div class="tm-label">タブの音声を含めて録画します。最大10分で自動的に停止します</div>
     <div class="tm-label" id="vc-status"></div>
   `,
   init() {
-    const modeEl = Toolkit.$('vc-mode'), btn = Toolkit.$('vc-record'), statusEl = Toolkit.$('vc-status');
+    const idleView = Toolkit.$('vc-idle-view'), recordingView = Toolkit.$('vc-recording-view');
+    const modeEl = Toolkit.$('vc-mode'), recordBtn = Toolkit.$('vc-record'), stopBtn = Toolkit.$('vc-stop');
+    const elapsedEl = Toolkit.$('vc-elapsed'), statusEl = Toolkit.$('vc-status');
     Toolkit.bindState('videocapture', { 'vc-mode': ['value', 'mode'] });
 
-    btn.addEventListener('click', async () => {
+    function formatElapsed(ms) {
+      const s = Math.floor(ms / 1000);
+      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    let tickTimer = null;
+    function showRecording(startedAt) {
+      idleView.hidden = true;
+      recordingView.hidden = false;
+      clearInterval(tickTimer);
+      const tick = () => { elapsedEl.textContent = formatElapsed(Date.now() - startedAt); };
+      tick();
+      tickTimer = setInterval(tick, 1000);
+    }
+
+    const runtimeApi = typeof chrome !== 'undefined' && chrome.runtime;
+    if (runtimeApi) {
+      runtimeApi.sendMessage({ type: 'getVideoCaptureStatus' }, res => {
+        if (res && res.recording) showRecording(res.startedAt);
+      });
+    }
+
+    recordBtn.addEventListener('click', async () => {
       const tabsApi = typeof chrome !== 'undefined' && chrome.tabs;
       if (!tabsApi) { Toolkit.showToast('⚠ この環境では録画できません'); return; }
       let tab;
@@ -29,10 +63,10 @@ Toolkit.registerTab({
         Toolkit.showToast('⚠ このページでは録画できません');
         return;
       }
-      btn.disabled = true;
+      recordBtn.disabled = true;
       statusEl.textContent = modeEl.value === 'rect' ? '矩形選択を起動中…' : '録画準備中…';
       chrome.runtime.sendMessage({ type: 'startVideoCapture', tabId: tab.id, mode: modeEl.value }, res => {
-        btn.disabled = false;
+        recordBtn.disabled = false;
         statusEl.textContent = '';
         if (chrome.runtime.lastError || !res || !res.ok) {
           Toolkit.showToast('⚠ 録画の開始に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
@@ -40,6 +74,12 @@ Toolkit.registerTab({
         }
         window.close();
       });
+    });
+
+    stopBtn.addEventListener('click', () => {
+      stopBtn.disabled = true;
+      chrome.runtime.sendMessage({ type: 'vcStopClicked' });
+      window.close();
     });
   },
 });
