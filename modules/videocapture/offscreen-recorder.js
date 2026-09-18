@@ -15,9 +15,12 @@ const TkVideoRecorder = (() => {
 
   let recorders = {}; // { mp4?: { recorder, mimeType }, webm?: { recorder, mimeType } }
   let chunks = {};
-  let compositeStop = null; // 矩形合成用の rAF ループの停止関数（表示領域全体モードでは null）
+  let compositeStop = null; // 矩形合成用の描画ループの停止関数（表示領域全体モードでは null）
+
+  const COMPOSITE_FPS = 30;
 
   // captureVisibleTab 系と同じく、物理px（video の実サイズ）と CSS px（rect の座標系）の比率で換算する
+  // offscreen document は画面に描画されず requestAnimationFrame が正常に発火しないため、setInterval で明示的に駆動する
   function startCompositing(videoEl, rect, innerWidth) {
     const canvas = document.getElementById('vc-canvas');
     const ratio = videoEl.videoWidth / innerWidth;
@@ -25,14 +28,11 @@ const TkVideoRecorder = (() => {
     canvas.height = Math.round(rect.height * ratio);
     const sx = Math.round(rect.left * ratio), sy = Math.round(rect.top * ratio);
     const ctx = canvas.getContext('2d');
-    let rafId = 0;
-    function draw() {
+    const intervalId = setInterval(() => {
       ctx.drawImage(videoEl, sx, sy, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-      rafId = requestAnimationFrame(draw);
-    }
-    draw();
-    compositeStop = () => cancelAnimationFrame(rafId);
-    return canvas.captureStream(30);
+    }, 1000 / COMPOSITE_FPS);
+    compositeStop = () => clearInterval(intervalId);
+    return canvas.captureStream(COMPOSITE_FPS);
   }
 
   function startRecorderFor(format, type, stream) {

@@ -121,3 +121,32 @@ async function runVideoRectPicker(tabId) {
     func: videoRectPickerOverlay,
   });
 }
+
+// 録画対象の範囲が分かるよう、選択確定後も枠線だけをページに残す。
+// outline-offset で矩形の外側に隙間を空けて描画するため、録画（矩形の内側だけを合成）には映り込まない
+// executeScript は func を toString() で直列化して注入するため、外側スコープを参照しない自己完結な関数にすること
+function showVideoRectMarker(rect) {
+  const ATTR = 'data-tm-video-rect-marker';
+  const existing = document.querySelector(`[${ATTR}]`);
+  if (existing) existing.remove();
+  const marker = document.createElement('div');
+  marker.setAttribute(ATTR, '1');
+  Object.assign(marker.style, {
+    position: 'fixed', zIndex: '2147483647', pointerEvents: 'none', boxSizing: 'border-box',
+    left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px',
+    outline: '2px solid #0ea5e9', outlineOffset: '2px',
+  });
+  document.documentElement.appendChild(marker);
+}
+
+function hideVideoRectMarker() {
+  const el = document.querySelector('[data-tm-video-rect-marker]');
+  if (el) el.remove();
+}
+
+async function runShowVideoRectMarker(tabId, rect) {
+  try { await chrome.scripting.executeScript({ target: { tabId }, func: showVideoRectMarker, args: [rect] }); } catch (_) {}
+}
+async function runHideVideoRectMarker(tabId) {
+  try { await chrome.scripting.executeScript({ target: { tabId }, func: hideVideoRectMarker }); } catch (_) {}
+}

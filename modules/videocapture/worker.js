@@ -118,6 +118,7 @@ async function handleVcRectSelected(rect, innerWidth) {
     vcStartedAt = Date.now();
     vcArmAutoStop();
     vcStartBadge();
+    runShowVideoRectMarker(vcRecordingTabId, rect); // 録画対象の範囲が分かるよう、矩形の外側に枠線を表示し続ける
   } catch (e) {
     await abortVideoCapture();
     vcFlashBadgeError();
@@ -125,10 +126,12 @@ async function handleVcRectSelected(rect, innerWidth) {
 }
 
 async function abortVideoCapture() {
+  const tabId = vcRecordingTabId;
   vcDisarmAutoStop();
   vcStopBadge();
   try { await chrome.runtime.sendMessage({ type: 'vcAbort' }); } catch (_) {}
   await vcCloseOffscreenDocument();
+  if (tabId) runHideVideoRectMarker(tabId);
   vcRecordingTabId = null;
   vcBaseName = null;
   vcStartedAt = null;
@@ -138,11 +141,13 @@ async function abortVideoCapture() {
 // vcRecordingTabId を最初に null にすることで、複数経路からの多重呼び出しを無視する（二重に空のプレビュータブが開くのを防ぐ）
 async function finishVideoCapture() {
   if (vcRecordingTabId === null) return;
+  const tabId = vcRecordingTabId;
   vcDisarmAutoStop();
   vcStopBadge();
   vcRecordingTabId = null;
   vcBaseName = null;
   vcStartedAt = null;
+  runHideVideoRectMarker(tabId);
   try {
     const res = await chrome.runtime.sendMessage({ type: 'vcStopRecording' });
     await vcCloseOffscreenDocument();
