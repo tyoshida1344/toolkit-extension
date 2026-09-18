@@ -6,9 +6,12 @@
  * 速度変更で編集する。DOM描画は timeline-render.js、再生・カット区間の自動スキップは
  * dual-video-player.js が担う。
  *
- * 「編集対象クリップ」（editIndex）は、タイムライン上のクリップをクリックするか再生位置が
- * シークされたときに切り替わる。再生中の自動的なクリップ送りは対象にしない（再生に合わせて
- * 選択がちらつくのを防ぐため。カット地点を通過した際は seek 相当として追従する）。
+ * 「編集対象クリップ」（editIndex）は、再生位置がシークされたときに切り替わる。タイムライン上の
+ * クリックは常にシークを優先し（クリップ選択を別扱いにすると、クリップがタイムラインの
+ * ほぼ全域を占めるためシーク＝タイムラインのクリックがほぼ機能しなくなってしまう）、
+ * 結果としてクリックした位置のクリップが編集対象になる。再生中の自動的なクリップ送りは
+ * 対象にしない（再生に合わせて選択がちらつくのを防ぐため。カット地点を通過した際は
+ * seek 相当として追従する）。
  */
 function createTrimTimeline({
   videoElA, videoElB, timelineEl, playheadEl, splitIconEl,
@@ -139,14 +142,11 @@ function createTrimTimeline({
     }
   });
 
+  // クリップ矩形（.vp-timeline-selected）は選択用に別枠で扱わず、タイムライン上のクリックは
+  // ハンドル・分割アイコン以外なら常にシークを優先する（シーク後の編集対象クリップの追従は
+  // player.onSeeked(resyncToCurrentTime) が行う）
   timelineEl.addEventListener('click', e => {
-    if (dragging || findHandleNear(e.clientX) || e.target.closest('.vp-timeline-split-icon')) return;
-    const clipBlock = e.target.closest('.vp-timeline-selected');
-    if (clipBlock) {
-      editIndex = Number(clipBlock.dataset.clip);
-      refreshUi();
-      return;
-    }
+    if (dragging || findHandleNear(e.clientX)) return;
     player.seekTo(posToTime(e.clientX));
   });
 

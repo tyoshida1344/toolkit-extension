@@ -44,7 +44,6 @@ function createTimelineRenderer({ timelineEl, duration, model }) {
     clips.forEach((clip, i) => {
       const selected = document.createElement('div');
       selected.className = 'vp-timeline-selected';
-      selected.dataset.clip = String(i);
       selected.style.left = (clip.start / duration * 100) + '%';
       selected.style.width = ((clip.end - clip.start) / duration * 100) + '%';
       timelineEl.appendChild(selected);
