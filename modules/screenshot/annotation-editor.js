@@ -1,9 +1,4 @@
-/**
- * 注釈エディタのエントリポイント。canvas に撮影結果を描画し、四角形・矢印・吹き出し・
- * テキストの追加/選択/移動/リサイズ/削除を扱う状態（state）を組み立て、
- * 各ファイル（annotation-shapes/geometry/render/toolbar/interactions）の配線を行う。
- * preview.js から呼び出される。
- */
+// preview.js から呼び出される注釈エディタのエントリポイント。state を組み立て、各ファイルの配線を行う
 function createAnnotationEditor(canvas, canvasWrap, baseImage) {
   const state = {
     canvas, canvasWrap, baseImage,

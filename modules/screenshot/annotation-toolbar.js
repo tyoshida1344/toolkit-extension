@@ -1,3 +1,4 @@
+// ── 編集対象のスタイル取得・変更 ──
 function isFontSizeType(type) { return type === 'text' || type === 'bubble'; }
 
 // 編集対象（選択中の図形 / 未選択なら次に描く図形の既定値）を1つの入口にまとめる。
@@ -78,6 +79,7 @@ function setTool(state, tool) {
   renderScene(state);
 }
 
+// ── ツールバー DOM 配線 ──
 function wireToolbar(state) {
   const toolButtons = _TkUtils.qsa('.ann-tool-btn');
   // アイコンは ui-helpers.js の _TkUI.ICONS（他機能とも共有する SVG 置き場）から流用する
