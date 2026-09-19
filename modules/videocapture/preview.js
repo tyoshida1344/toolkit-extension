@@ -60,6 +60,7 @@
       startLabelEl: document.getElementById('vp-trim-start-label'),
       endLabelEl: document.getElementById('vp-trim-end-label'),
       durationLabelEl: document.getElementById('vp-trim-duration-label'),
+      restartBtn: document.getElementById('vp-trim-restart'),
       startBtn: document.getElementById('vp-trim-start-btn'),
       endBtn: document.getElementById('vp-trim-end-btn'),
       splitBtn: document.getElementById('vp-trim-split'),

@@ -16,7 +16,7 @@
 function createTrimTimeline({
   videoElA, videoElB, timelineEl, timelineViewportEl, playheadEl, splitIconEl,
   startLabelEl, endLabelEl, durationLabelEl,
-  startBtn, endBtn, splitBtn, deleteBtn, resetBtn, speedEl,
+  restartBtn, startBtn, endBtn, splitBtn, deleteBtn, resetBtn, speedEl,
   zoomInBtn, zoomOutBtn, duration,
 }) {
   const model = createClipModel(duration);
@@ -160,6 +160,11 @@ function createTrimTimeline({
     } else {
       refresh();
     }
+  });
+
+  restartBtn.addEventListener('click', () => {
+    // 0 が先頭クリップより前（トリム済み）の場合は既存のシーク後クランプで自動的に先頭クリップの開始位置へ寄る
+    player.seekTo(0);
   });
 
   startBtn.addEventListener('click', () => {
