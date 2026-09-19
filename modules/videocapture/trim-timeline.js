@@ -123,7 +123,7 @@ function createTrimTimeline({
     if (e.target.closest('.vp-timeline-split-icon')) return;
     e.preventDefault();
     scrubbing = true;
-    document.body.style.cursor = 'grabbing';
+    document.body.style.cursor = 'text';
     player.seekTo(posToTime(e.clientX));
   });
   document.addEventListener('mousemove', e => {
