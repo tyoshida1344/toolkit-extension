@@ -29,8 +29,13 @@
     .vp-trim[hidden] { display: none; }
     .vp-trim .tm-inline { flex-wrap: wrap; }
     .vp-trim .tm-inline .tm-label { margin-bottom: 0; }
+    .vp-timeline-viewport {
+      overflow-x: auto; overflow-y: hidden;
+      /* 分割アイコン（top:-18px）とプレイヘッドの上下はみ出し（4px）がスクロール領域にクリップされないための余白 */
+      padding-top: 18px;
+    }
     .vp-timeline {
-      position: relative; height: 36px; border-radius: 6px; background: var(--tm-bg-sunken);
+      position: relative; width: 100%; height: 36px; border-radius: 6px; background: var(--tm-bg-sunken);
       border: 1px solid var(--tm-border); cursor: pointer;
     }
     .vp-timeline-selected {
@@ -93,10 +98,14 @@
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-end-btn">|◀ 終了点に</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-split">✂ ここで分割</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-reset">↺ リセット</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-out" title="縮小" aria-label="タイムラインを縮小">－</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
       </div>
-      <div class="vp-timeline" id="vp-timeline">
-        <div class="vp-timeline-playhead" id="vp-timeline-playhead"></div>
-        <div class="vp-timeline-split-icon" id="vp-timeline-split-icon" title="ここで分割" tabindex="0" role="button" aria-label="ここで分割">✂</div>
+      <div class="vp-timeline-viewport" id="vp-timeline-viewport">
+        <div class="vp-timeline" id="vp-timeline">
+          <div class="vp-timeline-playhead" id="vp-timeline-playhead"></div>
+          <div class="vp-timeline-split-icon" id="vp-timeline-split-icon" title="ここで分割" tabindex="0" role="button" aria-label="ここで分割">✂</div>
+        </div>
       </div>
       <div class="vp-trim-times">
         <span id="vp-trim-start-label">00:00</span>
@@ -125,6 +134,7 @@
   <script src="modules/videocapture/clip-model.js"></script>
   <script src="modules/videocapture/dual-video-player.js"></script>
   <script src="modules/videocapture/timeline-render.js"></script>
+  <script src="modules/videocapture/timeline-zoom.js"></script>
   <script src="modules/videocapture/trim-timeline.js"></script>
   <script src="modules/videocapture/trim-export.js"></script>
   <script src="modules/videocapture/preview.js"></script>

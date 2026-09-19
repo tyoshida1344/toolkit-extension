@@ -54,6 +54,7 @@
       videoElA,
       videoElB,
       timelineEl: document.getElementById('vp-timeline'),
+      timelineViewportEl: document.getElementById('vp-timeline-viewport'),
       playheadEl: document.getElementById('vp-timeline-playhead'),
       splitIconEl: document.getElementById('vp-timeline-split-icon'),
       startLabelEl: document.getElementById('vp-trim-start-label'),
@@ -65,6 +66,8 @@
       deleteBtn: document.getElementById('vp-trim-delete'),
       resetBtn: document.getElementById('vp-trim-reset'),
       speedEl: document.getElementById('vp-speed'),
+      zoomInBtn: document.getElementById('vp-timeline-zoom-in'),
+      zoomOutBtn: document.getElementById('vp-timeline-zoom-out'),
       duration: videoElA.duration,
     });
   });
