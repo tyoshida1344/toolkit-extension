@@ -140,6 +140,7 @@ function createTrimTimeline({
       document.body.style.cursor = '';
       render();
       refreshUi(); // 接触/分離の変化に応じてハンドル構成を作り直す
+      player.refreshPrep(); // クリップ範囲の変更で次クリップの先読み内容が古くなるため更新する
     } else if (scrubbing) {
       scrubbing = false;
       document.body.style.cursor = '';
@@ -160,6 +161,7 @@ function createTrimTimeline({
     } else {
       refresh();
     }
+    player.refreshPrep();
   });
 
   restartBtn.addEventListener('click', () => {
@@ -171,11 +173,13 @@ function createTrimTimeline({
     const clip = model.getClips()[editIndex];
     model.setRange(editIndex, player.getEl().currentTime, clip.end);
     refresh();
+    player.refreshPrep();
   });
   endBtn.addEventListener('click', () => {
     const clip = model.getClips()[editIndex];
     model.setRange(editIndex, clip.start, player.getEl().currentTime);
     refresh();
+    player.refreshPrep();
   });
 
   function splitAtPlayhead() {
@@ -184,6 +188,7 @@ function createTrimTimeline({
     editIndex = idx;
     render();
     refreshUi();
+    player.refreshPrep();
   }
   splitBtn.addEventListener('click', splitAtPlayhead);
   splitIconEl.addEventListener('click', e => { e.stopPropagation(); splitAtPlayhead(); });
@@ -197,12 +202,14 @@ function createTrimTimeline({
     if (!model.removeAt(editIndex)) return;
     render();
     resyncToCurrentTime();
+    player.refreshPrep(); // 削除で後続クリップの index がずれるため、古い先読み内容を更新する
   });
 
   resetBtn.addEventListener('click', () => {
     model.reset();
     render();
     resyncToCurrentTime();
+    player.refreshPrep();
   });
 
   speedEl.addEventListener('change', () => {
@@ -210,6 +217,7 @@ function createTrimTimeline({
     model.setSpeed(editIndex, speed);
     if (model.indexAt(player.getEl().currentTime) === editIndex) player.getEl().playbackRate = speed;
     refreshUi();
+    player.refreshPrep();
   });
 
   player.onTick(renderPlayhead);
