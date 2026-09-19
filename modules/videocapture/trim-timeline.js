@@ -106,24 +106,43 @@ function createTrimTimeline({
     }
   }
 
+  // タイムライン背景のドラッグ（シークバーのスクラブ）。ハンドル・分割アイコン以外なら
+  // クリップ矩形の上でも常にシークを優先する（編集対象クリップの追従は
+  // player.onSeeked(resyncToCurrentTime) が行う）
+  let scrubbing = false;
+
   timelineEl.addEventListener('mousedown', e => {
     const handle = findHandleNear(e.clientX);
-    if (!handle) return;
+    if (handle) {
+      e.preventDefault();
+      dragging = handle;
+      document.body.style.cursor = 'grabbing';
+      return;
+    }
+    if (e.target.closest('.vp-timeline-split-icon')) return;
     e.preventDefault();
-    dragging = handle;
+    scrubbing = true;
     document.body.style.cursor = 'grabbing';
+    player.seekTo(posToTime(e.clientX));
   });
   document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    applyHandleMove(dragging, posToTime(e.clientX));
-    refresh();
+    if (dragging) {
+      applyHandleMove(dragging, posToTime(e.clientX));
+      refresh();
+    } else if (scrubbing) {
+      player.seekTo(posToTime(e.clientX));
+    }
   });
   document.addEventListener('mouseup', () => {
-    if (!dragging) return;
-    dragging = null;
-    document.body.style.cursor = '';
-    render();
-    refreshUi(); // 接触/分離の変化に応じてハンドル構成を作り直す
+    if (dragging) {
+      dragging = null;
+      document.body.style.cursor = '';
+      render();
+      refreshUi(); // 接触/分離の変化に応じてハンドル構成を作り直す
+    } else if (scrubbing) {
+      scrubbing = false;
+      document.body.style.cursor = '';
+    }
   });
 
   const NUDGE_STEP = 0.5; // 矢印キーでの移動幅（秒）
@@ -140,14 +159,6 @@ function createTrimTimeline({
     } else {
       refresh();
     }
-  });
-
-  // クリップ矩形（.vp-timeline-selected）は選択用に別枠で扱わず、タイムライン上のクリックは
-  // ハンドル・分割アイコン以外なら常にシークを優先する（シーク後の編集対象クリップの追従は
-  // player.onSeeked(resyncToCurrentTime) が行う）
-  timelineEl.addEventListener('click', e => {
-    if (dragging || findHandleNear(e.clientX)) return;
-    player.seekTo(posToTime(e.clientX));
   });
 
   startBtn.addEventListener('click', () => {
