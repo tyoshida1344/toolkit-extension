@@ -7,6 +7,15 @@
   const statusEl = document.getElementById('vp-status');
   const trimEl = document.getElementById('vp-trim');
 
+  // 編集モード切替タブ。今は「トリム」のみだが、注釈編集など今後のモードを
+  // タブ + #vp-mode-<mode> パネルの組で追加できるよう汎用的に配線しておく
+  document.querySelectorAll('.vp-mode-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.vp-mode-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.vp-mode-panel').forEach(p => { p.hidden = p.id !== `vp-mode-${tab.dataset.mode}`; });
+    });
+  });
+
   const id = new URLSearchParams(location.search).get('id');
   const record = id && await TkVideoBlobStore.takeAndDelete(id);
 

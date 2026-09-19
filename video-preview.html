@@ -20,7 +20,7 @@
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
       background: var(--tm-bg); box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
     }
-    #vp-video, #vp-video-b { display: block; max-width: 100%; max-height: 70vh; }
+    #vp-video, #vp-video-b { display: block; max-width: 100%; max-height: 55vh; }
     #vp-video[hidden] { display: none; }
     /* .tm-inline は display:flex を持つため、[hidden] だけでは隠れない（screenshot-preview.html と同じ対処） */
     #vp-actions[hidden] { display: none; }
@@ -29,11 +29,23 @@
     .vp-trim[hidden] { display: none; }
     .vp-trim .tm-inline { flex-wrap: wrap; }
     .vp-trim .tm-inline .tm-label { margin-bottom: 0; }
+    /* タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する共有部分 */
+    .vp-timeline-row { display: flex; align-items: center; gap: 8px; }
     .vp-timeline-viewport {
+      flex: 1; min-width: 0;
       overflow-x: auto; overflow-y: hidden;
       /* 分割アイコン（top:-22px）とプレイヘッドの上下はみ出し（4px）がスクロール領域にクリップされないための余白 */
       padding-top: 22px;
     }
+    /* モード切替タブ。今は「トリム」のみだが、注釈編集など今後のモード追加を見込んだ構造にしている */
+    .vp-mode-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--tm-border); }
+    .vp-mode-tab {
+      padding: 6px 14px; margin-bottom: -1px; border: none; border-bottom: 2px solid transparent;
+      background: none; color: var(--tm-text-muted); font-size: 13px; cursor: pointer;
+    }
+    .vp-mode-tab.active { color: var(--tm-accent); border-bottom-color: var(--tm-accent); font-weight: 600; }
+    .vp-mode-panel[hidden] { display: none; }
+    .vp-mode-panel { display: flex; flex-direction: column; gap: 8px; }
     .vp-timeline {
       position: relative; width: 100%; height: 36px; border-radius: 6px; background: var(--tm-bg-sunken);
       border: 1px solid var(--tm-border); cursor: text; /* シーク（クリック/ドラッグで位置を指定）であることを示す */
@@ -79,7 +91,7 @@
       border: 1px solid var(--tm-border-strong); border-radius: 50%; background: var(--tm-bg);
     }
     .vp-timeline-split-icon:hover { background: var(--tm-bg-sunken); }
-    .vp-trim-times { display: flex; justify-content: space-between; font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
+    .vp-trim-times { display: flex; gap: 8px; font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
   </style>
 </head>
 <body>
@@ -96,37 +108,48 @@
       <video id="vp-video-b" muted style="display:none"></video>
     </div>
     <div class="vp-trim" id="vp-trim" hidden>
-      <div class="tm-inline">
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart">⏮ 最初に戻す</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-start-btn">▶| 開始点に</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-end-btn">|◀ 終了点に</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-split">✂ ここで分割</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-reset">↺ リセット</button>
+      <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
+      <div class="vp-timeline-row">
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-out" title="縮小" aria-label="タイムラインを縮小">－</button>
+        <div class="vp-timeline-viewport" id="vp-timeline-viewport">
+          <div class="vp-timeline" id="vp-timeline">
+            <div class="vp-timeline-playhead" id="vp-timeline-playhead"></div>
+            <div class="vp-timeline-split-icon" id="vp-timeline-split-icon" title="ここで分割" tabindex="0" role="button" aria-label="ここで分割">✂</div>
+          </div>
+        </div>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
       </div>
-      <div class="vp-timeline-viewport" id="vp-timeline-viewport">
-        <div class="vp-timeline" id="vp-timeline">
-          <div class="vp-timeline-playhead" id="vp-timeline-playhead"></div>
-          <div class="vp-timeline-split-icon" id="vp-timeline-split-icon" title="ここで分割" tabindex="0" role="button" aria-label="ここで分割">✂</div>
+
+      <!-- 編集モード切替タブ。今は「トリム」のみ（注釈編集など今後のモード追加を見込んだ構造） -->
+      <div class="vp-mode-tabs" id="vp-mode-tabs">
+        <button type="button" class="vp-mode-tab active" data-mode="trim">✂ トリム</button>
+      </div>
+
+      <div class="vp-mode-panel" id="vp-mode-trim">
+        <div class="tm-inline">
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart">⏮ 最初に戻す</button>
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-start-btn">▶| 開始点に</button>
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-end-btn">|◀ 終了点に</button>
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-split">✂ ここで分割</button>
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-reset">↺ リセット</button>
         </div>
-      </div>
-      <div class="vp-trim-times">
-        <span id="vp-trim-start-label">00:00</span>
-        <span id="vp-trim-duration-label">合計 00:00</span>
-        <span id="vp-trim-end-label">00:00</span>
-      </div>
-      <div class="tm-inline">
-        <label class="tm-label" for="vp-speed">選択中クリップの速度</label>
-        <select class="tm-select" id="vp-speed">
-          <option value="0.5">0.5倍</option>
-          <option value="1" selected>1倍</option>
-          <option value="1.25">1.25倍</option>
-          <option value="1.5">1.5倍</option>
-          <option value="2">2倍</option>
-          <option value="4">4倍</option>
-        </select>
-        <button type="button" class="tm-btn tm-btn-danger tm-btn-sm" id="vp-trim-delete">🗑 このクリップを削除</button>
+        <div class="tm-inline">
+          <span class="vp-trim-times">
+            <span id="vp-trim-start-label">00:00</span>
+            <span id="vp-trim-duration-label">合計 00:00</span>
+            <span id="vp-trim-end-label">00:00</span>
+          </span>
+          <label class="tm-label" for="vp-speed">速度</label>
+          <select class="tm-select" id="vp-speed">
+            <option value="0.5">0.5倍</option>
+            <option value="1" selected>1倍</option>
+            <option value="1.25">1.25倍</option>
+            <option value="1.5">1.5倍</option>
+            <option value="2">2倍</option>
+            <option value="4">4倍</option>
+          </select>
+          <button type="button" class="tm-btn tm-btn-danger tm-btn-sm" id="vp-trim-delete">🗑 このクリップを削除</button>
+        </div>
       </div>
     </div>
     <div class="status" id="vp-status">読み込み中…</div>
