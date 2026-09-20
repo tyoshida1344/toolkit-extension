@@ -51,6 +51,7 @@
       background: none; color: var(--tm-text-muted); font-size: 13px; cursor: pointer;
     }
     .vp-mode-tab.active { color: var(--tm-accent); border-bottom-color: var(--tm-accent); font-weight: 600; }
+    .vp-mode-tab .tm-ico { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
     .vp-mode-panel[hidden] { display: none; }
     .vp-mode-panel { display: flex; flex-direction: column; gap: 8px; }
     .vp-timeline {
@@ -133,7 +134,7 @@
       <!-- 編集モード切替タブ。今は「トリム」「速度」のみ（注釈編集など今後のモード追加を見込んだ構造） -->
       <div class="vp-mode-tabs" id="vp-mode-tabs">
         <button type="button" class="vp-mode-tab active" data-mode="trim">✂ トリム</button>
-        <button type="button" class="vp-mode-tab" data-mode="speed">⏩ 速度</button>
+        <button type="button" class="vp-mode-tab" id="vp-mode-tab-speed" data-mode="speed">速度</button>
       </div>
 
       <div class="vp-mode-panel" id="vp-mode-trim">
@@ -164,6 +165,7 @@
   </div>
   <video id="vp-export-video" style="display:none" muted></video>
   <script src="utils.js"></script>
+  <script src="ui-helpers.js"></script>
   <script src="modules/videocapture/blob-store.js"></script>
   <script src="modules/videocapture/time-format.js"></script>
   <script src="modules/videocapture/clip-model.js"></script>

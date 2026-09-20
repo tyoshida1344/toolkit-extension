@@ -7,14 +7,16 @@
   const statusEl = document.getElementById('vp-status');
   const trimEl = document.getElementById('vp-trim');
 
-  // 編集モード切替タブ。今は「トリム」のみだが、注釈編集など今後のモードを
-  // タブ + #vp-mode-<mode> パネルの組で追加できるよう汎用的に配線しておく
+  // 編集モード切替タブ。注釈編集など今後のモードをタブ + #vp-mode-<mode> パネルの組で
+  // 追加できるよう汎用的に配線しておく
   document.querySelectorAll('.vp-mode-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.vp-mode-tab').forEach(t => t.classList.toggle('active', t === tab));
       document.querySelectorAll('.vp-mode-panel').forEach(p => { p.hidden = p.id !== `vp-mode-${tab.dataset.mode}`; });
     });
   });
+  // アイコンは ui-helpers.js の _TkUI.ICONS（他機能とも共有する SVG 置き場）から流用する
+  document.getElementById('vp-mode-tab-speed').insertAdjacentHTML('afterbegin', _TkUI.ICONS.speed);
 
   const id = new URLSearchParams(location.search).get('id');
   const record = id && await TkVideoBlobStore.takeAndDelete(id);
