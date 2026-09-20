@@ -100,6 +100,8 @@
     }
     .vp-timeline-split-icon:hover { background: var(--tm-bg-sunken); }
     .vp-trim-duration { font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
+    /* 不可逆な操作なので、他の操作ボタンから離して誤クリックを防ぐ */
+    .vp-trim-reset-btn { margin-left: auto; }
   </style>
 </head>
 <body>
@@ -128,7 +130,6 @@
         </div>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-reset" title="編集をリセット" aria-label="編集をリセット">↺</button>
       </div>
 
       <!-- 編集モード切替タブ。今は「トリム」「速度」のみ（注釈編集など今後のモード追加を見込んだ構造） -->
@@ -144,6 +145,7 @@
           <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-split">✂ ここで分割</button>
           <button type="button" class="tm-btn tm-btn-danger tm-btn-sm" id="vp-trim-delete">🗑 削除</button>
           <span class="vp-trim-duration" id="vp-trim-duration-label">合計 00:00</span>
+          <button type="button" class="tm-btn tm-btn-danger tm-btn-sm vp-trim-reset-btn" id="vp-trim-reset">↺ 編集をリセット</button>
         </div>
       </div>
 

@@ -205,6 +205,8 @@ function createTrimTimeline({
   });
 
   resetBtn.addEventListener('click', () => {
+    if (!model.isEdited()) return; // 何も編集していなければ確認不要
+    if (!confirm('カット・速度など、これまでの編集内容をすべて元に戻します。よろしいですか？')) return;
     model.reset();
     render();
     resyncToCurrentTime();
