@@ -122,9 +122,10 @@
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-reset" title="編集をリセット" aria-label="編集をリセット">↺</button>
       </div>
 
-      <!-- 編集モード切替タブ。今は「トリム」のみ（注釈編集など今後のモード追加を見込んだ構造） -->
+      <!-- 編集モード切替タブ。今は「トリム」「速度」のみ（注釈編集など今後のモード追加を見込んだ構造） -->
       <div class="vp-mode-tabs" id="vp-mode-tabs">
         <button type="button" class="vp-mode-tab active" data-mode="trim">✂ トリム</button>
+        <button type="button" class="vp-mode-tab" data-mode="speed">⏩ 速度</button>
       </div>
 
       <div class="vp-mode-panel" id="vp-mode-trim">
@@ -132,14 +133,18 @@
           <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-start-btn">▶| 開始点に</button>
           <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-end-btn">|◀ 終了点に</button>
           <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-split">✂ ここで分割</button>
-        </div>
-        <div class="tm-inline">
+          <button type="button" class="tm-btn tm-btn-danger tm-btn-sm" id="vp-trim-delete">🗑 削除</button>
           <span class="vp-trim-times">
             <span id="vp-trim-start-label">00:00</span>
             <span id="vp-trim-duration-label">合計 00:00</span>
             <span id="vp-trim-end-label">00:00</span>
           </span>
-          <label class="tm-label" for="vp-speed">速度</label>
+        </div>
+      </div>
+
+      <div class="vp-mode-panel" id="vp-mode-speed" hidden>
+        <div class="tm-inline">
+          <label class="tm-label" for="vp-speed">選択中クリップの速度</label>
           <select class="tm-select" id="vp-speed">
             <option value="0.5">0.5倍</option>
             <option value="1" selected>1倍</option>
@@ -148,7 +153,6 @@
             <option value="2">2倍</option>
             <option value="4">4倍</option>
           </select>
-          <button type="button" class="tm-btn tm-btn-danger tm-btn-sm" id="vp-trim-delete">🗑 このクリップを削除</button>
         </div>
       </div>
     </div>
