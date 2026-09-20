@@ -30,13 +30,20 @@
     .vp-trim .tm-inline { flex-wrap: wrap; }
     .vp-trim .tm-inline .tm-label { margin-bottom: 0; }
     /* タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する共有部分 */
-    .vp-timeline-row { display: flex; align-items: center; gap: 8px; }
+    .vp-timeline-row { display: flex; align-items: flex-start; gap: 8px; }
+    /* ボタン(34px)の上端をタイムライン本体（.vp-timeline-viewport の padding-top ぶん下がった位置）の
+       上端に揃える。ボタンの高さは .vp-timeline とほぼ同じ(34px/36px)なので、上端さえ揃えば見た目も揃う */
+    .vp-timeline-row > .tm-btn { margin-top: 22px; }
     .vp-timeline-viewport {
       flex: 1; min-width: 0;
       overflow-x: auto; overflow-y: hidden;
       /* 分割アイコン（top:-22px）とプレイヘッドの上下はみ出し（4px）がスクロール領域にクリップされないための余白 */
       padding-top: 22px;
     }
+    .vp-timeline-ruler { position: relative; height: 14px; font-size: 10px; color: var(--tm-text-muted); font-family: monospace; }
+    .vp-timeline-ruler-label { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
+    .vp-timeline-ruler-label-first { transform: translateX(0); }
+    .vp-timeline-ruler-label-last { transform: translateX(-100%); }
     /* モード切替タブ。今は「トリム」のみだが、注釈編集など今後のモード追加を見込んだ構造にしている */
     .vp-mode-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--tm-border); }
     .vp-mode-tab {
@@ -91,7 +98,7 @@
       border: 1px solid var(--tm-border-strong); border-radius: 50%; background: var(--tm-bg);
     }
     .vp-timeline-split-icon:hover { background: var(--tm-bg-sunken); }
-    .vp-trim-times { display: flex; gap: 8px; font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
+    .vp-trim-duration { font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
   </style>
 </head>
 <body>
@@ -116,6 +123,7 @@
             <div class="vp-timeline-playhead" id="vp-timeline-playhead"></div>
             <div class="vp-timeline-split-icon" id="vp-timeline-split-icon" title="ここで分割" tabindex="0" role="button" aria-label="ここで分割">✂</div>
           </div>
+          <div class="vp-timeline-ruler" id="vp-timeline-ruler"></div>
         </div>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮</button>
@@ -134,11 +142,7 @@
           <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-end-btn">|◀ 終了点に</button>
           <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-split">✂ ここで分割</button>
           <button type="button" class="tm-btn tm-btn-danger tm-btn-sm" id="vp-trim-delete">🗑 削除</button>
-          <span class="vp-trim-times">
-            <span id="vp-trim-start-label">00:00</span>
-            <span id="vp-trim-duration-label">合計 00:00</span>
-            <span id="vp-trim-end-label">00:00</span>
-          </span>
+          <span class="vp-trim-duration" id="vp-trim-duration-label">合計 00:00</span>
         </div>
       </div>
 

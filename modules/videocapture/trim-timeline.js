@@ -3,8 +3,9 @@
  *
  * clip-model.js が持つ「残すクリップ」の配列を、両端ハンドルのドラッグ／「開始・終了点に」
  * ボタンでのクリップ範囲調整、「ここで分割」での中間カット、クリップ削除、クリップ単位の
- * 速度変更で編集する。DOM描画は timeline-render.js、拡大縮小・パンは timeline-zoom.js、
- * 再生・カット区間の自動スキップは dual-video-player.js が担う。
+ * 速度変更で編集する。DOM描画（クリップ矩形・ハンドル・境界ごとの時刻目盛り）は
+ * timeline-render.js、拡大縮小・パンは timeline-zoom.js、再生・カット区間の自動スキップは
+ * dual-video-player.js が担う。
  *
  * 「編集対象クリップ」（editIndex）は、再生位置がシークされたときに切り替わる。タイムライン上の
  * クリックは常にシークを優先し（クリップ選択を別扱いにすると、クリップがタイムラインの
@@ -14,14 +15,14 @@
  * seek 相当として追従する）。
  */
 function createTrimTimeline({
-  videoElA, videoElB, timelineEl, timelineViewportEl, playheadEl, splitIconEl,
-  startLabelEl, endLabelEl, durationLabelEl,
+  videoElA, videoElB, timelineEl, timelineViewportEl, rulerEl, playheadEl, splitIconEl,
+  durationLabelEl,
   restartBtn, startBtn, endBtn, splitBtn, deleteBtn, resetBtn, speedEl,
   zoomInBtn, zoomOutBtn, duration,
 }) {
   const model = createClipModel(duration);
   const player = createDualVideoPlayer(videoElA, videoElB, model);
-  const { render, updatePositions } = createTimelineRenderer({ timelineEl, duration, model });
+  const { render, updatePositions } = createTimelineRenderer({ timelineEl, rulerEl, duration, model });
   let editIndex = 0;
   let dragging = null; // ドラッグ中の .vp-timeline-handle 要素 | null
 
@@ -34,8 +35,6 @@ function createTrimTimeline({
   function refreshUi() {
     const clips = model.getClips();
     const clip = clips[editIndex];
-    startLabelEl.textContent = formatMmSs(clip.start);
-    endLabelEl.textContent = formatMmSs(clip.end);
     const total = clips.reduce((sum, c) => sum + (c.end - c.start) / c.speed, 0);
     durationLabelEl.textContent = '合計 ' + formatMmSs(total);
     speedEl.value = String(clip.speed);

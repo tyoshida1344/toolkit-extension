@@ -1,12 +1,16 @@
 /**
- * timeline-render.js — トリムタイムラインのクリップ矩形・ハンドルのDOM描画
+ * timeline-render.js — トリムタイムラインのクリップ矩形・ハンドル・目盛りのDOM描画
  *
  * クリップ間に隙間がなく接している場合、両端ハンドルを別々に出さず、双方を同時に動かす
  * 1本の「分割位置」ハンドル（.vp-timeline-split-handle）にまとめる。
  * 別々のハンドルのままだと同じ座標に重なって掴みにくく、動かしても隣のクリップの端が
  * 追従しないため隙間や重なりが生まれてしまう（trim-timeline.js 側の操作ロジックが対処する）。
+ *
+ * タイムラインの下には、クリップ・カット区間それぞれの境界（開始/終了）ごとに時刻ラベルを
+ * 並べた目盛り（.vp-timeline-ruler）を表示する。どのクリップがどの時間範囲か、カットで
+ * 何秒失われているかが一目で分かるようにするため。
  */
-function createTimelineRenderer({ timelineEl, duration, model }) {
+function createTimelineRenderer({ timelineEl, rulerEl, duration, model }) {
   function createEdgeHandle(clipIndex, edge, t) {
     const handle = document.createElement('div');
     handle.className = 'vp-timeline-handle';
@@ -38,6 +42,22 @@ function createTimelineRenderer({ timelineEl, duration, model }) {
     return handle;
   }
 
+  function renderRuler() {
+    rulerEl.innerHTML = '';
+    const boundaries = new Set();
+    model.getClips().forEach(c => { boundaries.add(c.start); boundaries.add(c.end); });
+    const sorted = Array.from(boundaries).sort((a, b) => a - b);
+    sorted.forEach((t, i) => {
+      const label = document.createElement('span');
+      label.className = 'vp-timeline-ruler-label';
+      if (i === 0) label.classList.add('vp-timeline-ruler-label-first');
+      else if (i === sorted.length - 1) label.classList.add('vp-timeline-ruler-label-last');
+      label.textContent = formatMmSs(t);
+      label.style.left = (t / duration * 100) + '%';
+      rulerEl.appendChild(label);
+    });
+  }
+
   function render() {
     timelineEl.querySelectorAll('.vp-timeline-selected, .vp-timeline-handle').forEach(el => el.remove());
     const clips = model.getClips();
@@ -60,6 +80,7 @@ function createTimelineRenderer({ timelineEl, duration, model }) {
     }
     const last = clips.length - 1;
     timelineEl.appendChild(createEdgeHandle(last, 'end', clips[last].end));
+    renderRuler();
   }
 
   // クリップ数・ハンドル構成が変わらない範囲調整（ドラッグ・矢印キー・開始/終了点にボタン）では、
@@ -81,6 +102,7 @@ function createTimelineRenderer({ timelineEl, duration, model }) {
       handle.style.left = (t / duration * 100) + '%';
       handle.setAttribute('aria-valuenow', String(t));
     });
+    renderRuler();
   }
 
   return { render, updatePositions };
