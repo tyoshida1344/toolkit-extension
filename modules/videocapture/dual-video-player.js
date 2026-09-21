@@ -85,7 +85,13 @@ function createDualVideoPlayer(elA, elB, model) {
     prepareNext(clips, idx);
     if (el.paused) return;
     const clip = clips[idx];
-    if (!clip || el.currentTime < clip.end - EPS) return;
+    if (!clip) return;
+    // クリップ同士が接している（隙間がない）場合、映像自体は連続しているためスワップ／シークを
+    // 経由せずに idx だけが次のクリップへ変わることがある（タイムラインの精度次第で、EPS の
+    // 判定窓に一度も入らないまま currentTime が境界を越えてしまう）。その場合でも再生速度だけは
+    // 必ず現在のクリップに追従させる
+    if (el.playbackRate !== clip.speed) el.playbackRate = clip.speed;
+    if (el.currentTime < clip.end - EPS) return;
     const next = clips[idx + 1];
     if (!next) { el.pause(); return; }
     if (standbyReady && preparedTarget && preparedTarget.index === idx + 1) {
