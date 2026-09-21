@@ -92,6 +92,6 @@ function createClipModel(duration) {
 
   return {
     getClips, indexAt, splitAt, canSplitAt, removeAt, setSpeed, setRange, reset, isEdited,
-    isTouching, moveBoundary, MIN_GAP,
+    isTouching, moveBoundary,
   };
 }

@@ -23,6 +23,7 @@ function createTimelineZoom({ viewportEl, timelineEl, duration, zoomInBtn, zoomO
     const containerWidth = viewportEl.clientWidth || 1;
     const widthPx = containerWidth * (duration / visibleSeconds);
     timelineEl.style.width = widthPx + 'px';
+    return widthPx;
   }
 
   function updateButtons() {
@@ -36,9 +37,7 @@ function createTimelineZoom({ viewportEl, timelineEl, duration, zoomInBtn, zoomO
     const clamped = Math.min(duration, Math.max(minVisibleSeconds(), next));
     if (Math.abs(clamped - visibleSeconds) < 1e-6) return;
     visibleSeconds = clamped;
-    applyWidth();
-    const containerWidth = viewportEl.clientWidth || 1;
-    const fullWidthPx = containerWidth * (duration / visibleSeconds);
+    const fullWidthPx = applyWidth();
     viewportEl.scrollLeft = (anchorTime / duration) * fullWidthPx - anchorScreenOffsetPx;
     updateButtons();
   }

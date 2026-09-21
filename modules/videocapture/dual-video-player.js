@@ -57,6 +57,11 @@ function createDualVideoPlayer(elA, elB, model) {
     standby.currentTime = nextClip.start;
   }
 
+  function prepareNext(clips, idx) {
+    const next = clips[idx + 1];
+    if (next) prepareStandby(idx + 1, next);
+  }
+
   // 次クリップの先読みだけを行う（カット判定・スワップは行わない）。再生中の毎tickに加えて、
   // 一時停止中でもクリップの編集（削除・分割・範囲変更等）直後に呼べるようにする。編集で次に
   // 再生すべきクリップの index がズレたまま古い先読み内容が残るのを防ぐのが目的
@@ -64,22 +69,21 @@ function createDualVideoPlayer(elA, elB, model) {
   // 発生せず先読みが更新されないため、再生を再開した瞬間に間に合わずカクつく）
   function syncPrep() {
     if (active.seeking || pointerDown) return;
-    const clips = model.getClips();
-    const idx = model.indexAt(active.currentTime);
-    const next = clips[idx + 1];
-    if (next) prepareStandby(idx + 1, next);
+    prepareNext(model.getClips(), model.indexAt(active.currentTime));
   }
 
   function handleTick(el) {
     if (!isActive(el)) return;
     tickListeners.forEach(fn => fn());
-    syncPrep();
     // ネイティブのシークバーをドラッグ中は el.seeking が true になり続ける。この間にスワップすると
     // ブラウザ側がドラッグを追跡している要素そのものが差し替わってしまいドラッグ操作が壊れるため、
-    // シーク中・マウス操作中（＝ユーザーが能動的に位置を操作している間）はカット判定・スワップを行わない
-    if (el.seeking || pointerDown || el.paused) return;
+    // シーク中・マウス操作中（＝ユーザーが能動的に位置を操作している間）は先読み・カット判定・
+    // スワップを行わない
+    if (el.seeking || pointerDown) return;
     const clips = model.getClips();
     const idx = model.indexAt(el.currentTime);
+    prepareNext(clips, idx);
+    if (el.paused) return;
     const clip = clips[idx];
     if (!clip || el.currentTime < clip.end - EPS) return;
     const next = clips[idx + 1];
