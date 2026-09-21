@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>動画キャプチャ プレビュー</title>
   <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/modal.css">
   <style>
     body {
       width: auto; height: auto; min-height: 100vh; overflow: visible; padding: 24px;
@@ -102,16 +103,14 @@
     .vp-trim-duration { font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
     /* 不可逆な操作なので、他の操作ボタンから離して誤クリックを防ぐ */
     .vp-trim-reset-btn { margin-left: auto; }
-    /* 書き出し中は実時間程度かかり得るため、固まって見えないよう保存ボタンにスピナーを出す。
-       disabled による薄い表示（.tm-btn:disabled { opacity:.4 }）だと逆に無反応に見えるため、
-       書き出し中はしっかり見えるよう戻す */
-    .tm-btn:disabled.vp-btn-exporting { opacity: 1; }
+    /* 書き出し中は実時間程度かかり得るため、固まって見えないようモーダル内にスピナーを出す */
     .vp-spinner {
-      display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px;
+      display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px;
       border: 2px solid currentColor; border-right-color: transparent;
       border-radius: 50%; animation: vp-spin .7s linear infinite;
     }
     @keyframes vp-spin { to { transform: rotate(360deg); } }
+    .vp-export-modal-note { margin: 8px 0 0; font-size: 12px; color: var(--tm-text-muted); }
   </style>
 </head>
 <body>
@@ -175,6 +174,16 @@
       </div>
     </div>
     <div class="status" id="vp-status">読み込み中…</div>
+  </div>
+  <!-- 書き出し中はページ全体の操作を塞ぐモーダル。閉じるボタンは無く、完了/失敗で自動的に閉じる -->
+  <div class="tm-modal-overlay" id="vp-export-modal" hidden>
+    <div class="tm-modal">
+      <div class="tm-modal-header"><span>書き出し中</span></div>
+      <div class="tm-modal-body">
+        <p id="vp-export-modal-text"><span class="vp-spinner"></span>書き出し中… 0%</p>
+        <p class="vp-export-modal-note">書き出し中は編集できません。完了までそのままお待ちください。</p>
+      </div>
+    </div>
   </div>
   <video id="vp-export-video" style="display:none" muted></video>
   <script src="utils.js"></script>

@@ -83,7 +83,12 @@
     });
   });
 
-  const saveBtnDefaultHtml = saveBtn.innerHTML;
+  // 書き出し中は裏でタイムラインの編集ができてしまうと、書き出し済みの内容と食い違って
+  // 混乱するため、オーバーレイ付きモーダルでページ全体の操作を塞ぐ（閉じるボタン・Escでは
+  // 閉じられない。完了/失敗時に自動で消える）
+  const exportModalEl = document.getElementById('vp-export-modal');
+  const exportModalTextEl = document.getElementById('vp-export-modal-text');
+
   saveBtn.addEventListener('click', async () => {
     const f = formats.find(x => x.key === formatEl.value);
     if (!f) return;
@@ -94,13 +99,11 @@
     const filename = `${record.baseName}.${f.key}`;
 
     if (isEdited) {
-      // 書き出しは実時間程度かかり得るため、クリック直後の視線が向く保存ボタン自体に
-      // スピナー＋進捗%を出し、固まったように見えないようにする（統計テキストにも同時表示）
       saveBtn.disabled = true;
-      saveBtn.classList.add('vp-btn-exporting');
+      exportModalEl.hidden = false;
       const setProgress = p => {
         const text = `書き出し中… ${Math.round(p * 100)}%`;
-        saveBtn.innerHTML = '<span class="vp-spinner"></span>' + text;
+        exportModalTextEl.innerHTML = '<span class="vp-spinner"></span>' + text;
         statusEl.textContent = text;
       };
       setProgress(0);
@@ -111,13 +114,11 @@
         });
       } catch (e) {
         statusEl.textContent = '⚠ 書き出しに失敗しました（' + ((e && e.message) || e) + '）';
-        saveBtn.innerHTML = saveBtnDefaultHtml;
-        saveBtn.classList.remove('vp-btn-exporting');
+        exportModalEl.hidden = true;
         saveBtn.disabled = false;
         return;
       }
-      saveBtn.innerHTML = saveBtnDefaultHtml;
-      saveBtn.classList.remove('vp-btn-exporting');
+      exportModalEl.hidden = true;
       saveBtn.disabled = false;
     }
 
