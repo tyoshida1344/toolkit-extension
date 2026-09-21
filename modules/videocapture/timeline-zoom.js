@@ -9,8 +9,12 @@
  *
  * 最大ズームは「1px ≈ MIN_UNIT 秒」になる幅を上限として決める（実際の動画fpsは取得できないため、
  * 一般的なフレームレートである1/30秒を基準値として使う）。
+ *
+ * rulerEl（timeline-render.js が描く境界時刻の目盛り）は .vp-timeline の兄弟要素で、
+ * ラベルの left% はこの要素自身の幅が基準になる。.vp-timeline と同じ幅を明示的に
+ * 与えないと、ズームで .vp-timeline だけが伸びてラベルの位置がずれてしまう。
  */
-function createTimelineZoom({ viewportEl, timelineEl, duration, zoomInBtn, zoomOutBtn, getAnchorTime, posToTime }) {
+function createTimelineZoom({ viewportEl, timelineEl, rulerEl, duration, zoomInBtn, zoomOutBtn, getAnchorTime, posToTime }) {
   const MIN_UNIT = 1 / 30; // 秒。最大ズーム時の目標精度（1px ≈ この値）
   const ZOOM_STEP = 1.5; // ボタン/ホイール1回あたりの拡大縮小倍率
   let visibleSeconds = duration;
@@ -23,6 +27,7 @@ function createTimelineZoom({ viewportEl, timelineEl, duration, zoomInBtn, zoomO
     const containerWidth = viewportEl.clientWidth || 1;
     const widthPx = containerWidth * (duration / visibleSeconds);
     timelineEl.style.width = widthPx + 'px';
+    rulerEl.style.width = widthPx + 'px';
     return widthPx;
   }
 

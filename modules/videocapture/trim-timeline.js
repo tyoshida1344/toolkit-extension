@@ -228,6 +228,7 @@ function createTrimTimeline({
   createTimelineZoom({
     viewportEl: timelineViewportEl,
     timelineEl,
+    rulerEl,
     duration,
     zoomInBtn,
     zoomOutBtn,
