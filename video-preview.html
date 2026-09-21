@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>動画キャプチャ プレビュー</title>
   <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/modal.css">
   <style>
     body {
       width: auto; height: auto; min-height: 100vh; overflow: visible; padding: 24px;
@@ -20,11 +21,96 @@
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
       background: var(--tm-bg); box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
     }
-    #vp-video { display: block; max-width: 100%; max-height: 70vh; }
+    #vp-video, #vp-video-b { display: block; max-width: 100%; max-height: 55vh; }
     #vp-video[hidden] { display: none; }
     /* .tm-inline は display:flex を持つため、[hidden] だけでは隠れない（screenshot-preview.html と同じ対処） */
     #vp-actions[hidden] { display: none; }
     .status { color: var(--tm-text-muted); font-size: 13px; }
+    .vp-trim { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 8px; }
+    .vp-trim[hidden] { display: none; }
+    .vp-trim .tm-inline { flex-wrap: wrap; }
+    .vp-trim .tm-inline .tm-label { margin-bottom: 0; }
+    /* タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する共有部分 */
+    .vp-timeline-row { display: flex; align-items: flex-start; gap: 8px; }
+    /* ボタン(34px)の上端をタイムライン本体（.vp-timeline-viewport の padding-top ぶん下がった位置）の
+       上端に揃える。ボタンの高さは .vp-timeline とほぼ同じ(34px/36px)なので、上端さえ揃えば見た目も揃う */
+    .vp-timeline-row > .tm-btn { margin-top: 22px; }
+    .vp-timeline-viewport {
+      flex: 1; min-width: 0;
+      overflow-x: auto; overflow-y: hidden;
+      /* 分割アイコン（top:-22px）とプレイヘッドの上下はみ出し（4px）がスクロール領域にクリップされないための余白 */
+      padding-top: 22px;
+    }
+    .vp-timeline-ruler { position: relative; height: 14px; font-size: 10px; color: var(--tm-text-muted); font-family: monospace; }
+    .vp-timeline-ruler-label { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
+    .vp-timeline-ruler-label-first { transform: translateX(0); }
+    .vp-timeline-ruler-label-last { transform: translateX(-100%); }
+    /* モード切替タブ。今は「トリム」「速度」のみだが、注釈編集など今後のモード追加を見込んだ構造にしている */
+    .vp-mode-tabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--tm-border); padding-bottom: 4px; }
+    .vp-mode-tab {
+      padding: 6px 14px; margin-bottom: -1px; border: none; border-bottom: 2px solid transparent;
+      background: none; color: var(--tm-text-muted); font-size: 13px; cursor: pointer;
+    }
+    .vp-mode-tab.active { color: var(--tm-accent); border-bottom-color: var(--tm-accent); font-weight: 600; }
+    .vp-mode-tab .tm-ico { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+    .vp-mode-panel[hidden] { display: none; }
+    .vp-mode-panel { display: flex; flex-direction: column; gap: 8px; }
+    .vp-timeline {
+      position: relative; width: 100%; height: 36px; border-radius: 6px; background: var(--tm-bg-sunken);
+      border: 1px solid var(--tm-border); cursor: text; /* シーク（クリック/ドラッグで位置を指定）であることを示す */
+    }
+    .vp-timeline-selected {
+      position: absolute; top: 0; bottom: 0;
+      background: var(--tm-accent-surface); border-top: 2px solid var(--tm-accent); border-bottom: 2px solid var(--tm-accent);
+      box-sizing: border-box;
+    }
+    .vp-timeline-selected.active { background: var(--tm-accent); }
+    /* クリックで掴む実際の当たり判定は見た目より広くする（細い線のままだと掴みにくいため）。
+       ::after の細いバーだけを見た目として表示し、.vp-timeline-handle 自体は透明な広いヒット領域にする */
+    .vp-timeline-handle {
+      position: absolute; top: 0; bottom: 0; width: 24px; margin-left: -12px;
+      cursor: grab; z-index: 1;
+      display: flex; justify-content: center;
+    }
+    .vp-timeline-handle::after {
+      content: ''; width: 6px; background: var(--tm-accent); border-radius: 3px;
+    }
+    .vp-timeline-handle:hover::after, .vp-timeline-handle:focus-visible::after {
+      background: var(--tm-accent-hover);
+    }
+    /* 分割位置（接しているクリップ同士の共有境界）は単独のハンドルより幅広・別色にして掴みやすくする */
+    .vp-timeline-split-handle::after {
+      width: 10px;
+      background: var(--tm-text-heading);
+      border: 2px solid var(--tm-bg);
+      box-sizing: border-box;
+    }
+    .vp-timeline-split-handle:hover::after, .vp-timeline-split-handle:focus-visible::after {
+      background: var(--tm-text-muted);
+    }
+    .vp-timeline-playhead {
+      position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--tm-text-heading); pointer-events: none;
+      z-index: 2;
+    }
+    .vp-timeline-split-icon {
+      position: absolute; top: -22px; width: 20px; height: 20px; margin-left: -10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; cursor: pointer;
+      z-index: 3; user-select: none; box-sizing: border-box;
+      border: 1px solid var(--tm-border-strong); border-radius: 50%; background: var(--tm-bg);
+    }
+    .vp-timeline-split-icon:hover { background: var(--tm-bg-sunken); }
+    .vp-trim-duration { font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
+    /* 不可逆な操作なので、他の操作ボタンから離して誤クリックを防ぐ */
+    .vp-trim-reset-btn { margin-left: auto; }
+    /* 書き出し中は実時間程度かかり得るため、固まって見えないようモーダル内にスピナーを出す */
+    .vp-spinner {
+      display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px;
+      border: 2px solid currentColor; border-right-color: transparent;
+      border-radius: 50%; animation: vp-spin .7s linear infinite;
+    }
+    @keyframes vp-spin { to { transform: rotate(360deg); } }
+    .vp-export-modal-note { margin: 8px 0 0; font-size: 12px; color: var(--tm-text-muted); }
   </style>
 </head>
 <body>
@@ -38,11 +124,78 @@
     </div>
     <div class="frame">
       <video id="vp-video" controls hidden></video>
+      <video id="vp-video-b" muted style="display:none"></video>
+    </div>
+    <div class="vp-trim" id="vp-trim" hidden>
+      <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
+      <div class="vp-timeline-row">
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-out" title="縮小" aria-label="タイムラインを縮小">－</button>
+        <div class="vp-timeline-viewport" id="vp-timeline-viewport">
+          <div class="vp-timeline" id="vp-timeline">
+            <div class="vp-timeline-playhead" id="vp-timeline-playhead"></div>
+            <div class="vp-timeline-split-icon" id="vp-timeline-split-icon" title="ここで分割" tabindex="0" role="button" aria-label="ここで分割">✂</div>
+          </div>
+          <div class="vp-timeline-ruler" id="vp-timeline-ruler"></div>
+        </div>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮</button>
+      </div>
+
+      <!-- 編集モード切替タブ。今は「トリム」「速度」のみ（注釈編集など今後のモード追加を見込んだ構造）。
+           リセットはトリム・速度どちらもまとめて初期化するモード横断の操作なのでこの行に置く -->
+      <div class="vp-mode-tabs" id="vp-mode-tabs">
+        <button type="button" class="vp-mode-tab active" data-mode="trim">✂ トリム</button>
+        <button type="button" class="vp-mode-tab" id="vp-mode-tab-speed" data-mode="speed">速度</button>
+        <button type="button" class="tm-btn tm-btn-danger tm-btn-sm vp-trim-reset-btn" id="vp-trim-reset">↺ 編集をリセット</button>
+      </div>
+
+      <div class="vp-mode-panel" id="vp-mode-trim">
+        <div class="tm-inline">
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-start-btn">▶| 開始点に</button>
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-end-btn">|◀ 終了点に</button>
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-split">✂ ここで分割</button>
+          <button type="button" class="tm-btn tm-btn-danger tm-btn-sm" id="vp-trim-delete">🗑 削除</button>
+          <span class="vp-trim-duration" id="vp-trim-duration-label">合計 00:00</span>
+        </div>
+      </div>
+
+      <div class="vp-mode-panel" id="vp-mode-speed" hidden>
+        <div class="tm-inline">
+          <label class="tm-label" for="vp-speed">選択中クリップの速度</label>
+          <select class="tm-select" id="vp-speed">
+            <option value="0.5">0.5倍</option>
+            <option value="1" selected>1倍</option>
+            <option value="1.25">1.25倍</option>
+            <option value="1.5">1.5倍</option>
+            <option value="2">2倍</option>
+            <option value="4">4倍</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="status" id="vp-status">読み込み中…</div>
   </div>
+  <!-- 書き出し中はページ全体の操作を塞ぐモーダル。閉じるボタンは無く、完了/失敗で自動的に閉じる -->
+  <div class="tm-modal-overlay" id="vp-export-modal" hidden>
+    <div class="tm-modal">
+      <div class="tm-modal-header"><span>書き出し中</span></div>
+      <div class="tm-modal-body">
+        <p id="vp-export-modal-text"><span class="vp-spinner"></span>書き出し中… 0%</p>
+        <p class="vp-export-modal-note">書き出し中は編集できません。完了までそのままお待ちください。</p>
+      </div>
+    </div>
+  </div>
+  <video id="vp-export-video" style="display:none" muted></video>
   <script src="utils.js"></script>
+  <script src="ui-helpers.js"></script>
   <script src="modules/videocapture/blob-store.js"></script>
+  <script src="modules/videocapture/time-format.js"></script>
+  <script src="modules/videocapture/clip-model.js"></script>
+  <script src="modules/videocapture/dual-video-player.js"></script>
+  <script src="modules/videocapture/timeline-render.js"></script>
+  <script src="modules/videocapture/timeline-zoom.js"></script>
+  <script src="modules/videocapture/trim-timeline.js"></script>
+  <script src="modules/videocapture/trim-export.js"></script>
   <script src="modules/videocapture/preview.js"></script>
 </body>
 </html>
