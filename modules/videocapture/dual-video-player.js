@@ -93,7 +93,11 @@ function createDualVideoPlayer(elA, elB, model) {
       swap();
       seekedListeners.forEach(fn => fn());
     } else {
-      el.currentTime = next.start; // 先読みが間に合わなかった場合のフォールバック（通常のシーク）
+      // 先読みが間に合わなかった場合のフォールバック（通常のシーク）。ここで速度も明示的に
+      // 合わせておかないと、シークが解決して resyncToCurrentTime が効くまでの間、前のクリップの
+      // 速度のまま再生されてしまう（間に合わない＝シークが遅いケースほど、この間が長くなり目立つ）
+      el.playbackRate = next.speed;
+      el.currentTime = next.start;
     }
   }
 
