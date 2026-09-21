@@ -40,6 +40,7 @@ function createTrimTimeline({
     speedEl.value = String(clip.speed);
     deleteBtn.disabled = clips.length <= 1;
     splitBtn.disabled = !model.canSplitAt(player.getEl().currentTime);
+    resetBtn.disabled = !model.isEdited();
     timelineEl.querySelectorAll('.vp-timeline-selected').forEach((el, i) => {
       el.classList.toggle('active', i === editIndex);
     });
