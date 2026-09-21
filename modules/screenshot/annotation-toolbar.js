@@ -35,7 +35,7 @@ function targetGet(state, target, field) {
 }
 
 function targetSet(state, target, field, value) {
-  if (target.shape) { target.shape[field] = value; renderScene(state); return; }
+  if (target.shape) { target.shape[field] = value; renderScene(state); state.onChange(); return; }
   if (field === 'color') state.currentColor = value;
   else if (field === 'opacity') state.currentOpacity = value;
   else if (field === 'lineWidth') state.currentLineWidth = value;
@@ -83,6 +83,7 @@ function selectShape(state, id) {
   state.selectedId = id;
   syncStyleInputs(state);
   renderScene(state);
+  state.onChange();
 }
 
 function setTool(state, tool) {
@@ -97,6 +98,7 @@ function setTool(state, tool) {
   state.canvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
   syncStyleInputs(state);
   renderScene(state);
+  state.onChange();
 }
 
 // ── ツールバー DOM 配線 ──

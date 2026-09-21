@@ -6,6 +6,14 @@
  */
 function cancelBubbleAwaitingTail(state) { state.bubbleAwaitingTail = null; state.tailPreviewPoint = null; }
 
+function addAnnotationShape(state, props) {
+  const range = state.newRange ? state.newRange(state.getTime()) : {};
+  const shape = { ...props, ...range, id: state.nextId++ };
+  state.shapes.push(shape);
+  state.onChange();
+  return shape;
+}
+
 function closeTextEditor(state, commit) {
   if (!state.textEditorEl) return;
   const el = state.textEditorEl;
@@ -92,18 +100,18 @@ function onWindowMouseUp(state, evt) {
     if (finished.type === 'arrow') {
       // 水平・垂直の矢印は幅か高さのどちらかが0になるため、縦横どちらか一方の判定ではなく線の長さで見る
       if (Math.hypot(finished.x2 - finished.x1, finished.y2 - finished.y1) < 4) { renderScene(state); return; }
-      state.shapes.push({ ...finished, id: state.nextId++ });
+      addAnnotationShape(state, finished);
       renderScene(state);
       return;
     }
     const w = Math.abs(finished.x2 - finished.x1), h = Math.abs(finished.y2 - finished.y1);
     if (w < 4 || h < 4) { renderScene(state); return; }
-    state.shapes.push({ ...finished, id: state.nextId++ });
+    addAnnotationShape(state, finished);
     renderScene(state);
     return;
   }
-  if (state.dragMove) { state.dragMove = null; renderScene(state); return; }
-  if (state.resizeDrag) { state.resizeDrag = null; renderScene(state); }
+  if (state.dragMove) { state.dragMove = null; renderScene(state); state.onChange(); return; }
+  if (state.resizeDrag) { state.resizeDrag = null; renderScene(state); state.onChange(); }
 }
 
 function startDrag(state) {
@@ -112,7 +120,7 @@ function startDrag(state) {
 }
 
 function onCanvasMouseDown(state, evt) {
-  if (evt.button !== 0) return;
+  if (!state.active || evt.button !== 0) return;
   // これが無いと、mousedown ハンドラ内で textarea を生成して focus() しても
   // ブラウザ既定のフォーカス処理に直後に奪われ、テキストが入力できなくなる
   evt.preventDefault();
@@ -123,17 +131,16 @@ function onCanvasMouseDown(state, evt) {
     const body = state.bubbleAwaitingTail;
     cancelBubbleAwaitingTail(state);
     const rect = bubbleRect(body);
-    state.shapes.push({
-      id: state.nextId++, type: 'bubble', color: state.currentColor, opacity: state.currentOpacity, fontSize: state.currentFontSize,
+    const shape = addAnnotationShape(state, {
+      type: 'bubble', color: state.currentColor, opacity: state.currentOpacity, fontSize: state.currentFontSize,
       x1: body.x1, y1: body.y1, x2: body.x2, y2: body.y2, tailX: p.x, tailY: p.y, text: '',
     });
-    const shape = state.shapes[state.shapes.length - 1];
     renderScene(state);
     openTextEditor(state, {
       cssX: (rect.x + 8) * scale, cssY: (rect.y + 6) * scale,
       cssWidth: Math.max(20, (rect.w - 16) * scale), cssHeight: Math.max(16, (rect.h - 12) * scale),
       color: state.currentColor, fontSize: state.currentFontSize, scale, resizable: false, autoGrow: false,
-      onCommit: text => { shape.text = text; renderScene(state); },
+      onCommit: text => { shape.text = text; renderScene(state); state.onChange(); },
     });
     return;
   }
@@ -141,7 +148,7 @@ function onCanvasMouseDown(state, evt) {
   if (state.currentTool === 'select') {
     if (state.selectedId != null) {
       const selected = findShape(state.shapes, state.selectedId);
-      if (selected) {
+      if (selected && (!state.getTime || isShapeVisibleAt(selected, state.getTime()))) {
         const handle = findHandleAt(getHandles(state.ctx, selected), p.x, p.y, scale);
         if (handle) {
           state.resizeDrag = { id: selected.id, handleId: handle.id, original: captureResizeOriginal(state.ctx, selected), startPoint: p };
@@ -150,7 +157,10 @@ function onCanvasMouseDown(state, evt) {
         }
       }
     }
-    const hit = hitTest(state.ctx, state.shapes, p.x, p.y);
+    const candidates = state.getTime
+      ? state.shapes.filter(s => isShapeVisibleAt(s, state.getTime()))
+      : state.shapes;
+    const hit = hitTest(state.ctx, candidates, p.x, p.y);
     if (!hit) { selectShape(state, null); return; }
     selectShape(state, hit.id);
     const origin = hit.type === 'text'
@@ -168,7 +178,7 @@ function onCanvasMouseDown(state, evt) {
       color: state.currentColor, fontSize: state.currentFontSize, scale, resizable: true, autoGrow: true,
       onCommit: text => {
         if (!text.trim()) return;
-        state.shapes.push({ id: state.nextId++, type: 'text', color: state.currentColor, opacity: state.currentOpacity, fontSize: state.currentFontSize, x: p.x, y: p.y, text });
+        addAnnotationShape(state, { type: 'text', color: state.currentColor, opacity: state.currentOpacity, fontSize: state.currentFontSize, x: p.x, y: p.y, text });
         renderScene(state);
       },
     });
@@ -199,6 +209,7 @@ function wireCanvasEvents(state) {
   });
 
   window.addEventListener('keydown', evt => {
+    if (!state.active) return;
     if (state.textEditorEl) return; // テキスト入力中は編集用ショートカットを発火させない
     if (evt.key === 'Escape') {
       if (state.bubbleAwaitingTail) { cancelBubbleAwaitingTail(state); renderScene(state); return; }

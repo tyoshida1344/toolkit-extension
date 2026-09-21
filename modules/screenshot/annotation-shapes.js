@@ -7,6 +7,10 @@ const ANN_FONT_FAMILY = "'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif";
 
 function textLines(s) { return (s.text || '').split('\n'); }
 
+function isShapeVisibleAt(shape, time) {
+  return shape.startTime == null || (shape.startTime <= time && time <= shape.endTime);
+}
+
 function drawRectShape(c, s) {
   const x = Math.min(s.x1, s.x2), y = Math.min(s.y1, s.y2);
   const w = Math.abs(s.x2 - s.x1), h = Math.abs(s.y2 - s.y1);

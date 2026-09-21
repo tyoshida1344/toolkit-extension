@@ -4,7 +4,7 @@
  * state を組み立て、annotation-shapes / annotation-geometry / annotation-render /
  * annotation-toolbar / annotation-interactions の配線を行う。preview.js から呼び出される。
  */
-function createAnnotationEditor(canvas, canvasWrap, baseImage) {
+function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
   const state = {
     canvas, canvasWrap, baseImage,
     ctx: canvas.getContext('2d'),
@@ -27,6 +27,10 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
     dragMove: null, // 選択中の図形をドラッグ移動中の状態 { id, origin, startPoint }
     resizeDrag: null, // 選択中の図形をハンドルでリサイズ中の状態 { id, handleId, original, startPoint }
     textEditorEl: null,
+    getTime: options.getTime || null,
+    newRange: options.newRange || null,
+    onChange: options.onChange || (() => {}),
+    active: true,
   };
 
   wireToolbar(state);
@@ -36,5 +40,27 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage) {
   return {
     getExportDataUrl: () => getExportDataUrl(state),
     getExportBlob: () => getExportBlob(state),
+    getShapes: () => state.shapes.slice(),
+    getSelectedId: () => state.selectedId,
+    select(id) {
+      setTool(state, 'select');
+      selectShape(state, id);
+    },
+    updateShape(id, patch) {
+      const shape = findShape(state.shapes, id);
+      if (!shape) return;
+      Object.assign(shape, patch);
+      renderScene(state);
+      state.onChange();
+    },
+    clear() {
+      state.shapes.length = 0;
+      selectShape(state, null);
+    },
+    refresh: () => renderScene(state),
+    setActive(active) {
+      state.active = active;
+      if (!active) setTool(state, state.currentTool);
+    },
   };
 }

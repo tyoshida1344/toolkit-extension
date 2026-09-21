@@ -5,6 +5,8 @@
   <title>動画キャプチャ プレビュー</title>
   <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="styles/modal.css">
+  <link rel="stylesheet" href="styles/annotation.css">
+  <link rel="stylesheet" href="styles/video-annotation.css">
   <style>
     body {
       width: auto; height: auto; min-height: 100vh; overflow: visible; padding: 24px;
@@ -123,8 +125,11 @@
       </div>
     </div>
     <div class="frame">
-      <video id="vp-video" controls hidden></video>
-      <video id="vp-video-b" muted style="display:none"></video>
+      <div class="ann-canvas-wrap vp-video-wrap" id="vp-video-wrap">
+        <video id="vp-video" controls hidden></video>
+        <video id="vp-video-b" muted style="display:none"></video>
+        <canvas id="vp-annotation-canvas" aria-label="動画の注釈編集"></canvas>
+      </div>
     </div>
     <div class="vp-trim" id="vp-trim" hidden>
       <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
@@ -136,16 +141,18 @@
             <div class="vp-timeline-split-icon" id="vp-timeline-split-icon" title="ここで分割" tabindex="0" role="button" aria-label="ここで分割">✂</div>
           </div>
           <div class="vp-timeline-ruler" id="vp-timeline-ruler"></div>
+          <div class="vp-ann-lanes" id="vp-annotation-lanes" hidden></div>
         </div>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮</button>
       </div>
 
-      <!-- 編集モード切替タブ。今は「トリム」「速度」のみ（注釈編集など今後のモード追加を見込んだ構造）。
-           リセットはトリム・速度どちらもまとめて初期化するモード横断の操作なのでこの行に置く -->
+      <!-- 編集モード切替タブ。リセットはトリム・速度・注釈をまとめて初期化する
+           モード横断の操作なのでこの行に置く -->
       <div class="vp-mode-tabs" id="vp-mode-tabs">
         <button type="button" class="vp-mode-tab active" data-mode="trim">✂ トリム</button>
         <button type="button" class="vp-mode-tab" id="vp-mode-tab-speed" data-mode="speed">速度</button>
+        <button type="button" class="vp-mode-tab" id="vp-mode-tab-annotation" data-mode="annotation">注釈</button>
         <button type="button" class="tm-btn tm-btn-danger tm-btn-sm vp-trim-reset-btn" id="vp-trim-reset">↺ 編集をリセット</button>
       </div>
 
@@ -172,6 +179,42 @@
           </select>
         </div>
       </div>
+      <div class="vp-mode-panel" id="vp-mode-annotation" hidden>
+        <div class="ann-toolbar" id="ann-toolbar">
+          <div class="tm-inline">
+            <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-select" data-tool="select" data-tip="選択" aria-label="選択"></button>
+            <button type="button" class="tm-icon-btn ann-tool-btn active" id="ann-tool-rect" data-tool="rect" data-tip="四角形（枠線）" aria-label="四角形（枠線）"></button>
+            <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" data-tip="矢印" aria-label="矢印"></button>
+            <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" data-tip="吹き出し" aria-label="吹き出し"></button>
+            <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" data-tip="テキスト" aria-label="テキスト"></button>
+          </div>
+          <div class="tm-inline">
+            <span class="tm-inline" id="ann-style-fields">
+              <span class="ann-field-group">
+                <input type="color" class="ann-color-input" id="ann-color" value="#ff3b30" title="色" aria-label="色">
+                <input type="range" class="ann-opacity-input" id="ann-opacity" min="0" max="100" value="100" title="不透明度" aria-label="不透明度">
+                <span class="ann-size-label" id="ann-opacity-label">100%</span>
+              </span>
+              <span class="ann-field-group">
+                <input type="number" class="tm-input ann-size-input" id="ann-size" min="1" max="20" value="3" title="太さ" aria-label="太さ">
+                <span class="ann-size-label" id="ann-size-label">太さ</span>
+              </span>
+              <span class="ann-field-group" id="ann-fill-group" hidden>
+                <label class="tm-check-label"><input type="checkbox" id="ann-fill">塗りつぶし</label>
+                <input type="color" class="ann-color-input" id="ann-fill-color" value="#ff3b30" title="塗りつぶし色" aria-label="塗りつぶし色" hidden>
+                <input type="range" class="ann-opacity-input" id="ann-fill-opacity" min="0" max="100" value="100" title="塗りつぶし不透明度" aria-label="塗りつぶし不透明度" hidden>
+                <span class="ann-size-label" id="ann-fill-opacity-label" hidden>100%</span>
+              </span>
+            </span>
+            <span class="ann-size-label" id="ann-style-hint">オブジェクトをクリックすると編集できます</span>
+            <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中のオブジェクトを削除（Delete / Backspace）" hidden>削除</button>
+          </div>
+        </div>
+        <div class="tm-inline">
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-ann-start">現在位置を開始に</button>
+          <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-ann-end">現在位置を終了に</button>
+        </div>
+      </div>
     </div>
     <div class="status" id="vp-status">読み込み中…</div>
   </div>
@@ -181,7 +224,7 @@
       <div class="tm-modal-header"><span>書き出し中</span></div>
       <div class="tm-modal-body">
         <p id="vp-export-modal-text"><span class="vp-spinner"></span>書き出し中… 0%</p>
-        <p class="vp-export-modal-note">書き出し中は編集できません。完了までそのままお待ちください。</p>
+        <p class="vp-export-modal-note">書き出し中は編集できません。他のタブに切り替えると遅くなったり、コマ落ちしたりすることがあるため、このタブを表示したままお待ちください。</p>
       </div>
     </div>
   </div>
@@ -194,6 +237,15 @@
   <script src="modules/videocapture/dual-video-player.js"></script>
   <script src="modules/videocapture/timeline-render.js"></script>
   <script src="modules/videocapture/timeline-zoom.js"></script>
+  <script src="modules/screenshot/annotation-shapes.js"></script>
+  <script src="modules/screenshot/annotation-geometry.js"></script>
+  <script src="modules/screenshot/annotation-render.js"></script>
+  <script src="modules/screenshot/annotation-toolbar.js"></script>
+  <script src="modules/screenshot/annotation-interactions.js"></script>
+  <script src="modules/screenshot/annotation-editor.js"></script>
+  <script src="modules/videocapture/annotation-lanes.js"></script>
+  <script src="modules/videocapture/annotation-overlay.js"></script>
+  <script src="modules/videocapture/annotation-composite.js"></script>
   <script src="modules/videocapture/trim-timeline.js"></script>
   <script src="modules/videocapture/trim-export.js"></script>
   <script src="modules/videocapture/preview.js"></script>
