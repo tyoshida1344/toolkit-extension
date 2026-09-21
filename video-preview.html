@@ -102,6 +102,16 @@
     .vp-trim-duration { font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
     /* 不可逆な操作なので、他の操作ボタンから離して誤クリックを防ぐ */
     .vp-trim-reset-btn { margin-left: auto; }
+    /* 書き出し中は実時間程度かかり得るため、固まって見えないよう保存ボタンにスピナーを出す。
+       disabled による薄い表示（.tm-btn:disabled { opacity:.4 }）だと逆に無反応に見えるため、
+       書き出し中はしっかり見えるよう戻す */
+    .tm-btn:disabled.vp-btn-exporting { opacity: 1; }
+    .vp-spinner {
+      display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px;
+      border: 2px solid currentColor; border-right-color: transparent;
+      border-radius: 50%; animation: vp-spin .7s linear infinite;
+    }
+    @keyframes vp-spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>

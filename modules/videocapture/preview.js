@@ -83,6 +83,7 @@
     });
   });
 
+  const saveBtnDefaultHtml = saveBtn.innerHTML;
   saveBtn.addEventListener('click', async () => {
     const f = formats.find(x => x.key === formatEl.value);
     if (!f) return;
@@ -93,18 +94,30 @@
     const filename = `${record.baseName}.${f.key}`;
 
     if (isEdited) {
+      // 書き出しは実時間程度かかり得るため、クリック直後の視線が向く保存ボタン自体に
+      // スピナー＋進捗%を出し、固まったように見えないようにする（統計テキストにも同時表示）
       saveBtn.disabled = true;
-      statusEl.textContent = '書き出し中… 0%';
+      saveBtn.classList.add('vp-btn-exporting');
+      const setProgress = p => {
+        const text = `書き出し中… ${Math.round(p * 100)}%`;
+        saveBtn.innerHTML = '<span class="vp-spinner"></span>' + text;
+        statusEl.textContent = text;
+      };
+      setProgress(0);
       try {
         outBlob = await exportTrimmedVideo({
           blob: f.blob, mimeType: f.mimeType, clips,
-          onProgress: p => { statusEl.textContent = `書き出し中… ${Math.round(p * 100)}%`; },
+          onProgress: setProgress,
         });
       } catch (e) {
         statusEl.textContent = '⚠ 書き出しに失敗しました（' + ((e && e.message) || e) + '）';
+        saveBtn.innerHTML = saveBtnDefaultHtml;
+        saveBtn.classList.remove('vp-btn-exporting');
         saveBtn.disabled = false;
         return;
       }
+      saveBtn.innerHTML = saveBtnDefaultHtml;
+      saveBtn.classList.remove('vp-btn-exporting');
       saveBtn.disabled = false;
     }
 
