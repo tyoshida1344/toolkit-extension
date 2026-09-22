@@ -4,13 +4,15 @@
  * 共有エディタと区間レーンを結び、再生中は rAF でフレームへ追従する。シークや動画要素の
  * 入れ替えでも即時反映するため、player の通知も併用する。
  */
-function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, laneEl, startBtn, endBtn, onChange }) {
+function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, laneEl, previewBtn, startBtn, endBtn, onChange }) {
   canvas.width = player.getEl().videoWidth;
   canvas.height = player.getEl().videoHeight;
   let lanes;
   let raf = null;
   let lastTime = -1;
   let annotationMode = false;
+  let previewing = false;
+  const toolbarEl = document.getElementById('ann-toolbar');
 
   const editor = createAnnotationEditor(canvas, canvasWrap, null, {
     getTime: () => player.getEl().currentTime,
@@ -32,16 +34,26 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
     laneEl, duration, editor,
     getTime: () => player.getEl().currentTime,
     seekTo: player.seekTo,
-    isEditable: () => annotationMode,
+    isEditable: () => annotationMode && !previewing,
   });
 
   function updateButtons() {
-    const disabled = editor.getSelectedId() == null;
+    const disabled = previewing || editor.getSelectedId() == null;
     startBtn.disabled = disabled;
     endBtn.disabled = disabled;
   }
 
+  function applyLockState() {
+    const editable = annotationMode && !previewing;
+    editor.setActive(editable);
+    canvas.style.pointerEvents = editable ? 'auto' : 'none';
+    toolbarEl.classList.toggle('vp-ann-locked', !editable);
+    laneEl.classList.toggle('vp-ann-lanes--editable', editable);
+    updateButtons();
+  }
+
   function refresh() {
+    if (annotationMode) player.getEl().controls = false; // swap() が controls を有効に戻すため注釈タブ中は打ち消す
     editor.refresh();
   }
 
@@ -59,9 +71,7 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
   function setMode(active) {
     const video = player.getEl();
     annotationMode = active;
-    editor.setActive(active);
-    canvas.style.pointerEvents = active ? 'auto' : 'none';
-    laneEl.classList.toggle('vp-ann-lanes--editable', active);
+    applyLockState();
     if (active) {
       video.pause();
       video.controls = false;
@@ -73,19 +83,36 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
 
   [videoElA, videoElB].forEach(video => {
     video.addEventListener('play', () => {
-      if (annotationMode) {
+      if (annotationMode && !previewing) {
         video.pause();
         video.controls = false;
         return;
       }
       startTicking();
     });
-    const stopTicking = () => { if (video === player.getEl()) cancelAnimationFrame(raf); };
+    const stopTicking = () => {
+      if (video !== player.getEl()) return;
+      cancelAnimationFrame(raf);
+      if (!previewing) return;
+      previewing = false;
+      previewBtn.textContent = '▶ プレビュー再生';
+      if (annotationMode) applyLockState();
+    };
     video.addEventListener('pause', stopTicking);
     video.addEventListener('ended', stopTicking);
   });
   player.onTick(refresh);
   player.onSeeked(refresh);
+  previewBtn.addEventListener('click', () => {
+    if (previewing) {
+      player.getEl().pause();
+      return;
+    }
+    previewing = true;
+    previewBtn.textContent = '⏸ 停止';
+    applyLockState();
+    player.getEl().play();
+  });
   startBtn.addEventListener('click', () => lanes.setStart(editor.getSelectedId()));
   endBtn.addEventListener('click', () => lanes.setEnd(editor.getSelectedId()));
   lanes.render();

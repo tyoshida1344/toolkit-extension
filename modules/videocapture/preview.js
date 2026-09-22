@@ -97,6 +97,7 @@
       duration: videoElA.duration,
       player: timeline.player,
       laneEl: document.getElementById('vp-annotation-lanes'),
+      previewBtn: document.getElementById('vp-ann-preview'),
       startBtn: document.getElementById('vp-ann-start'),
       endBtn: document.getElementById('vp-ann-end'),
       onChange: timeline.refreshUi,
