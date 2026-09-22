@@ -103,8 +103,8 @@
     }
     .vp-timeline-split-icon:hover { background: var(--tm-bg-sunken); }
     .vp-trim-duration { font-size: 12px; color: var(--tm-text-muted); font-family: monospace; }
-    /* 不可逆な操作なので、他の操作ボタンから離して誤クリックを防ぐ */
-    .vp-trim-reset-btn { margin-left: auto; }
+    /* 不可逆な操作なので、モード切替タブと行を分けて誤クリックを防ぐ */
+    .vp-trim-reset-btn { display: block; margin: 0 0 8px auto; }
     /* 書き出し中は実時間程度かかり得るため、固まって見えないようモーダル内にスピナーを出す */
     .vp-spinner {
       display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px;
@@ -156,13 +156,14 @@
       </div>
 
       <aside class="preview-side-panel" aria-label="動画編集">
-        <!-- 編集モード切替タブ。リセットはトリム・速度・注釈をまとめて初期化する
-             モード横断の操作なのでこの行に置く -->
+        <!-- リセットはトリム・速度・注釈をまとめて初期化するモード横断の操作なので、
+             編集モード切替タブと行を分けてパネル上部に置く -->
+        <button type="button" class="tm-btn tm-btn-danger tm-btn-sm vp-trim-reset-btn" id="vp-trim-reset">↺ 編集をリセット</button>
+        <!-- トリム・速度・注釈の編集モード切替タブ -->
       <div class="vp-mode-tabs" id="vp-mode-tabs">
         <button type="button" class="vp-mode-tab active" data-mode="trim">✂ トリム</button>
         <button type="button" class="vp-mode-tab" id="vp-mode-tab-speed" data-mode="speed">速度</button>
         <button type="button" class="vp-mode-tab" id="vp-mode-tab-annotation" data-mode="annotation">注釈</button>
-        <button type="button" class="tm-btn tm-btn-danger tm-btn-sm vp-trim-reset-btn" id="vp-trim-reset">↺ 編集をリセット</button>
       </div>
 
       <div class="vp-mode-panel" id="vp-mode-trim">

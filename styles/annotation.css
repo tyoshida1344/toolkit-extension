@@ -3,10 +3,10 @@
   padding: 8px 12px; background: var(--tm-bg); border: 1px solid var(--tm-border); border-radius: 8px;
 }
 /* 行内の要素の表示/非表示で高さが変わっても操作位置が安定するよう最小高さを確保する。
-   狭い右パネルではツールとスタイル枠を折り返し、2行目は縦方向に並べる */
+   狭い右パネルではツールを折り返し、2行目のスタイル枠は1つずつ縦方向に並べる */
 .ann-toolbar > .tm-inline { min-height: 34px; flex-wrap: wrap; align-items: flex-start; }
 .ann-toolbar > .tm-inline:nth-child(2) { flex-direction: column; align-items: stretch; }
-#ann-style-fields { width: 100%; flex-wrap: wrap; }
+#ann-style-fields { width: 100%; flex-direction: column; align-items: stretch; }
 /* .tm-inline / .tm-btn / .tm-check-label は display:flex 系を持つため、[hidden] だけでは隠れない（.tm-tab[hidden] 等と同じ対処） */
 #ann-toolbar[hidden], #ann-style-fields[hidden], #ann-delete[hidden], #ann-fill-group[hidden] { display: none; }
 /* 中身の量（色スウォッチ有無等）に関わらず3つの枠の高さを揃える */
