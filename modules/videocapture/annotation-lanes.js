@@ -43,13 +43,7 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo 
     laneEl.replaceChildren();
     const shapes = editor.getShapes();
     renderedSignature = signatureOf(shapes);
-    if (!shapes.length) {
-      const empty = document.createElement('span');
-      empty.className = 'vp-ann-empty';
-      empty.textContent = '注釈を追加すると表示区間を調整できます';
-      laneEl.appendChild(empty);
-      return;
-    }
+    if (!shapes.length) return;
     shapes.forEach(shape => {
       const bar = document.createElement('div');
       bar.className = 'vp-ann-bar';

@@ -16,4 +16,3 @@
 .vp-ann-handle-start { left: 0; }
 .vp-ann-handle-end { right: 0; }
 .vp-ann-handle:focus-visible { outline: 2px solid var(--tm-accent); }
-.vp-ann-empty { display: block; padding: 8px; font-size: 12px; color: var(--tm-text-muted); }
