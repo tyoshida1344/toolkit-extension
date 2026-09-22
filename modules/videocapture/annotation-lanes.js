@@ -101,18 +101,41 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo 
     }
     editor.select(id);
     const shape = editor.getShapes().find(s => s.id === id);
-    seekTo(shape.startTime);
+    e.preventDefault();
+    dragging = {
+      id,
+      edge: 'move',
+      startClientX: e.clientX,
+      origin: { startTime: shape.startTime, endTime: shape.endTime },
+      moved: false,
+    };
+    document.body.style.cursor = 'grabbing';
   });
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
     const rect = laneEl.getBoundingClientRect();
-    const time = Math.min(duration, Math.max(0, (e.clientX - rect.left) / rect.width * duration));
-    const shape = editor.getShapes().find(s => s.id === dragging.id);
-    editor.updateShape(shape.id, clampRange(shape, dragging.edge, time));
+    if (dragging.edge === 'move') {
+      if (e.clientX !== dragging.startClientX) dragging.moved = true;
+      const deltaTime = (e.clientX - dragging.startClientX) / rect.width * duration;
+      const length = dragging.origin.endTime - dragging.origin.startTime;
+      const startTime = Math.min(Math.max(0, dragging.origin.startTime + deltaTime), duration - length);
+      editor.updateShape(dragging.id, { startTime, endTime: startTime + length });
+    } else {
+      const time = Math.min(duration, Math.max(0, (e.clientX - rect.left) / rect.width * duration));
+      const shape = editor.getShapes().find(s => s.id === dragging.id);
+      editor.updateShape(shape.id, clampRange(shape, dragging.edge, time));
+    }
     updatePositions();
   });
   document.addEventListener('mouseup', () => {
     if (!dragging) return;
+    if (dragging.edge === 'move') {
+      if (!dragging.moved) {
+        const shape = editor.getShapes().find(s => s.id === dragging.id);
+        seekTo(shape.startTime);
+      }
+      document.body.style.cursor = '';
+    }
     dragging = null;
     updatePositions();
   });

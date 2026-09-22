@@ -6,7 +6,7 @@
 }
 .vp-ann-lanes[hidden] { display: none; }
 .vp-ann-bar {
-  position: relative; height: 24px; margin-bottom: 3px; box-sizing: border-box;
+  position: relative; height: 24px; margin-bottom: 3px; box-sizing: border-box; cursor: grab;
   border: 1px solid var(--tm-border-strong); border-radius: 4px; background: var(--tm-accent-surface);
 }
 .vp-ann-bar:last-child { margin-bottom: 0; }
