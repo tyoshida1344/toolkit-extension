@@ -9,11 +9,13 @@
 #ann-style-fields { width: 100%; flex-direction: column; align-items: stretch; }
 /* .tm-inline / .tm-btn / .tm-check-label は display:flex 系を持つため、[hidden] だけでは隠れない（.tm-tab[hidden] 等と同じ対処） */
 #ann-toolbar[hidden], #ann-style-fields[hidden], #ann-delete[hidden], #ann-fill-group[hidden] { display: none; }
-/* 中身の量（色スウォッチ有無等）に関わらず3つの枠の高さを揃える */
+/* 色・不透明度と太さの枠は、中身の量に関わらず高さを揃える */
 .ann-field-group {
   display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 44px;
   border: 1px solid var(--tm-border); border-radius: 6px; padding: 4px 8px;
 }
+#ann-fill-group { flex-direction: column; align-items: flex-start; height: auto; }
+.ann-fill-controls { display: flex; align-items: center; gap: 8px; }
 .ann-tool-btn.active { background: var(--tm-accent-surface); color: var(--tm-accent); border-color: var(--tm-accent); }
 /* ツールバーアイコンのホバーツールチップ（.tm-tab のサイドバー版と同じ仕組みを、上部ツールバー向けに下方向表示にしたもの） */
 .ann-tool-btn, .ann-tip-btn { position: relative; }
