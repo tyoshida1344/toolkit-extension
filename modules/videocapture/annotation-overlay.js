@@ -4,7 +4,7 @@
  * 共有エディタと区間レーンを結び、再生中は rAF でフレームへ追従する。シークや動画要素の
  * 入れ替えでも即時反映するため、player の通知も併用する。
  */
-function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, laneEl, previewBtn, startBtn, endBtn, onChange }) {
+function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, laneEl, playBtn, pauseBtn, startBtn, endBtn, onChange }) {
   canvas.width = player.getEl().videoWidth;
   canvas.height = player.getEl().videoHeight;
   let lanes;
@@ -39,6 +39,8 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
 
   function updateButtons() {
     const disabled = previewing || editor.getSelectedId() == null;
+    playBtn.disabled = previewing;
+    pauseBtn.disabled = !previewing;
     startBtn.disabled = disabled;
     endBtn.disabled = disabled;
   }
@@ -95,23 +97,21 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
       cancelAnimationFrame(raf);
       if (!previewing) return;
       previewing = false;
-      previewBtn.textContent = '▶ プレビュー再生';
       if (annotationMode) applyLockState();
+      else updateButtons();
     };
     video.addEventListener('pause', stopTicking);
     video.addEventListener('ended', stopTicking);
   });
   player.onTick(refresh);
   player.onSeeked(refresh);
-  previewBtn.addEventListener('click', () => {
-    if (previewing) {
-      player.getEl().pause();
-      return;
-    }
+  playBtn.addEventListener('click', () => {
     previewing = true;
-    previewBtn.textContent = '⏸ 停止';
     applyLockState();
     player.getEl().play();
+  });
+  pauseBtn.addEventListener('click', () => {
+    player.getEl().pause();
   });
   startBtn.addEventListener('click', () => lanes.setStart(editor.getSelectedId()));
   endBtn.addEventListener('click', () => lanes.setEnd(editor.getSelectedId()));
