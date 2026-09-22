@@ -1,11 +1,15 @@
 .vp-video-wrap { position: relative; width: fit-content; max-width: 100%; }
 #vp-annotation-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
-.vp-ann-lanes { position: relative; min-height: 34px; padding: 4px 0; }
+.vp-ann-lanes {
+  position: relative; min-height: 34px; max-height: 86px; padding: 4px 0; box-sizing: border-box; overflow-y: auto;
+  /* バー3本と間隔2つを収め、4本目からレーン内でスクロールさせる */
+}
 .vp-ann-lanes[hidden] { display: none; }
 .vp-ann-bar {
   position: relative; height: 24px; margin-bottom: 3px; box-sizing: border-box;
   border: 1px solid var(--tm-border-strong); border-radius: 4px; background: var(--tm-accent-surface);
 }
+.vp-ann-bar:last-child { margin-bottom: 0; }
 .vp-ann-bar.active { border-color: var(--tm-accent); background: var(--tm-accent); color: var(--tm-on-accent); }
 .vp-ann-label { display: block; padding: 3px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; }
 .vp-ann-handle { position: absolute; top: 0; bottom: 0; width: 12px; cursor: ew-resize; }
