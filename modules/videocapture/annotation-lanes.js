@@ -6,7 +6,7 @@
  */
 const VIDEO_ANNOTATION_MIN_RANGE = 0.2; // 注釈区間の最小長（秒）。調整操作と、末尾付近で作る新規注釈の初期区間で保証する
 
-function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo }) {
+function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo, isEditable }) {
   const NUDGE_STEP = 0.5; // 矢印キーでの移動幅（秒）
   let dragging = null;
   let renderedSignature = '';
@@ -43,6 +43,7 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo 
     laneEl.replaceChildren();
     const shapes = editor.getShapes();
     renderedSignature = signatureOf(shapes);
+    laneEl.hidden = !shapes.length;
     if (!shapes.length) return;
     shapes.forEach(shape => {
       const bar = document.createElement('div');
@@ -86,11 +87,19 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo 
     const bar = e.target.closest('.vp-ann-bar');
     if (!bar) return;
     const id = Number(bar.dataset.shapeId);
+    if (!isEditable()) {
+      e.preventDefault();
+      editor.select(id);
+      const shape = editor.getShapes().find(s => s.id === id);
+      seekTo(shape.startTime);
+      return;
+    }
     const handle = e.target.closest('.vp-ann-handle');
     if (handle) {
       e.preventDefault();
       editor.select(id);
       dragging = { id, edge: handle.dataset.edge };
+      editor.setForceVisible(id);
       return;
     }
     editor.select(id);
@@ -103,6 +112,7 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo 
       origin: { startTime: shape.startTime, endTime: shape.endTime },
       moved: false,
     };
+    editor.setForceVisible(id);
     document.body.style.cursor = 'grabbing';
   });
   document.addEventListener('mousemove', e => {
@@ -130,6 +140,7 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo 
       }
       document.body.style.cursor = '';
     }
+    editor.setForceVisible(null);
     dragging = null;
     updatePositions();
   });
@@ -138,6 +149,7 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo 
     if (handle) editor.select(Number(handle.parentElement.dataset.shapeId));
   });
   laneEl.addEventListener('keydown', e => {
+    if (!isEditable()) return;
     const handle = e.target.closest('.vp-ann-handle');
     if (!handle || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     e.preventDefault();

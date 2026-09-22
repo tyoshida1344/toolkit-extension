@@ -30,6 +30,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
     getTime: options.getTime || null,
     newRange: options.newRange || null,
     onChange: options.onChange || (() => {}),
+    forceVisibleId: null, // レーンのドラッグ中は現在時刻による表示区間の絞り込みを一時的に迂回する
     active: true,
   };
 
@@ -58,6 +59,10 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
       selectShape(state, null);
     },
     refresh: () => renderScene(state),
+    setForceVisible(id) {
+      state.forceVisibleId = id;
+      renderScene(state);
+    },
     setActive(active) {
       state.active = active;
       if (!active) setTool(state, state.currentTool);

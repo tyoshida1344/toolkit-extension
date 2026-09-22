@@ -32,6 +32,7 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
     laneEl, duration, editor,
     getTime: () => player.getEl().currentTime,
     seekTo: player.seekTo,
+    isEditable: () => annotationMode,
   });
 
   function updateButtons() {
@@ -60,7 +61,7 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
     annotationMode = active;
     editor.setActive(active);
     canvas.style.pointerEvents = active ? 'auto' : 'none';
-    laneEl.hidden = !active;
+    laneEl.classList.toggle('vp-ann-lanes--editable', active);
     if (active) {
       video.pause();
       video.controls = false;
