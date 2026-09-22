@@ -8,8 +8,9 @@ function renderScene(state) {
   const { ctx, canvas, baseImage, shapes } = state;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (baseImage) ctx.drawImage(baseImage, 0, 0);
+  const time = state.getTime ? state.getTime() : null;
   const visibleShapes = state.getTime
-    ? shapes.filter(s => isShapeVisibleAt(s, state.getTime()) || s.id === state.forceVisibleId)
+    ? shapes.filter(s => isShapeVisibleAt(s, time) || s.id === state.forceVisibleId)
     : shapes;
   visibleShapes.forEach(s => drawShape(ctx, s));
 

@@ -50,7 +50,9 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
     editor.setActive(editable);
     canvas.style.pointerEvents = editable ? 'auto' : 'none';
     toolbarEl.classList.toggle('vp-ann-locked', !editable);
+    toolbarEl.querySelectorAll('button, input').forEach(el => { el.disabled = !editable; });
     laneEl.classList.toggle('vp-ann-lanes--editable', editable);
+    lanes.updatePositions();
     updateButtons();
   }
 

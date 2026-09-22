@@ -26,6 +26,9 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo,
     handle.setAttribute('aria-valuenow', value.toFixed(2));
     handle.setAttribute('aria-valuemin', edge === 'start' ? '0' : (shape.startTime + VIDEO_ANNOTATION_MIN_RANGE).toFixed(2));
     handle.setAttribute('aria-valuemax', edge === 'start' ? (shape.endTime - VIDEO_ANNOTATION_MIN_RANGE).toFixed(2) : String(duration));
+    const editable = isEditable();
+    handle.tabIndex = editable ? 0 : -1;
+    handle.setAttribute('aria-disabled', String(!editable));
   }
 
   function updatePositions() {
@@ -129,7 +132,6 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo,
       const shape = editor.getShapes().find(s => s.id === dragging.id);
       editor.updateShape(shape.id, clampRange(shape, dragging.edge, time));
     }
-    updatePositions();
   });
   document.addEventListener('mouseup', () => {
     if (!dragging) return;
