@@ -56,6 +56,7 @@ function createTimelineZoom({ viewportEl, timelineEl, rulerEl, extraWidthEls = [
   zoomOutBtn.addEventListener('click', () => zoomBy(1 / ZOOM_STEP));
 
   viewportEl.addEventListener('wheel', e => {
+    if (extraWidthEls.some(el => el.contains(e.target))) return; // 独自スクロールを持つ行の上ではズームさせない
     e.preventDefault();
     const rect = viewportEl.getBoundingClientRect();
     const anchorScreenOffsetPx = e.clientX - rect.left;
