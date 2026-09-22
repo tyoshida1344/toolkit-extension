@@ -14,7 +14,7 @@
  * ラベルの left% はこの要素自身の幅が基準になる。.vp-timeline と同じ幅を明示的に
  * 与えないと、ズームで .vp-timeline だけが伸びてラベルの位置がずれてしまう。
  */
-function createTimelineZoom({ viewportEl, timelineEl, rulerEl, duration, zoomInBtn, zoomOutBtn, getAnchorTime, posToTime }) {
+function createTimelineZoom({ viewportEl, timelineEl, rulerEl, extraWidthEls = [], duration, zoomInBtn, zoomOutBtn, getAnchorTime, posToTime }) {
   const MIN_UNIT = 1 / 30; // 秒。最大ズーム時の目標精度（1px ≈ この値）
   const ZOOM_STEP = 1.5; // ボタン/ホイール1回あたりの拡大縮小倍率
   let visibleSeconds = duration;
@@ -28,6 +28,7 @@ function createTimelineZoom({ viewportEl, timelineEl, rulerEl, duration, zoomInB
     const widthPx = containerWidth * (duration / visibleSeconds);
     timelineEl.style.width = widthPx + 'px';
     rulerEl.style.width = widthPx + 'px';
+    extraWidthEls.forEach(el => { el.style.width = widthPx + 'px'; });
     return widthPx;
   }
 
@@ -55,6 +56,7 @@ function createTimelineZoom({ viewportEl, timelineEl, rulerEl, duration, zoomInB
   zoomOutBtn.addEventListener('click', () => zoomBy(1 / ZOOM_STEP));
 
   viewportEl.addEventListener('wheel', e => {
+    if (extraWidthEls.some(el => el.contains(e.target))) return; // 独自スクロールを持つ行の上ではズームさせない
     e.preventDefault();
     const rect = viewportEl.getBoundingClientRect();
     const anchorScreenOffsetPx = e.clientX - rect.left;

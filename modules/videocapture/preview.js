@@ -6,6 +6,7 @@
   const saveBtn = document.getElementById('vp-save');
   const statusEl = document.getElementById('vp-status');
   const trimEl = document.getElementById('vp-trim');
+  let annotation = null;
 
   // 編集モード切替タブ。注釈編集など今後のモードをタブ + #vp-mode-<mode> パネルの組で
   // 追加できるよう汎用的に配線しておく
@@ -13,10 +14,12 @@
     tab.addEventListener('click', () => {
       document.querySelectorAll('.vp-mode-tab').forEach(t => t.classList.toggle('active', t === tab));
       document.querySelectorAll('.vp-mode-panel').forEach(p => { p.hidden = p.id !== `vp-mode-${tab.dataset.mode}`; });
+      if (annotation) annotation.setMode(tab.dataset.mode === 'annotation');
     });
   });
   // アイコンは ui-helpers.js の _TkUI.ICONS（他機能とも共有する SVG 置き場）から流用する
   document.getElementById('vp-mode-tab-speed').insertAdjacentHTML('afterbegin', _TkUI.ICONS.speed);
+  document.getElementById('vp-mode-tab-annotation').insertAdjacentHTML('afterbegin', _TkUI.ICONS.bubble);
 
   const id = new URLSearchParams(location.search).get('id');
   const record = id && await TkVideoBlobStore.takeAndDelete(id);
@@ -80,6 +83,25 @@
       zoomInBtn: document.getElementById('vp-timeline-zoom-in'),
       zoomOutBtn: document.getElementById('vp-timeline-zoom-out'),
       duration: videoElA.duration,
+      extraWidthEls: [document.getElementById('vp-annotation-lanes')],
+      extraEdits: {
+        isEdited: () => !!annotation && annotation.getShapes().length > 0,
+        reset: () => annotation && annotation.clear(),
+      },
+    });
+    annotation = createVideoAnnotationOverlay({
+      videoElA,
+      videoElB,
+      canvas: document.getElementById('vp-annotation-canvas'),
+      canvasWrap: document.getElementById('vp-video-wrap'),
+      duration: videoElA.duration,
+      player: timeline.player,
+      laneEl: document.getElementById('vp-annotation-lanes'),
+      playBtn: document.getElementById('vp-preview-play'),
+      pauseBtn: document.getElementById('vp-preview-pause'),
+      startBtn: document.getElementById('vp-ann-start'),
+      endBtn: document.getElementById('vp-ann-end'),
+      onChange: timeline.refreshUi,
     });
   });
 
@@ -93,6 +115,7 @@
     const f = formats.find(x => x.key === formatEl.value);
     if (!f) return;
     const clips = timeline ? timeline.getClips() : [{ start: 0, end: videoElA.duration, speed: 1 }];
+    const shapes = annotation ? annotation.getShapes() : [];
     const isEdited = timeline ? timeline.isEdited() : false;
 
     let outBlob = f.blob;
@@ -110,6 +133,7 @@
       try {
         outBlob = await exportTrimmedVideo({
           blob: f.blob, mimeType: f.mimeType, clips,
+          annotations: shapes,
           onProgress: setProgress,
         });
       } catch (e) {

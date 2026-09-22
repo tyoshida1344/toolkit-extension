@@ -1,17 +1,18 @@
 /**
- * trim-export.js — カット・クリップ単位の速度変更を反映した動画の再エンコード
+ * trim-export.js — カット・速度変更・注釈を反映した動画の再エンコード
  *
- * 画角の変換は不要（残すクリップの再生範囲と速度の変更のみ）なため、#89 の矩形選択録画のような
- * canvas 合成は行わず、HTMLVideoElement.captureStream() で再生中の動画から直接 MediaStream
- * （映像+音声）を取得し、そのまま MediaRecorder に渡す。クリップを順に再生・録画し、カットされた
+ * 注釈が無い場合は HTMLVideoElement.captureStream() で再生中の動画から直接 MediaStream
+ * （映像+音声）を取得する従来経路を使う。注釈がある場合だけ canvas に動画と図形を合成し、元動画の
+ * 音声トラックを加えて MediaRecorder に渡す。クリップを順に再生・録画し、カットされた
  * 区間（クリップ間の隙間）は再生位置を次クリップの開始点へシークして読み飛ばす。シーク中は
  * MediaRecorder を一時停止し、シークの待ち時間（コマ止まり）が書き出し結果に写り込まないようにする。
  * 音声ピッチはブラウザ既定（preservesPitch）のまま維持する。
  */
-async function exportTrimmedVideo({ blob, mimeType, clips, onProgress }) {
+async function exportTrimmedVideo({ blob, mimeType, clips, annotations = [], onProgress }) {
   const video = document.getElementById('vp-export-video');
   const url = URL.createObjectURL(blob);
   video.src = url;
+  let composite = null;
   try {
     await new Promise((resolve, reject) => {
       video.onloadedmetadata = resolve;
@@ -35,7 +36,13 @@ async function exportTrimmedVideo({ blob, mimeType, clips, onProgress }) {
     video.playbackRate = clips[0].speed;
     await seekTo(clips[0].start);
 
-    const stream = video.captureStream();
+    let stream;
+    if (annotations.length) {
+      composite = createVideoAnnotationComposite(video, annotations);
+      stream = composite.start();
+    } else {
+      stream = video.captureStream();
+    }
     const recorder = new MediaRecorder(stream, { mimeType });
     const chunks = [];
     recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
@@ -84,6 +91,7 @@ async function exportTrimmedVideo({ blob, mimeType, clips, onProgress }) {
 
     return await resultPromise;
   } finally {
+    if (composite) composite.stop();
     video.pause();
     video.removeAttribute('src');
     video.load();

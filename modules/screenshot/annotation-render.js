@@ -7,8 +7,12 @@
 function renderScene(state) {
   const { ctx, canvas, baseImage, shapes } = state;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(baseImage, 0, 0);
-  shapes.forEach(s => drawShape(ctx, s));
+  if (baseImage) ctx.drawImage(baseImage, 0, 0);
+  const time = state.getTime ? state.getTime() : null;
+  const visibleShapes = state.getTime
+    ? shapes.filter(s => isShapeVisibleAt(s, time) || s.id === state.forceVisibleId)
+    : shapes;
+  visibleShapes.forEach(s => drawShape(ctx, s));
 
   if (state.draft) {
     ctx.save();
@@ -27,7 +31,7 @@ function renderScene(state) {
     ctx.restore();
   }
   if (state.selectedId != null) {
-    const s = findShape(shapes, state.selectedId);
+    const s = findShape(visibleShapes, state.selectedId);
     if (s) {
       const b = shapeBounds(ctx, s);
       ctx.save();

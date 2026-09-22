@@ -18,13 +18,17 @@ function createTrimTimeline({
   videoElA, videoElB, timelineEl, timelineViewportEl, rulerEl, playheadEl, splitIconEl,
   durationLabelEl,
   restartBtn, startBtn, endBtn, splitBtn, deleteBtn, resetBtn, speedEl,
-  zoomInBtn, zoomOutBtn, duration,
+  zoomInBtn, zoomOutBtn, duration, extraEdits = null, extraWidthEls = [],
 }) {
   const model = createClipModel(duration);
   const player = createDualVideoPlayer(videoElA, videoElB, model);
   const { render, updatePositions } = createTimelineRenderer({ timelineEl, rulerEl, duration, model });
   let editIndex = 0;
   let dragging = null; // ドラッグ中の .vp-timeline-handle 要素 | null
+
+  function isEdited() {
+    return model.isEdited() || !!(extraEdits && extraEdits.isEdited());
+  }
 
   function renderPlayhead() {
     const pct = (player.getEl().currentTime / duration) * 100 + '%';
@@ -40,7 +44,7 @@ function createTrimTimeline({
     speedEl.value = String(clip.speed);
     deleteBtn.disabled = clips.length <= 1;
     splitBtn.disabled = !model.canSplitAt(player.getEl().currentTime);
-    resetBtn.disabled = !model.isEdited();
+    resetBtn.disabled = !isEdited();
     timelineEl.querySelectorAll('.vp-timeline-selected').forEach((el, i) => {
       el.classList.toggle('active', i === editIndex);
     });
@@ -206,9 +210,10 @@ function createTrimTimeline({
   });
 
   resetBtn.addEventListener('click', () => {
-    if (!model.isEdited()) return; // 何も編集していなければ確認不要
-    if (!confirm('カット・速度など、これまでの編集内容をすべて元に戻します。よろしいですか？')) return;
+    if (!isEdited()) return; // 何も編集していなければ確認不要
+    if (!confirm('カット・速度・注釈など、これまでの編集内容をすべて元に戻します。よろしいですか？')) return;
     model.reset();
+    if (extraEdits) extraEdits.reset();
     render();
     resyncToCurrentTime();
     player.refreshPrep();
@@ -234,6 +239,7 @@ function createTrimTimeline({
     zoomOutBtn,
     getAnchorTime: () => player.getEl().currentTime,
     posToTime,
+    extraWidthEls,
   });
 
   render();
@@ -242,7 +248,9 @@ function createTrimTimeline({
 
   return {
     getClips: model.getClips,
-    isEdited: model.isEdited,
+    isEdited,
     setSource: url => player.setSource(url),
+    player,
+    refreshUi,
   };
 }
