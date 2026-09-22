@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>スクリーンショットプレビュー</title>
   <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/preview-layout.css">
   <link rel="stylesheet" href="styles/annotation.css">
   <style>
     body {
@@ -11,7 +12,6 @@
       background: var(--tm-bg-sunken);
       display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
-    .panel { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
     .toolbar {
       width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
       position: sticky; top: 0; z-index: 1; padding: 8px 0; background: var(--tm-bg-sunken);
@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <div class="panel">
+  <div class="panel preview-panel">
     <div class="toolbar">
       <span class="title">プレビュー</span>
       <div class="tm-inline">
@@ -41,7 +41,17 @@
         <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
       </div>
     </div>
-    <div class="ann-toolbar" id="ann-toolbar" hidden>
+    <div class="preview-layout">
+      <div class="preview-main">
+        <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
+        <div class="frame">
+          <div class="ann-canvas-wrap" id="ann-canvas-wrap">
+            <canvas id="sp-canvas" role="img" aria-label="撮影結果プレビュー（注釈編集可能）" hidden></canvas>
+          </div>
+        </div>
+      </div>
+      <aside class="preview-side-panel" aria-label="注釈編集">
+        <div class="ann-toolbar" id="ann-toolbar" hidden>
       <div class="tm-inline">
         <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-select" data-tool="select" data-tip="選択" aria-label="選択"></button>
         <button type="button" class="tm-icon-btn ann-tool-btn active" id="ann-tool-rect" data-tool="rect" data-tip="四角形（枠線）" aria-label="四角形（枠線）"></button>
@@ -70,12 +80,8 @@
         <span class="ann-size-label" id="ann-style-hint">オブジェクトをクリックすると編集できます</span>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中のオブジェクトを削除（Delete / Backspace）" hidden>削除</button>
       </div>
-    </div>
-    <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
-    <div class="frame">
-      <div class="ann-canvas-wrap" id="ann-canvas-wrap">
-        <canvas id="sp-canvas" role="img" aria-label="撮影結果プレビュー（注釈編集可能）" hidden></canvas>
-      </div>
+        </div>
+      </aside>
     </div>
     <div class="status" id="sp-status">読み込み中…</div>
   </div>

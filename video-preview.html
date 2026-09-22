@@ -5,6 +5,7 @@
   <title>動画キャプチャ プレビュー</title>
   <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="styles/modal.css">
+  <link rel="stylesheet" href="styles/preview-layout.css">
   <link rel="stylesheet" href="styles/annotation.css">
   <link rel="stylesheet" href="styles/video-annotation.css">
   <style>
@@ -13,7 +14,6 @@
       background: var(--tm-bg-sunken);
       display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
-    .panel { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
     .toolbar {
       width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
       position: sticky; top: 0; z-index: 1; padding: 8px 0; background: var(--tm-bg-sunken);
@@ -28,10 +28,10 @@
     /* .tm-inline は display:flex を持つため、[hidden] だけでは隠れない（screenshot-preview.html と同じ対処） */
     #vp-actions[hidden] { display: none; }
     .status { color: var(--tm-text-muted); font-size: 13px; }
-    .vp-trim { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 8px; }
+    .vp-trim { width: 100%; display: flex; flex-direction: column; gap: 8px; }
     .vp-trim[hidden] { display: none; }
-    .vp-trim .tm-inline { flex-wrap: wrap; }
-    .vp-trim .tm-inline .tm-label { margin-bottom: 0; }
+    .vp-trim .tm-inline, .vp-mode-panel .tm-inline { flex-wrap: wrap; }
+    .vp-mode-panel .tm-inline .tm-label { margin-bottom: 0; }
     /* タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する共有部分 */
     .vp-timeline-row { display: flex; align-items: flex-start; gap: 8px; }
     /* ボタン(34px)の上端をタイムライン本体（.vp-timeline-viewport の padding-top ぶん下がった位置）の
@@ -48,7 +48,7 @@
     .vp-timeline-ruler-label-first { transform: translateX(0); }
     .vp-timeline-ruler-label-last { transform: translateX(-100%); }
     /* モード切替タブ。今は「トリム」「速度」のみだが、注釈編集など今後のモード追加を見込んだ構造にしている */
-    .vp-mode-tabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--tm-border); padding-bottom: 4px; }
+    .vp-mode-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; border-bottom: 1px solid var(--tm-border); padding-bottom: 4px; }
     .vp-mode-tab {
       padding: 6px 14px; margin-bottom: -1px; border: none; border-bottom: 2px solid transparent;
       background: none; color: var(--tm-text-muted); font-size: 13px; cursor: pointer;
@@ -116,7 +116,7 @@
   </style>
 </head>
 <body>
-  <div class="panel">
+  <div class="panel preview-panel">
     <div class="toolbar">
       <span class="title">プレビュー</span>
       <div class="tm-inline" id="vp-actions">
@@ -124,21 +124,23 @@
         <button type="button" class="tm-btn tm-btn-primary" id="vp-save">💾 ダウンロード</button>
       </div>
     </div>
-    <div class="frame">
-      <div class="ann-canvas-wrap vp-video-wrap" id="vp-video-wrap">
-        <video id="vp-video" controls hidden></video>
-        <video id="vp-video-b" muted style="display:none"></video>
-        <canvas id="vp-annotation-canvas" aria-label="動画の注釈編集"></canvas>
-      </div>
-    </div>
-    <div class="vp-trim" id="vp-trim" hidden>
-      <div class="tm-inline">
+    <div class="preview-layout">
+      <div class="preview-main">
+        <div class="frame">
+          <div class="ann-canvas-wrap vp-video-wrap" id="vp-video-wrap">
+            <video id="vp-video" controls hidden></video>
+            <video id="vp-video-b" muted style="display:none"></video>
+            <canvas id="vp-annotation-canvas" aria-label="動画の注釈編集"></canvas>
+          </div>
+        </div>
+        <div class="vp-trim" id="vp-trim" hidden>
+          <div class="tm-inline">
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮ 最初に戻す</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-pause">⏸ 一時停止</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-play">▶ 再生</button>
-      </div>
-      <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
-      <div class="vp-timeline-row">
+          </div>
+          <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
+          <div class="vp-timeline-row">
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-out" title="縮小" aria-label="タイムラインを縮小">－</button>
         <div class="vp-timeline-viewport" id="vp-timeline-viewport">
           <div class="vp-timeline" id="vp-timeline">
@@ -149,10 +151,13 @@
           <div class="vp-ann-lanes" id="vp-annotation-lanes" hidden></div>
         </div>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
+          </div>
+        </div>
       </div>
 
-      <!-- 編集モード切替タブ。リセットはトリム・速度・注釈をまとめて初期化する
-           モード横断の操作なのでこの行に置く -->
+      <aside class="preview-side-panel" aria-label="動画編集">
+        <!-- 編集モード切替タブ。リセットはトリム・速度・注釈をまとめて初期化する
+             モード横断の操作なのでこの行に置く -->
       <div class="vp-mode-tabs" id="vp-mode-tabs">
         <button type="button" class="vp-mode-tab active" data-mode="trim">✂ トリム</button>
         <button type="button" class="vp-mode-tab" id="vp-mode-tab-speed" data-mode="speed">速度</button>
@@ -219,6 +224,7 @@
           <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-ann-end">現在位置を終了に</button>
         </div>
       </div>
+      </aside>
     </div>
     <div class="status" id="vp-status">読み込み中…</div>
   </div>
