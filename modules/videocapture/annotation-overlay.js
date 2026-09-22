@@ -55,7 +55,7 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
   }
 
   function refresh() {
-    if (annotationMode) player.getEl().controls = false; // swap() が controls を有効に戻すため注釈タブ中は打ち消す
+    player.getEl().controls = false; // swap() が controls を有効に戻すため毎回打ち消す
     editor.refresh();
   }
 
@@ -74,12 +74,8 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
     const video = player.getEl();
     annotationMode = active;
     applyLockState();
-    if (active) {
-      video.pause();
-      video.controls = false;
-    } else {
-      video.controls = true;
-    }
+    video.controls = false; // 独自のタイムラインと再生ボタンで操作するため常に隠す
+    if (active) video.pause();
     refresh();
   }
 

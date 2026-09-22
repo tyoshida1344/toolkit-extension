@@ -132,6 +132,11 @@
       </div>
     </div>
     <div class="vp-trim" id="vp-trim" hidden>
+      <div class="tm-inline">
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-play">▶ 再生</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-pause">⏸ 一時停止</button>
+      </div>
       <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
       <div class="vp-timeline-row">
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-out" title="縮小" aria-label="タイムラインを縮小">－</button>
@@ -144,11 +149,6 @@
           <div class="vp-ann-lanes" id="vp-annotation-lanes" hidden></div>
         </div>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-timeline-zoom-in" title="拡大" aria-label="タイムラインを拡大">＋</button>
-      </div>
-      <div class="tm-inline">
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-play">▶ 再生</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-pause">⏸ 一時停止</button>
       </div>
 
       <!-- 編集モード切替タブ。リセットはトリム・速度・注釈をまとめて初期化する
