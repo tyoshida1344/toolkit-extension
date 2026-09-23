@@ -1,12 +1,14 @@
 /**
- * offscreen.js — desktopCapture の映像からスクリーンショットを生成する。
+ * offscreen.js — 画面共有ピッカーで選択した映像からスクリーンショットを生成する。
  */
-async function captureDesktopFrame(streamId) {
+async function captureDesktopFrame() {
   let stream;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
+    stream = await navigator.mediaDevices.getDisplayMedia({
       audio: false,
-      video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: streamId } },
+      video: { displaySurface: 'monitor' },
+      selfBrowserSurface: 'exclude',
+      surfaceSwitching: 'exclude',
     });
     const video = document.createElement('video');
     video.srcObject = stream;
@@ -25,8 +27,11 @@ async function captureDesktopFrame(streamId) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type !== 'captureDesktopFrame') return;
-  captureDesktopFrame(msg.streamId)
+  captureDesktopFrame()
     .then(dataUrl => sendResponse({ ok: true, dataUrl }))
-    .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+    .catch(e => {
+      if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) sendResponse({ ok: true, cancelled: true });
+      else sendResponse({ ok: false, error: String((e && e.message) || e) });
+    });
   return true;
 });

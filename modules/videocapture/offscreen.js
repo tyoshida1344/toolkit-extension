@@ -47,6 +47,20 @@ async function vcOpenStream(streamId, width, height, sourceType, includeAudio) {
   vcMediaStream.getVideoTracks()[0].onended = () => { chrome.runtime.sendMessage({ type: 'vcStopClicked' }); };
 }
 
+async function vcOpenDisplayStream() {
+  vcMediaStream = await navigator.mediaDevices.getDisplayMedia({
+    audio: true,
+    video: { displaySurface: 'monitor' },
+    selfBrowserSurface: 'exclude',
+    surfaceSwitching: 'exclude',
+    systemAudio: 'include',
+  });
+  vcVideoEl.srcObject = vcMediaStream;
+  vcVideoEl.muted = true;
+  await vcVideoEl.play();
+  vcMediaStream.getVideoTracks()[0].onended = () => { chrome.runtime.sendMessage({ type: 'vcStopClicked' }); };
+}
+
 function vcCloseStream() {
   if (vcMediaStream) vcMediaStream.getTracks().forEach(t => t.stop());
   if (vcAudioCtx) vcAudioCtx.close();
@@ -78,6 +92,15 @@ async function vcFinishRecording() {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'vcOpenStream') {
     vcOpenStream(msg.streamId, msg.width, msg.height, msg.sourceType, msg.includeAudio).then(() => sendResponse({ ok: true })).catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+    return true;
+  }
+  if (msg.type === 'vcOpenDisplayStream') {
+    vcOpenDisplayStream()
+      .then(() => sendResponse({ ok: true }))
+      .catch(e => {
+        if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) sendResponse({ ok: true, cancelled: true });
+        else sendResponse({ ok: false, error: String((e && e.message) || e) });
+      });
     return true;
   }
   if (msg.type === 'vcStartRecording') {

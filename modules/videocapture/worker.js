@@ -72,8 +72,8 @@ async function vcEnsureOffscreenDocument() {
   if (await chrome.offscreen.hasDocument()) return;
   await chrome.offscreen.createDocument({
     url: 'offscreen.html',
-    reasons: ['USER_MEDIA'],
-    justification: 'タブの動画・音声を録画するため',
+    reasons: ['USER_MEDIA', 'DISPLAY_MEDIA'],
+    justification: 'タブまたは画面の動画・音声を録画するため',
   });
 }
 async function vcCloseOffscreenDocument() {
@@ -128,19 +128,16 @@ async function startVideoCapture(tabId, mode) {
 async function startDesktopVideoCapture(tabId) {
   if (vcRecordingTabId !== null) throw new Error('既に録画中です');
   const tab = await chrome.tabs.get(tabId);
-  const source = await chooseDesktopSource();
-  if (!source) return { cancelled: true };
 
   const hadOffscreenDocument = await chrome.offscreen.hasDocument();
   await vcEnsureOffscreenDocument();
   try {
-    const openRes = await chrome.runtime.sendMessage({
-      type: 'vcOpenStream',
-      streamId: source.streamId,
-      sourceType: 'desktop',
-      includeAudio: source.canRequestAudioTrack,
-    });
+    const openRes = await chrome.runtime.sendMessage({ type: 'vcOpenDisplayStream' });
     if (!openRes || !openRes.ok) throw new Error((openRes && openRes.error) || 'ストリームの取得に失敗しました');
+    if (openRes.cancelled) {
+      if (!hadOffscreenDocument) await vcCloseOffscreenDocument();
+      return { cancelled: true };
+    }
 
     vcRecordingTabId = tabId;
     vcBaseName = videoBaseName(tab.title);
