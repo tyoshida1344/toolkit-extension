@@ -16,10 +16,14 @@ Toolkit.registerTab({
     <div class="tm-row">
       <button class="tm-btn tm-btn-primary" id="scr-capture">📸 撮影</button>
     </div>
+    <div class="tm-row">
+      <button class="tm-btn tm-btn-secondary" id="scr-desktop-capture">📸 画面/ウィンドウを撮影</button>
+    </div>
     <div class="tm-label" id="scr-status"></div>
   `,
   init() {
-    const modeEl = Toolkit.$('scr-mode'), delayEl = Toolkit.$('scr-delay'), delayRow = Toolkit.$('scr-delay-row'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
+    const modeEl = Toolkit.$('scr-mode'), delayEl = Toolkit.$('scr-delay'), delayRow = Toolkit.$('scr-delay-row');
+    const btn = Toolkit.$('scr-capture'), desktopBtn = Toolkit.$('scr-desktop-capture'), statusEl = Toolkit.$('scr-status');
 
     // 要素選択・矩形選択はクリック/ドラッグでの選択操作自体が前提のため、ページ状態を整えて自動撮影する「遅延」とは相性が悪く無効化する
     function syncDelayAvailability() {
@@ -62,6 +66,28 @@ Toolkit.registerTab({
         }
         if (res.picking) { window.close(); return; }
         Toolkit.showToast('🖼 新しいタブでプレビューを開きました');
+      });
+    });
+
+    desktopBtn.addEventListener('click', async () => {
+      const tabsApi = typeof chrome !== 'undefined' && chrome.tabs;
+      if (!tabsApi) { Toolkit.showToast('⚠ この環境では撮影できません'); return; }
+      let tab;
+      try {
+        const list = await tabsApi.query({ active: true, currentWindow: true });
+        tab = list && list[0];
+      } catch (_) {}
+      if (!tab) { Toolkit.showToast('⚠ 撮影対象を取得できません'); return; }
+      desktopBtn.disabled = true;
+      statusEl.textContent = '撮影対象を選択中…';
+      chrome.runtime.sendMessage({ type: 'captureDesktopScreenshot', tabId: tab.id }, res => {
+        desktopBtn.disabled = false;
+        statusEl.textContent = '';
+        if (chrome.runtime.lastError || !res || !res.ok) {
+          Toolkit.showToast('⚠ 撮影に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
+          return;
+        }
+        if (!res.cancelled) Toolkit.showToast('🖼 新しいタブでプレビューを開きました');
       });
     });
   },

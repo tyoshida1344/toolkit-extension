@@ -11,6 +11,9 @@ Toolkit.registerTab({
       <div class="tm-row">
         <button class="tm-btn tm-btn-primary" id="vc-record">🎥 録画開始</button>
       </div>
+      <div class="tm-row">
+        <button class="tm-btn tm-btn-secondary" id="vc-desktop-record">🎥 画面/ウィンドウを録画</button>
+      </div>
       <div class="tm-label">タブの音声を含めて録画します。最大10分で自動的に停止します</div>
     </div>
     <div id="vc-recording-view" hidden>
@@ -25,7 +28,7 @@ Toolkit.registerTab({
   `,
   init() {
     const idleView = Toolkit.$('vc-idle-view'), recordingView = Toolkit.$('vc-recording-view');
-    const modeEl = Toolkit.$('vc-mode'), recordBtn = Toolkit.$('vc-record'), stopBtn = Toolkit.$('vc-stop');
+    const modeEl = Toolkit.$('vc-mode'), recordBtn = Toolkit.$('vc-record'), desktopBtn = Toolkit.$('vc-desktop-record'), stopBtn = Toolkit.$('vc-stop');
     const elapsedEl = Toolkit.$('vc-elapsed'), statusEl = Toolkit.$('vc-status');
     Toolkit.bindState('videocapture', { 'vc-mode': ['value', 'mode'] });
 
@@ -68,6 +71,28 @@ Toolkit.registerTab({
           return;
         }
         window.close();
+      });
+    });
+
+    desktopBtn.addEventListener('click', async () => {
+      const tabsApi = typeof chrome !== 'undefined' && chrome.tabs;
+      if (!tabsApi) { Toolkit.showToast('⚠ この環境では録画できません'); return; }
+      let tab;
+      try {
+        const list = await tabsApi.query({ active: true, currentWindow: true });
+        tab = list && list[0];
+      } catch (_) {}
+      if (!tab) { Toolkit.showToast('⚠ 録画対象を取得できません'); return; }
+      desktopBtn.disabled = true;
+      statusEl.textContent = '録画対象を選択中…';
+      chrome.runtime.sendMessage({ type: 'startDesktopVideoCapture', tabId: tab.id }, res => {
+        desktopBtn.disabled = false;
+        statusEl.textContent = '';
+        if (chrome.runtime.lastError || !res || !res.ok) {
+          Toolkit.showToast('⚠ 録画の開始に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
+          return;
+        }
+        if (!res.cancelled) window.close();
       });
     });
 

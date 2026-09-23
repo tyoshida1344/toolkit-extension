@@ -100,6 +100,7 @@ async function startVideoCapture(tabId, mode) {
   const openRes = await chrome.runtime.sendMessage({
     type: 'vcOpenStream',
     streamId,
+    sourceType: 'tab',
     width: Math.round(viewport.innerWidth * viewport.devicePixelRatio),
     height: Math.round(viewport.innerHeight * viewport.devicePixelRatio),
   });
@@ -122,6 +123,43 @@ async function startVideoCapture(tabId, mode) {
   vcArmAutoStop();
   vcStartBadge();
   return { recording: true, startedAt: vcStartedAt };
+}
+
+async function startDesktopVideoCapture(tabId) {
+  if (vcRecordingTabId !== null) throw new Error('既に録画中です');
+  const tab = await chrome.tabs.get(tabId);
+  const source = await chooseDesktopSource();
+  if (!source) return { cancelled: true };
+
+  const hadOffscreenDocument = await chrome.offscreen.hasDocument();
+  await vcEnsureOffscreenDocument();
+  try {
+    const openRes = await chrome.runtime.sendMessage({
+      type: 'vcOpenStream',
+      streamId: source.streamId,
+      sourceType: 'desktop',
+      includeAudio: source.canRequestAudioTrack,
+    });
+    if (!openRes || !openRes.ok) throw new Error((openRes && openRes.error) || 'ストリームの取得に失敗しました');
+
+    vcRecordingTabId = tabId;
+    vcBaseName = videoBaseName(tab.title);
+    const startRes = await chrome.runtime.sendMessage({ type: 'vcStartRecording', rect: null, baseName: vcBaseName });
+    if (!startRes || !startRes.ok) {
+      await abortVideoCapture();
+      throw new Error((startRes && startRes.error) || '録画の開始に失敗しました');
+    }
+    vcStartedAt = Date.now();
+    vcArmAutoStop();
+    vcStartBadge();
+    return { cancelled: false, recording: true, startedAt: vcStartedAt };
+  } catch (e) {
+    if (vcRecordingTabId === null) {
+      try { await chrome.runtime.sendMessage({ type: 'vcAbort' }); } catch (_) {}
+      if (!hadOffscreenDocument) await vcCloseOffscreenDocument();
+    }
+    throw e;
+  }
 }
 
 // ページ側の矩形選択オーバーレイからの矩形確定を受けて、実際の録画を開始する。

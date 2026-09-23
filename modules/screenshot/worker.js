@@ -50,6 +50,41 @@ async function openPreviewTab({ dataUrl, baseName, truncated }) {
   await chrome.tabs.create({ url: chrome.runtime.getURL('screenshot-preview.html') });
 }
 
+function chooseDesktopSource() {
+  return new Promise((resolve, reject) => {
+    chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'audio'], (streamId, options) => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve(streamId ? { streamId, canRequestAudioTrack: !!(options && options.canRequestAudioTrack) } : null);
+    });
+  });
+}
+
+async function captureDesktopScreenshot(tabId) {
+  const tab = await chrome.tabs.get(tabId);
+  const source = await chooseDesktopSource();
+  if (!source) return { cancelled: true };
+
+  const hadOffscreenDocument = await chrome.offscreen.hasDocument();
+  if (!hadOffscreenDocument) {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen.html',
+      reasons: ['USER_MEDIA'],
+      justification: '画面またはウィンドウの静止画を撮影するため',
+    });
+  }
+  try {
+    const res = await chrome.runtime.sendMessage({ type: 'captureDesktopFrame', streamId: source.streamId });
+    if (!res || !res.ok) throw new Error((res && res.error) || '画像の取得に失敗しました');
+    await openPreviewTab({ dataUrl: res.dataUrl, baseName: screenshotBaseName(tab.title), truncated: false });
+    return { cancelled: false };
+  } finally {
+    if (!hadOffscreenDocument && vcRecordingTabId === null && await chrome.offscreen.hasDocument()) {
+      await chrome.offscreen.closeDocument();
+    }
+  }
+}
+
 async function runCaptureAndOpenPreview(tabId, mode) {
   const { dataUrl, baseName, truncated } = await captureScreenshot(tabId, mode);
   await openPreviewTab({ dataUrl, baseName, truncated });
