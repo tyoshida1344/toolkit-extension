@@ -7,14 +7,12 @@ Toolkit.registerTab({
         <option value="fullpage">ページ全体（スクロール含む）</option>
         <option value="element">要素選択</option>
         <option value="rect">矩形選択</option>
+        <option value="desktop">画面/ウィンドウ</option>
       </select>
     </div>
     <div class="tm-row tm-inline" id="scr-delay-row">
       <label class="tm-label" style="white-space:nowrap;margin:0">遅延（秒）</label>
       <input type="number" class="tm-input" id="scr-delay" value="0" min="0" max="10" step="1" style="width:80px">
-    </div>
-    <div class="tm-row">
-      ${Toolkit.checkLabel('scr-desktop', '画面/ウィンドウを対象にする', { title: 'チェックすると、選んだ画面全体またはウィンドウを撮影します（ページ外の内容も映り込みます。キャプチャ範囲・遅延の指定は無効になります）' })}
     </div>
     <div class="tm-row">
       <button class="tm-btn tm-btn-primary" id="scr-capture">📸 撮影</button>
@@ -23,21 +21,18 @@ Toolkit.registerTab({
   `,
   init() {
     const modeEl = Toolkit.$('scr-mode'), delayEl = Toolkit.$('scr-delay'), delayRow = Toolkit.$('scr-delay-row');
-    const desktopEl = Toolkit.$('scr-desktop'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
+    const btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
 
     // 要素選択・矩形選択はクリック/ドラッグでの選択操作自体が前提のため、ページ状態を整えて自動撮影する「遅延」とは相性が悪く無効化する
     function syncDelayAvailability() {
-      const desktopMode = desktopEl.checked;
-      const delayDisabled = desktopMode || modeEl.value === 'element' || modeEl.value === 'rect';
-      modeEl.disabled = desktopMode;
+      const delayDisabled = modeEl.value === 'desktop' || modeEl.value === 'element' || modeEl.value === 'rect';
       delayEl.disabled = delayDisabled;
       delayRow.style.opacity = delayDisabled ? '0.5' : '';
     }
 
-    Toolkit.bindState('screenshot', { 'scr-mode': ['value', 'mode'], 'scr-delay': ['value', 'delaySeconds'], 'scr-desktop': ['checked', 'desktopMode'] }, { onRestore: syncDelayAvailability });
+    Toolkit.bindState('screenshot', { 'scr-mode': ['value', 'mode'], 'scr-delay': ['value', 'delaySeconds'] }, { onRestore: syncDelayAvailability });
     Toolkit.clampInput(delayEl);
     modeEl.addEventListener('change', syncDelayAvailability);
-    desktopEl.addEventListener('change', syncDelayAvailability);
     syncDelayAvailability();
 
     btn.addEventListener('click', async () => {
@@ -48,7 +43,7 @@ Toolkit.registerTab({
         const list = await tabsApi.query({ active: true, currentWindow: true });
         tab = list && list[0];
       } catch (_) {}
-      const desktopMode = desktopEl.checked;
+      const desktopMode = modeEl.value === 'desktop';
       if (!tab || (!desktopMode && !/^https?:\/\//.test(tab.url || ''))) {
         Toolkit.showToast('⚠ このページでは撮影できません');
         return;
