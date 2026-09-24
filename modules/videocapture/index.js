@@ -6,6 +6,7 @@ Toolkit.registerTab({
         <select class="tm-select" id="vc-mode">
           <option value="viewport">表示領域全体</option>
           <option value="rect">矩形選択</option>
+          <option value="desktop">画面/ウィンドウ</option>
         </select>
       </div>
       <div class="tm-row">
@@ -54,20 +55,24 @@ Toolkit.registerTab({
         const list = await tabsApi.query({ active: true, currentWindow: true });
         tab = list && list[0];
       } catch (_) {}
-      if (!tab || !/^https?:\/\//.test(tab.url || '')) {
+      const desktopMode = modeEl.value === 'desktop';
+      if (!tab || (!desktopMode && !/^https?:\/\//.test(tab.url || ''))) {
         Toolkit.showToast('⚠ このページでは録画できません');
         return;
       }
       recordBtn.disabled = true;
-      statusEl.textContent = modeEl.value === 'rect' ? '矩形選択を起動中…' : '録画準備中…';
-      chrome.runtime.sendMessage({ type: 'startVideoCapture', tabId: tab.id, mode: modeEl.value }, res => {
+      statusEl.textContent = desktopMode ? '録画対象を選択中…' : modeEl.value === 'rect' ? '矩形選択を起動中…' : '録画準備中…';
+      const message = desktopMode
+        ? { type: 'startDesktopVideoCapture', tabId: tab.id }
+        : { type: 'startVideoCapture', tabId: tab.id, mode: modeEl.value };
+      chrome.runtime.sendMessage(message, res => {
         recordBtn.disabled = false;
         statusEl.textContent = '';
         if (chrome.runtime.lastError || !res || !res.ok) {
           Toolkit.showToast('⚠ 録画の開始に失敗しました' + (res && res.error ? '（' + res.error + '）' : ''));
           return;
         }
-        window.close();
+        if (!res.cancelled) window.close();
       });
     });
 
