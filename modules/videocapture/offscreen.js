@@ -49,7 +49,11 @@ async function vcOpenStream(streamId, width, height, sourceType, includeAudio) {
 
 async function vcOpenDisplayStream() {
   vcMediaStream = await navigator.mediaDevices.getDisplayMedia({
-    audio: true,
+    audio: {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+    },
     video: { displaySurface: 'monitor' },
     selfBrowserSurface: 'exclude',
     surfaceSwitching: 'exclude',
