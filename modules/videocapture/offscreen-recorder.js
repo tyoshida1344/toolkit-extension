@@ -68,9 +68,25 @@ const TkVideoRecorder = (() => {
   function stopOne(format) {
     const entry = recorders[format];
     if (!entry) return Promise.resolve(null);
-    return new Promise(resolve => {
-      entry.recorder.onstop = () => resolve({ blob: new Blob(chunks[format], { type: entry.mimeType }), mimeType: entry.mimeType });
-      entry.recorder.stop();
+    const finalize = () => ({ blob: new Blob(chunks[format], { type: entry.mimeType }), mimeType: entry.mimeType });
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve(finalize());
+      };
+      entry.recorder.addEventListener('stop', finish, { once: true });
+      if (entry.recorder.state === 'inactive') {
+        finish();
+        return;
+      }
+      try {
+        entry.recorder.stop();
+      } catch (e) {
+        if (e && e.name === 'InvalidStateError') setTimeout(finish, 0);
+        else reject(e);
+      }
     });
   }
 

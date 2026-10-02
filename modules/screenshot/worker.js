@@ -10,6 +10,7 @@ importScripts('modules/screenshot/fullpage.js', 'modules/screenshot/element-pick
 
 const SCREENSHOT_MAX_SHOTS = 40; // 非常に長いページでの無限ループを防ぐ安全上限
 const SCREENSHOT_CAPTURE_INTERVAL_MS = 550; // captureVisibleTab のレート制限（2回/秒）を避けつつ再描画を待つ
+let desktopCaptureOwner = null; // 'screenshot' | 'video' | null。offscreen document の画面/ウィンドウキャプチャ用途での排他制御
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -48,6 +49,36 @@ async function captureScreenshot(tabId, mode) {
 async function openPreviewTab({ dataUrl, baseName, truncated }) {
   await chrome.storage.session.set({ tm_screenshot_pending: { dataUrl, baseName, truncated } });
   await chrome.tabs.create({ url: chrome.runtime.getURL('screenshot-preview.html') });
+}
+
+async function captureDesktopScreenshot(tabId) {
+  if (desktopCaptureOwner !== null) throw new Error('別の画面/ウィンドウキャプチャ操作が進行中です');
+  desktopCaptureOwner = 'screenshot';
+  let createdOffscreenDocument = false;
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!await chrome.offscreen.hasDocument()) {
+      await chrome.offscreen.createDocument({
+        url: 'offscreen.html',
+        reasons: ['USER_MEDIA', 'DISPLAY_MEDIA'],
+        justification: '画面またはウィンドウの静止画を撮影するため',
+      });
+      createdOffscreenDocument = true;
+    }
+    const res = await chrome.runtime.sendMessage({ type: 'captureDesktopFrame' });
+    if (!res || !res.ok) throw new Error((res && res.error) || '画像の取得に失敗しました');
+    if (res.cancelled) return { cancelled: true };
+    await openPreviewTab({ dataUrl: res.dataUrl, baseName: screenshotBaseName(tab.title), truncated: false });
+    return { cancelled: false };
+  } finally {
+    try {
+      if (createdOffscreenDocument && vcRecordingTabId === null && await chrome.offscreen.hasDocument()) {
+        await chrome.offscreen.closeDocument();
+      }
+    } finally {
+      if (desktopCaptureOwner === 'screenshot') desktopCaptureOwner = null;
+    }
+  }
 }
 
 async function runCaptureAndOpenPreview(tabId, mode) {

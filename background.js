@@ -22,6 +22,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
     return true;
   }
+  if (msg.type === 'captureDesktopScreenshot') {
+    captureDesktopScreenshot(msg.tabId)
+      .then(res => sendResponse({ ok: true, ...res }))
+      .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+    return true;
+  }
   if (msg.type === 'pickerCaptureComplete') {
     openPreviewTab({
       dataUrl: msg.dataUrl,
@@ -34,6 +40,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'startVideoCapture') {
     startVideoCapture(msg.tabId, msg.mode)
+      .then(res => sendResponse({ ok: true, ...res }))
+      .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+    return true;
+  }
+  if (msg.type === 'startDesktopVideoCapture') {
+    startDesktopVideoCapture(msg.tabId)
       .then(res => sendResponse({ ok: true, ...res }))
       .catch(e => sendResponse({ ok: false, error: String((e && e.message) || e) }));
     return true;
