@@ -4,30 +4,31 @@
   <meta charset="UTF-8">
   <title>スクリーンショットプレビュー</title>
   <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/preview-layout.css">
+  <link rel="stylesheet" href="styles/annotation.css">
   <style>
     body {
       width: auto; height: auto; min-height: 100vh; overflow: visible; padding: 24px;
       background: var(--tm-bg-sunken);
       display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
-    .panel { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
     .toolbar {
       width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
       position: sticky; top: 0; z-index: 1; padding: 8px 0; background: var(--tm-bg-sunken);
     }
     .title { font-size: 15px; font-weight: 700; color: var(--tm-text-heading); }
-    #sp-save:disabled { opacity: .4; cursor: default; pointer-events: none; }
     .warning { color: var(--tm-error); font-size: 13px; font-weight: 600; }
     .frame {
       max-width: 100%; padding: 12px; border: 1px solid var(--tm-text-faint); border-radius: 10px;
       background: var(--tm-bg); box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
     }
-    .frame img { display: block; max-width: 100%; }
+    .frame canvas { display: block; max-width: 100%; }
+    #sp-canvas[hidden] { display: none; }
     .status { color: var(--tm-text-muted); font-size: 13px; }
   </style>
 </head>
 <body>
-  <div class="panel">
+  <div class="panel preview-panel">
     <div class="toolbar">
       <span class="title">プレビュー</span>
       <div class="tm-inline">
@@ -36,13 +37,64 @@
           <option value="jpeg">JPEG</option>
           <option value="webp">WebP</option>
         </select>
+        <button type="button" class="tm-btn tm-btn-primary" id="sp-copy">📋 コピー</button>
         <button type="button" class="tm-btn tm-btn-primary" id="sp-save">💾 ダウンロード</button>
       </div>
     </div>
-    <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
-    <div class="frame"><img id="sp-img" alt="撮影結果プレビュー" hidden></div>
+    <div class="preview-layout">
+      <div class="preview-main">
+        <span class="warning" id="sp-warning" hidden>⚠ ページが長すぎるため一部のみキャプチャしました</span>
+        <div class="frame">
+          <div class="ann-canvas-wrap" id="ann-canvas-wrap">
+            <canvas id="sp-canvas" role="img" aria-label="撮影結果プレビュー（注釈編集可能）" hidden></canvas>
+          </div>
+        </div>
+      </div>
+      <aside class="preview-side-panel" aria-label="注釈編集">
+        <div class="ann-toolbar" id="ann-toolbar" hidden>
+      <div class="tm-inline">
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-select" data-tool="select" data-tip="選択" aria-label="選択"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn active" id="ann-tool-rect" data-tool="rect" data-tip="四角形（枠線）" aria-label="四角形（枠線）"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" data-tip="矢印" aria-label="矢印"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" data-tip="吹き出し" aria-label="吹き出し"></button>
+        <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" data-tip="テキスト" aria-label="テキスト"></button>
+      </div>
+      <div class="tm-inline">
+        <span class="tm-inline" id="ann-style-fields">
+          <span class="ann-field-group">
+            <input type="color" class="ann-color-input" id="ann-color" value="#ff3b30" title="色" aria-label="色">
+            <input type="range" class="ann-opacity-input" id="ann-opacity" min="0" max="100" value="100" title="不透明度" aria-label="不透明度">
+            <span class="ann-size-label" id="ann-opacity-label">100%</span>
+          </span>
+          <span class="ann-field-group">
+            <input type="number" class="tm-input ann-size-input" id="ann-size" min="1" max="20" value="3" title="太さ" aria-label="太さ">
+            <span class="ann-size-label" id="ann-size-label">太さ</span>
+          </span>
+          <span class="ann-field-group" id="ann-fill-group" hidden>
+            <label class="tm-check-label"><input type="checkbox" id="ann-fill">塗りつぶし</label>
+            <span class="ann-fill-controls">
+              <input type="color" class="ann-color-input" id="ann-fill-color" value="#ff3b30" title="塗りつぶし色" aria-label="塗りつぶし色" hidden>
+              <input type="range" class="ann-opacity-input" id="ann-fill-opacity" min="0" max="100" value="100" title="塗りつぶし不透明度" aria-label="塗りつぶし不透明度" hidden>
+              <span class="ann-size-label" id="ann-fill-opacity-label" hidden>100%</span>
+            </span>
+          </span>
+        </span>
+        <span class="ann-size-label" id="ann-style-hint">オブジェクトをクリックすると編集できます</span>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中のオブジェクトを削除（Delete / Backspace）" hidden>削除</button>
+      </div>
+        </div>
+      </aside>
+    </div>
     <div class="status" id="sp-status">読み込み中…</div>
   </div>
+  <script src="utils.js"></script>
+  <script src="ui-helpers.js"></script>
+  <script src="modules/screenshot/annotation-shapes.js"></script>
+  <script src="modules/screenshot/annotation-geometry.js"></script>
+  <script src="modules/screenshot/annotation-render.js"></script>
+  <script src="modules/screenshot/annotation-toolbar.js"></script>
+  <script src="modules/screenshot/annotation-interactions.js"></script>
+  <script src="modules/screenshot/annotation-editor.js"></script>
   <script src="modules/screenshot/preview.js"></script>
 </body>
 </html>

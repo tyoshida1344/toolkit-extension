@@ -1,0 +1,24 @@
+.preview-panel {
+  width: 100%; min-width: 960px; max-width: 1200px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+
+.preview-layout {
+  width: 100%; display: flex; align-items: flex-start; gap: 16px;
+}
+
+.preview-main {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+
+.preview-side-panel {
+  width: 300px; flex: 0 0 300px; padding: 12px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--tm-bg-muted); border: 1px solid var(--tm-border); border-radius: 10px;
+}
+
+.preview-side-panel:has(#ann-toolbar[hidden]),
+.preview-layout:has(#vp-trim[hidden]) .preview-side-panel {
+  display: none;
+}

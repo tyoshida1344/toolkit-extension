@@ -7,6 +7,7 @@ Toolkit.registerTab({
         <option value="fullpage">ページ全体（スクロール含む）</option>
         <option value="element">要素選択</option>
         <option value="rect">矩形選択</option>
+        <option value="desktop">画面/ウィンドウ</option>
       </select>
     </div>
     <div class="tm-row tm-inline" id="scr-delay-row">
@@ -19,13 +20,14 @@ Toolkit.registerTab({
     <div class="tm-label" id="scr-status"></div>
   `,
   init() {
-    const modeEl = Toolkit.$('scr-mode'), delayEl = Toolkit.$('scr-delay'), delayRow = Toolkit.$('scr-delay-row'), btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
+    const modeEl = Toolkit.$('scr-mode'), delayEl = Toolkit.$('scr-delay'), delayRow = Toolkit.$('scr-delay-row');
+    const btn = Toolkit.$('scr-capture'), statusEl = Toolkit.$('scr-status');
 
     // 要素選択・矩形選択はクリック/ドラッグでの選択操作自体が前提のため、ページ状態を整えて自動撮影する「遅延」とは相性が悪く無効化する
     function syncDelayAvailability() {
-      const disabled = modeEl.value === 'element' || modeEl.value === 'rect';
-      delayEl.disabled = disabled;
-      delayRow.style.opacity = disabled ? '0.5' : '';
+      const delayDisabled = modeEl.value === 'desktop' || modeEl.value === 'element' || modeEl.value === 'rect';
+      delayEl.disabled = delayDisabled;
+      delayRow.style.opacity = delayDisabled ? '0.5' : '';
     }
 
     Toolkit.bindState('screenshot', { 'scr-mode': ['value', 'mode'], 'scr-delay': ['value', 'delaySeconds'] }, { onRestore: syncDelayAvailability });
@@ -41,15 +43,19 @@ Toolkit.registerTab({
         const list = await tabsApi.query({ active: true, currentWindow: true });
         tab = list && list[0];
       } catch (_) {}
-      if (!tab || !/^https?:\/\//.test(tab.url || '')) {
+      const desktopMode = modeEl.value === 'desktop';
+      if (!tab || (!desktopMode && !/^https?:\/\//.test(tab.url || ''))) {
         Toolkit.showToast('⚠ このページでは撮影できません');
         return;
       }
       const isPickingMode = modeEl.value === 'element' || modeEl.value === 'rect';
       const delaySeconds = isPickingMode ? 0 : (parseInt(delayEl.value, 10) || 0);
       btn.disabled = true;
-      statusEl.textContent = modeEl.value === 'element' ? '要素選択を起動中…' : modeEl.value === 'rect' ? '矩形選択を起動中…' : '撮影中…';
-      chrome.runtime.sendMessage({ type: 'captureScreenshot', tabId: tab.id, mode: modeEl.value, delaySeconds }, res => {
+      statusEl.textContent = desktopMode ? '撮影対象を選択中…' : modeEl.value === 'element' ? '要素選択を起動中…' : modeEl.value === 'rect' ? '矩形選択を起動中…' : '撮影中…';
+      const message = desktopMode
+        ? { type: 'captureDesktopScreenshot', tabId: tab.id }
+        : { type: 'captureScreenshot', tabId: tab.id, mode: modeEl.value, delaySeconds };
+      chrome.runtime.sendMessage(message, res => {
         btn.disabled = false;
         statusEl.textContent = '';
         if (chrome.runtime.lastError || !res || !res.ok) {
@@ -61,7 +67,7 @@ Toolkit.registerTab({
           return;
         }
         if (res.picking) { window.close(); return; }
-        Toolkit.showToast('🖼 新しいタブでプレビューを開きました');
+        if (!res.cancelled) Toolkit.showToast('🖼 新しいタブでプレビューを開きました');
       });
     });
   },

@@ -124,6 +124,7 @@ body {
   transition: background .15s, color .15s, transform .1s;
 }
 .tm-btn:active { transform: scale(.96); }
+.tm-btn:disabled { opacity: .4; cursor: default; pointer-events: none; }
 .tm-btn-primary { background: var(--tm-accent); color: var(--tm-on-accent); }
 .tm-btn-primary:hover { background: var(--tm-accent-hover); }
 .tm-btn-secondary {
@@ -146,6 +147,7 @@ body {
 .tm-inline { display: flex; gap: 8px; align-items: center; }
 .tm-inline > * { flex-shrink: 0; }
 .tm-inline .tm-input, .tm-inline .tm-select { flex: 1; }
+.tm-inline-end { justify-content: flex-end; }
 
 .tm-hr { border: none; border-top: 1px solid var(--tm-border); margin: 12px 0; }
 
