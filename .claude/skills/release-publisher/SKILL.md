@@ -42,15 +42,23 @@ description: >-
   git describe --tags --abbrev=0   # 直近タグ。無ければ「初回リリース」として扱う
   ```
 
-- リポジトリの状態を確認: 現在ブランチ、未コミットの変更（`git status`）。`main` 以外にいる場合はユーザに確認する。
+- リポジトリの状態を確認: 現在ブランチ、未コミットの変更（`git status`）。想定する基点ブランチ（後述）以外にいる場合はユーザに確認する。
+- 既存のリリースブランチを確認する（`RELEASING.md`「リリースブランチの運用」参照）:
+
+  ```sh
+  git fetch origin --quiet
+  git branch -r --list 'origin/release/v*'
+  ```
+
+  見つかった各ブランチが `main` にマージ済みでないか `git merge-base --is-ancestor origin/release/vX.Y.Z origin/main` で確認する。**未マージのものが1つ見つかればそれが今回集計・公開する対象ブランチ**（`<target>` とする）。複数見つかった場合はユーザに確認する。見つからない場合は `<target>` を `main` とする（緊急 PATCH 等、リリースブランチを経由しない公開）。
 
 ### 2. 変更内容の収集
 
-直近タグ以降の変更を `main` ブランチから集め、リリースノートの**材料**としてユーザに提示する（この時点では確定しない）。
+直近タグ以降の変更を `<target>` ブランチから集め、リリースノートの**材料**としてユーザに提示する（この時点では確定しない）。
 
 ```sh
-git log <直近タグ>..main --no-merges --format='%h %s'   # 初回リリースなら範囲指定なしで全件
-gh pr list --state merged --base main --limit 30         # マージ済み PR も参考に
+git log <直近タグ>..origin/<target> --no-merges --format='%h %s'   # 初回リリースなら範囲指定なしで全件
+gh pr list --state merged --base <target> --limit 30                # マージ済み PR も参考に
 ```
 
 初回リリースでタグが無い場合は全履歴が対象。件数が多いときは主要な変更に絞ってよいが、**絞ったことは明示する**。
@@ -74,23 +82,24 @@ gh pr list --state merged --base main --limit 30         # マージ済み PR �
 
 ### 5. リリース PR の作成
 
-バージョンとリリースノートが確定したら、リリース用ブランチを作り PR を作成する。
+バージョンとリリースノートが確定したら、リリース用ブランチにコミットを積んで PR を作成する。
 
-1. `main` から `release/vX.Y.Z` ブランチを作成する。
+1. `<target>` が既存の `release/vX.Y.Z` ブランチならそれをそのまま使う。`<target>` が `main`（リリースブランチが無かった場合）なら、ここで `main` から新規に `release/vX.Y.Z` を作成する。
 2. `manifest.json` の `version` を更新する。
 3. `RELEASE_NOTES.md` に確定したリリースノート本文を書き出す。
 4. 変更をコミットし、PR を作成する:
 
    ```sh
-   git checkout -b release/vX.Y.Z main
+   git checkout release/vX.Y.Z   # 既存ブランチの場合。無い場合は: git checkout -b release/vX.Y.Z main
+   git pull origin release/vX.Y.Z --ff-only   # 既存ブランチの場合のみ
    # manifest.json と RELEASE_NOTES.md を更新
    git add manifest.json RELEASE_NOTES.md
    git commit -m "release: vX.Y.Z"
    git push -u origin release/vX.Y.Z
-   gh pr create --title "release: vX.Y.Z" --body "<リリースノート本文>"
+   gh pr create --title "release: vX.Y.Z" --base main --head release/vX.Y.Z --body "<リリースノート本文>"
    ```
 
-5. PR の URL をユーザに報告し、レビュー・マージを促す。
+5. PR の URL をユーザに報告し、レビュー・マージを促す。このブランチが `main` にマージされればリリースサイクルは終了する（次のリリースブランチの作成はメンテナが別途行う）。
 
 **PR をマージすると CI が自動で GitHub Release を公開する**旨を伝える（CI は `manifest.json` の変更を検知し、バージョンに対応するタグが無ければ `RELEASE_NOTES.md` の内容でリリースを作成する）。
 

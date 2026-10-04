@@ -3,7 +3,7 @@ name: issue-handler
 argument-hint: "<イシュー番号> (例: 8)"
 description: >-
   GitHub イシューの番号を起点に、仕様の決定から実装・セルフレビュー・PR作成までを一貫して行うスキル。
-  最新の main からブランチを作成し、イシュー本文と既存コメントを読み取り、
+  進行中のリリースブランチ（無ければ main）からブランチを作成し、イシュー本文と既存コメントを読み取り、
   曖昧な点・決まっていない仕様を洗い出してユーザに確認し、確定した仕様をイシューへコメントとして記録してから、
   プロジェクトの規約に沿って実装・構文検証・セルフレビュー・修正を行い、コミットして PR を作成する。
   「イシュー8を対応して」「issue #5 をやって」「#3 を実装して」「7番のイシュー着手して」のように、
@@ -29,21 +29,32 @@ GitHub イシューを「ブランチ準備 → 読む → 不明点を潰す �
 
 ### 1. ブランチ準備
 
-最新の main ブランチから作業用ブランチを作成する。
+まず `git status` で現在の状態を確認する。未コミットの変更（staged / unstaged / untracked）がある場合は**警告してユーザに確認**してから進める。
 
-まず `git status` で現在の状態を確認する。以下のいずれかに該当する場合は**警告してユーザに確認**してから進める:
-- 未コミットの変更（staged / unstaged / untracked）がある
-- main 以外のブランチにいる
-
-ユーザが続行を許可したら:
+次に、作業の土台となるブランチ（`<base>`）を決める。進行中のリリースサイクルがあれば、そのリリースブランチを土台にする（`RELEASING.md`「リリースブランチの運用」参照）:
 
 ```sh
-git checkout main
-git pull origin main
+git fetch origin --quiet
+git branch -r --list 'origin/release/v*'
+```
+
+見つかった各 `release/vX.Y.Z` ブランチについて `main` にマージ済みでないか確認する:
+
+```sh
+git merge-base --is-ancestor origin/release/vX.Y.Z origin/main && echo merged || echo active
+```
+
+- **未マージのものが1つ見つかった場合**: それを `<base>` にする。
+- **複数見つかった場合**: どれを使うかユーザに確認する。
+- **見つからない場合**: `main` を `<base>` にする。
+
+```sh
+git checkout <base>
+git pull origin <base>
 git checkout -b issues/<番号>
 ```
 
-ブランチ名は `issues/<イシュー番号>` で統一する（例: `issues/45`）。
+ブランチ名は `issues/<イシュー番号>` で統一する（例: `issues/45`）。**`<base>` が `main` 以外の場合、ステップ9の PR 作成で base に指定するのを忘れないこと。**
 
 ### 2. イシューの取得と理解
 
@@ -153,8 +164,10 @@ git commit -m "prefix: #<番号> 説明"
 
 ```sh
 git push -u origin issues/<番号>
-gh pr create --title "prefix: #<番号> 説明" --body "<テンプレートを埋めた内容>"
+gh pr create --title "prefix: #<番号> 説明" --base <base> --body "<テンプレートを埋めた内容>"
 ```
+
+`--base` にはステップ1で決めた `<base>` を指定する（`main` の場合も明示してよい）。
 
 - Summary: 変更内容を利用者・レビュアー視点で箇条書き
 - Test plan: 手動で確認すべき項目をチェックボックスで列挙し、実施済みならチェックを入れる
