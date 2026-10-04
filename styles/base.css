@@ -147,6 +147,7 @@ body {
 .tm-inline { display: flex; gap: 8px; align-items: center; }
 .tm-inline > * { flex-shrink: 0; }
 .tm-inline .tm-input, .tm-inline .tm-select { flex: 1; }
+.tm-inline-end { justify-content: flex-end; }
 
 .tm-hr { border: none; border-top: 1px solid var(--tm-border); margin: 12px 0; }
 
