@@ -17,7 +17,7 @@ Toolkit.registerTab({
       <input type="number" class="tm-input" id="sg-len" value="10" min="1" max="10000" style="width:100px">
       <button class="tm-btn tm-btn-primary" id="sg-exec">生成</button>
     </div>
-    <div class="tm-row tm-inline" style="align-items:flex-start">
+    <div class="tm-row tm-inline" style="align-items:flex-end">
       <div class="tm-output" id="sg-output" style="flex:1"></div>
       ${Toolkit.copyButton('sg-output')}
     </div>
