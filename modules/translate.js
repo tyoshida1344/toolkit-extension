@@ -16,7 +16,7 @@ Toolkit.registerTab({
     <div class="tm-row">
       <div class="tm-output tm-tr-result" id="tr-result"></div>
     </div>
-    <div class="tm-row tm-inline" style="justify-content:flex-end">
+    <div class="tm-row tm-inline tm-inline-end">
       ${Toolkit.copyButton('tr-result', { title: '結果をコピー' })}
     </div>
     <div class="tm-tr-history">

@@ -20,7 +20,7 @@ Toolkit.registerTab({
     <div class="tm-row">
       <div class="tm-output" id="sg-output"></div>
     </div>
-    <div class="tm-row tm-inline" style="justify-content:flex-end">
+    <div class="tm-row tm-inline tm-inline-end">
       ${Toolkit.copyButton('sg-output')}
     </div>
     <hr class="tm-hr">
