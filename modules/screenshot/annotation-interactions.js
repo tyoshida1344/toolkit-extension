@@ -1,10 +1,15 @@
 /**
- * annotation-interactions.js — マウス/キーボード操作とテキスト入力 UI
+ * annotation-interactions.js — canvas 上のマウス操作
  *
- * canvas 上での描画・選択・移動・リサイズ操作、Escape/Delete のショートカット、
- * テキスト注釈の入力欄（textarea）の生成・確定を扱う。
+ * 描画・選択・移動・リサイズ・ダブルクリックでの文字再編集を扱う。座標は annotation-snap.js の
+ * 吸着を通す。キーボードは annotation-keyboard.js、テキスト入力欄は annotation-text-editor.js が担う。
  */
-function cancelBubbleAwaitingTail(state) { state.bubbleAwaitingTail = null; state.tailPreviewPoint = null; }
+function cancelBubbleAwaitingTail(state) { state.bubbleAwaitingTail = null; state.tailPreviewPoint = null; state.guides = []; }
+
+// 動画では現在の時刻に表示されている注釈だけが選択・編集の対象になる
+function selectableShapes(state) {
+  return state.getTime ? state.shapes.filter(s => isShapeVisibleAt(s, state.getTime())) : state.shapes;
+}
 
 function addAnnotationShape(state, props) {
   const range = state.newRange ? state.newRange(state.getTime()) : {};
@@ -14,70 +19,28 @@ function addAnnotationShape(state, props) {
   return shape;
 }
 
-function closeTextEditor(state, commit) {
-  if (!state.textEditorEl) return;
-  const el = state.textEditorEl;
-  const handlers = el._annHandlers;
-  const value = el.value;
-  state.textEditorEl = null;
-  el.remove();
-  if (commit && handlers && handlers.onCommit) handlers.onCommit(value);
-}
-
-// ── テキスト入力 UI ──
-function openTextEditor(state, opts) {
-  closeTextEditor(state, true);
-  const el = document.createElement('textarea');
-  el.className = 'ann-text-editor';
-  el.style.left = `${opts.cssX}px`;
-  el.style.top = `${opts.cssY}px`;
-  el.style.width = `${opts.cssWidth}px`;
-  el.style.height = `${opts.cssHeight}px`;
-  el.style.color = opts.color;
-  el.style.fontSize = `${opts.fontSize * opts.scale}px`;
-  el.style.resize = opts.resizable ? 'both' : 'none';
-  el.value = opts.initialText || '';
-  state.canvasWrap.appendChild(el);
-  state.textEditorEl = el;
-  el._annHandlers = { onCommit: opts.onCommit };
-  if (opts.autoGrow) {
-    const grow = () => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; };
-    el.addEventListener('input', grow);
-    grow();
-  }
-  el.addEventListener('keydown', evt => {
-    if (evt.key === 'Escape') {
-      evt.preventDefault();
-      evt.stopPropagation();
-      state.textEditorEl = null;
-      el.remove();
-    }
-  });
-  el.addEventListener('blur', () => { if (state.textEditorEl === el) closeTextEditor(state, true); });
-  // mousedown 側で preventDefault 済みのため、ここでの focus() がブラウザのデフォルト
-  // フォーカス処理に奪われずに効く（奪われるとテキストが1文字も入力できなくなる）
-  el.focus();
-}
-
 // ── マウス操作 ──
 function onWindowMouseMove(state, evt) {
   const { x, y } = measurePointer(state.canvas, evt);
   if (state.draft) {
-    state.draft.x2 = x; state.draft.y2 = y;
+    const p = snapPoint(state, x, y);
+    state.draft.x2 = p.x; state.draft.y2 = p.y;
     renderScene(state);
     return;
   }
   if (state.dragMove) {
-    const dx = x - state.dragMove.startPoint.x, dy = y - state.dragMove.startPoint.y;
-    const s = findShape(state.shapes, state.dragMove.id);
-    if (s) applyMoveDelta(s, state.dragMove.origin, dx, dy);
+    const { id, bounds, origin, startPoint } = state.dragMove;
+    const { dx, dy } = snapMoveDelta(state, id, bounds, x - startPoint.x, y - startPoint.y);
+    const s = findShape(state.shapes, id);
+    if (s) applyMoveDelta(s, origin, dx, dy);
     renderScene(state);
     return;
   }
   if (state.resizeDrag) {
-    const dx = x - state.resizeDrag.startPoint.x, dy = y - state.resizeDrag.startPoint.y;
-    const s = findShape(state.shapes, state.resizeDrag.id);
-    if (s) applyResize(s, state.resizeDrag.handleId, state.resizeDrag.original, dx, dy);
+    const { id, handleId, original, startPoint } = state.resizeDrag;
+    const { dx, dy } = snapResizeDelta(state, id, handleId, original, x - startPoint.x, y - startPoint.y);
+    const s = findShape(state.shapes, id);
+    if (s) applyResize(s, handleId, original, dx, dy);
     renderScene(state);
   }
 }
@@ -85,7 +48,7 @@ function onWindowMouseMove(state, evt) {
 function onWindowMouseUp(state, evt) {
   window.removeEventListener('mousemove', state._onWindowMouseMove);
   window.removeEventListener('mouseup', state._onWindowMouseUp);
-  const { x, y } = measurePointer(state.canvas, evt);
+  state.guides = [];
   if (state.draft) {
     const finished = state.draft;
     state.draft = null;
@@ -93,7 +56,7 @@ function onWindowMouseUp(state, evt) {
       const w = Math.abs(finished.x2 - finished.x1), h = Math.abs(finished.y2 - finished.y1);
       if (w < 8 || h < 8) { renderScene(state); return; }
       state.bubbleAwaitingTail = { x1: finished.x1, y1: finished.y1, x2: finished.x2, y2: finished.y2 };
-      state.tailPreviewPoint = { x, y };
+      state.tailPreviewPoint = { x: finished.x2, y: finished.y2 };
       renderScene(state);
       return;
     }
@@ -124,8 +87,12 @@ function onCanvasMouseDown(state, evt) {
   // これが無いと、mousedown ハンドラ内で textarea を生成して focus() しても
   // ブラウザ既定のフォーカス処理に直後に奪われ、テキストが入力できなくなる
   evt.preventDefault();
-  const { x, y, scale } = measurePointer(state.canvas, evt);
-  const p = { x, y };
+  // preventDefault によりブラウザ既定の blur が起きないため、開いたままの入力欄はここで確定する
+  closeTextEditor(state, true);
+  const { scale, ...raw } = measurePointer(state.canvas, evt);
+  // 描画の始点・テキストの位置・吹き出しの尻尾の先端は、クリックした位置を他の注釈へ吸着させる
+  const p = state.currentTool === 'select' ? raw : snapPoint(state, raw.x, raw.y);
+  state.guides = [];
 
   if (state.currentTool === 'bubble' && state.bubbleAwaitingTail) {
     const body = state.bubbleAwaitingTail;
@@ -149,31 +116,25 @@ function onCanvasMouseDown(state, evt) {
     if (state.selectedId != null) {
       const selected = findShape(state.shapes, state.selectedId);
       if (selected && (!state.getTime || isShapeVisibleAt(selected, state.getTime()))) {
-        const handle = findHandleAt(getHandles(state.ctx, selected), p.x, p.y, scale);
+        const handle = findHandleAt(getHandles(state.ctx, selected), raw.x, raw.y, scale);
         if (handle) {
-          state.resizeDrag = { id: selected.id, handleId: handle.id, original: captureResizeOriginal(state.ctx, selected), startPoint: p };
+          state.resizeDrag = { id: selected.id, handleId: handle.id, original: captureResizeOriginal(state.ctx, selected), startPoint: raw };
           startDrag(state);
           return;
         }
       }
     }
-    const candidates = state.getTime
-      ? state.shapes.filter(s => isShapeVisibleAt(s, state.getTime()))
-      : state.shapes;
-    const hit = hitTest(state.ctx, candidates, p.x, p.y);
+    const hit = hitTest(state.ctx, selectableShapes(state), raw.x, raw.y);
     if (!hit) { selectShape(state, null); return; }
     selectShape(state, hit.id);
-    const origin = hit.type === 'text'
-      ? { x: hit.x, y: hit.y }
-      : { x1: hit.x1, y1: hit.y1, x2: hit.x2, y2: hit.y2, tailX: hit.tailX, tailY: hit.tailY };
-    state.dragMove = { id: hit.id, origin, startPoint: p };
+    state.dragMove = { id: hit.id, origin: captureMoveOrigin(hit), bounds: shapeBounds(state.ctx, hit), startPoint: raw };
     startDrag(state);
     return;
   }
 
   if (state.currentTool === 'text') {
     openTextEditor(state, {
-      cssX: x * scale, cssY: y * scale,
+      cssX: p.x * scale, cssY: p.y * scale,
       cssWidth: Math.max(100, 160 * scale), cssHeight: state.currentFontSize * scale * 1.6,
       color: state.currentColor, fontSize: state.currentFontSize, scale, resizable: true, autoGrow: true,
       onCommit: text => {
@@ -204,20 +165,15 @@ function wireCanvasEvents(state) {
   state.canvas.addEventListener('mousedown', evt => onCanvasMouseDown(state, evt));
   state.canvas.addEventListener('mousemove', evt => {
     if (!state.bubbleAwaitingTail) return;
-    state.tailPreviewPoint = measurePointer(state.canvas, evt);
+    const { x, y } = measurePointer(state.canvas, evt);
+    state.tailPreviewPoint = snapPoint(state, x, y);
     renderScene(state);
   });
-
-  window.addEventListener('keydown', evt => {
-    if (!state.active) return;
-    if (state.textEditorEl) return; // テキスト入力中は編集用ショートカットを発火させない
-    if (evt.key === 'Escape') {
-      if (state.bubbleAwaitingTail) { cancelBubbleAwaitingTail(state); renderScene(state); return; }
-      if (state.draft) { state.draft = null; renderScene(state); return; }
-      if (state.selectedId != null) { selectShape(state, null); return; }
-    } else if ((evt.key === 'Delete' || evt.key === 'Backspace') && state.currentTool === 'select' && state.selectedId != null) {
-      evt.preventDefault();
-      state.deleteBtn.click();
-    }
+  state.canvas.addEventListener('dblclick', evt => {
+    if (!state.active || state.currentTool !== 'select') return;
+    const { x, y } = measurePointer(state.canvas, evt);
+    const hit = hitTest(state.ctx, selectableShapes(state), x, y);
+    if (hit && (hit.type === 'text' || hit.type === 'bubble')) reeditShapeText(state, hit);
   });
+  wireKeyboard(state);
 }

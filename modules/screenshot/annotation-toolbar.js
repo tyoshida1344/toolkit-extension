@@ -89,6 +89,7 @@ function selectShape(state, id) {
 function setTool(state, tool) {
   closeTextEditor(state, true);
   state.draft = null;
+  state.guides = [];
   cancelBubbleAwaitingTail(state);
   state.dragMove = null;
   state.resizeDrag = null;
@@ -121,6 +122,7 @@ function wireToolbar(state) {
   state.fillOpacityLabel = document.getElementById('ann-fill-opacity-label');
   state.deleteBtn = document.getElementById('ann-delete');
   state.deleteBtn.insertAdjacentHTML('afterbegin', _TkUI.ICONS.trash);
+  wireSnapToggle(state);
 
   toolButtons.forEach(btn => btn.addEventListener('click', () => setTool(state, btn.dataset.tool)));
 

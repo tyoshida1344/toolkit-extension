@@ -12,6 +12,7 @@
 }
 .vp-ann-lanes--editable .vp-ann-bar { cursor: grab; }
 .vp-ann-bar:last-child { margin-bottom: 0; }
+.vp-ann-bar--snapped { box-shadow: 0 0 0 2px var(--tm-accent); }
 .vp-ann-bar.active { border-color: var(--tm-accent); background: var(--tm-accent); color: var(--tm-on-accent); }
 .vp-ann-label { display: block; padding: 3px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; }
 .vp-ann-handle { position: absolute; top: 0; bottom: 0; width: 12px; cursor: default; }

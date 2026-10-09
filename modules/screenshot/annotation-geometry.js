@@ -106,6 +106,13 @@ function applyResize(s, handleId, original, dx, dy) {
   s.x1 = left; s.y1 = top; s.x2 = right; s.y2 = bottom;
 }
 
+// 移動の基点（ドラッグ開始時・コピペ時の座標）。applyMoveDelta に渡す
+function captureMoveOrigin(s) {
+  return s.type === 'text'
+    ? { x: s.x, y: s.y }
+    : { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, tailX: s.tailX, tailY: s.tailY };
+}
+
 function applyMoveDelta(s, origin, dx, dy) {
   if (s.type === 'text') { s.x = origin.x + dx; s.y = origin.y + dy; return; }
   s.x1 = origin.x1 + dx; s.y1 = origin.y1 + dy; s.x2 = origin.x2 + dx; s.y2 = origin.y2 + dy;

@@ -136,8 +136,7 @@
         <div class="vp-trim" id="vp-trim" hidden>
           <div class="tm-inline">
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮ 最初に戻す</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-pause">⏸ 一時停止</button>
-        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-play">▶ 再生</button>
+        <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-toggle" title="再生 / 一時停止（スペースキー）">▶ 再生</button>
           </div>
           <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
           <div class="vp-timeline-row">
@@ -197,6 +196,7 @@
             <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" data-tip="矢印" aria-label="矢印"></button>
             <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" data-tip="吹き出し" aria-label="吹き出し"></button>
             <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" data-tip="テキスト" aria-label="テキスト"></button>
+            <label class="tm-check-label" title="再生位置・他の注釈・クリップ境界や、他の注釈の端・中心に吸着します"><input type="checkbox" id="ann-snap">吸着</label>
           </div>
           <div class="tm-inline">
             <span class="tm-inline" id="ann-style-fields">
@@ -218,7 +218,7 @@
                 </span>
               </span>
             </span>
-            <span class="ann-size-label" id="ann-style-hint">オブジェクトをクリックすると編集できます</span>
+            <span class="ann-size-label" id="ann-style-hint">クリックで選択、ダブルクリックで文字を編集、Ctrl/Cmd+C・V で複製</span>
             <button type="button" class="tm-btn tm-btn-danger tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中のオブジェクトを削除（Delete / Backspace）" hidden>削除</button>
           </div>
         </div>
@@ -254,8 +254,13 @@
   <script src="modules/screenshot/annotation-geometry.js"></script>
   <script src="modules/screenshot/annotation-render.js"></script>
   <script src="modules/screenshot/annotation-toolbar.js"></script>
+  <script src="modules/screenshot/annotation-snap.js"></script>
+  <script src="modules/screenshot/annotation-text-editor.js"></script>
+  <script src="modules/screenshot/annotation-clipboard.js"></script>
+  <script src="modules/screenshot/annotation-keyboard.js"></script>
   <script src="modules/screenshot/annotation-interactions.js"></script>
   <script src="modules/screenshot/annotation-editor.js"></script>
+  <script src="modules/videocapture/annotation-time-snap.js"></script>
   <script src="modules/videocapture/annotation-lanes.js"></script>
   <script src="modules/videocapture/annotation-overlay.js"></script>
   <script src="modules/videocapture/annotation-composite.js"></script>
