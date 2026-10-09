@@ -137,6 +137,7 @@
           <div class="tm-inline">
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-trim-restart" title="最初に戻す" aria-label="最初に戻す">⏮ 最初に戻す</button>
         <button type="button" class="tm-btn tm-btn-secondary tm-btn-sm" id="vp-preview-toggle" title="再生 / 一時停止（スペースキー）">▶ 再生</button>
+        <label class="tm-check-label vp-time-snap" title="注釈の表示開始・終了を、再生位置・他の注釈・クリップ境界に揃えます"><input type="checkbox" id="vp-time-snap">時間補正</label>
           </div>
           <!-- タイムライン（スクラブ・ズーム）は編集モードに依らず常に表示する -->
           <div class="vp-timeline-row">
@@ -196,7 +197,7 @@
             <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-arrow" data-tool="arrow" data-tip="矢印" aria-label="矢印"></button>
             <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-bubble" data-tool="bubble" data-tip="吹き出し" aria-label="吹き出し"></button>
             <button type="button" class="tm-icon-btn ann-tool-btn" id="ann-tool-text" data-tool="text" data-tip="テキスト" aria-label="テキスト"></button>
-            <label class="tm-check-label" title="再生位置・他の注釈・クリップ境界や、他の注釈の端・中心に吸着します"><input type="checkbox" id="ann-snap">吸着</label>
+            <label class="tm-check-label" title="他の注釈の端・中心に位置を揃えます"><input type="checkbox" id="ann-snap">位置補正</label>
           </div>
           <div class="tm-inline">
             <span class="tm-inline" id="ann-style-fields">
@@ -218,7 +219,7 @@
                 </span>
               </span>
             </span>
-            <span class="ann-size-label" id="ann-style-hint">クリックで選択、ダブルクリックで文字を編集、Ctrl/Cmd+C・V で複製</span>
+            <span class="ann-size-label" id="ann-style-hint">オブジェクトをクリックすると編集できます</span>
             <button type="button" class="tm-btn tm-btn-danger tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中のオブジェクトを削除（Delete / Backspace）" hidden>削除</button>
           </div>
         </div>

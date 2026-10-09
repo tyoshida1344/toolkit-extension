@@ -5,7 +5,7 @@
  * 入れ替えでも即時反映するため、player の通知も併用する。再生/一時停止は1つの切替ボタンと
  * スペースキーで操作する。
  */
-function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, getClips, laneEl, toggleBtn, startBtn, endBtn, onChange }) {
+function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, getClips, laneEl, toggleBtn, timeSnapEl, startBtn, endBtn, onChange }) {
   canvas.width = player.getEl().videoWidth;
   canvas.height = player.getEl().videoHeight;
   let lanes;
@@ -32,11 +32,12 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
   });
 
   const getTime = () => player.getEl().currentTime;
+  bindPersistedCheckbox(timeSnapEl, VIDEO_TIME_SNAP_STORAGE_KEY);
   lanes = createVideoAnnotationLanes({
     laneEl, duration, editor, getTime,
     seekTo: player.seekTo,
     isEditable: () => annotationMode && !previewing,
-    snap: createAnnotationTimeSnap({ laneEl, duration, getTime, getClips, getShapes: editor.getShapes, isEnabled: editor.isSnapEnabled }),
+    snap: createAnnotationTimeSnap({ laneEl, duration, getTime, getClips, getShapes: editor.getShapes, isEnabled: () => timeSnapEl.checked }),
   });
 
   function updateButtons() {

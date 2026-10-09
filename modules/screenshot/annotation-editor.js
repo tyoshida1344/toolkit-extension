@@ -45,7 +45,6 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
     getExportDataUrl: () => getExportDataUrl(state),
     getExportBlob: () => getExportBlob(state),
     getShapes: () => state.shapes.slice(),
-    isSnapEnabled: () => state.snapCheckbox.checked,
     getSelectedId: () => state.selectedId,
     select(id) {
       setTool(state, 'select');

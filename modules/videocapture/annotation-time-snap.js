@@ -3,7 +3,7 @@
  *
  * 吸着先は「再生位置」「他の注釈の開始・終了」「クリップ境界（カット・分割点）」。
  * 判定距離は画面上の位置揃えと共通の ANN_SNAP_PX（annotation-snap.js）を、レーン幅に対する秒数へ換算して使い、ズーム倍率に依らず同じ感覚で効く。
- * 有効/無効はツールバーの「吸着」チェックボックス（isEnabled）に従う。
+ * 有効/無効は再生ボタンと同じ行の「時間補正」チェックボックス（isEnabled）に従う。
  */
 function createAnnotationTimeSnap({ laneEl, duration, getTime, getClips, getShapes, isEnabled }) {
   function targets(excludeId) {

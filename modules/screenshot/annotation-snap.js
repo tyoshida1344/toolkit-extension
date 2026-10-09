@@ -2,20 +2,25 @@
  * annotation-snap.js — 注釈の画面上の位置揃え（他の注釈の端・中心への吸着とガイド線）
  *
  * 描画・移動・リサイズ中の座標を、他の注釈の左/中央/右・上/中央/下の線へ近づけると吸着させる。
- * 有効/無効はツールバーの「吸着」チェックボックスで切り替え、状態は次回以降も引き継ぐ。
+ * 有効/無効はツールバーの「位置補正」チェックボックスで切り替え、状態は次回以降も引き継ぐ。
  */
 const ANN_SNAP_PX = 8; // 吸着が効く距離（画面表示上の px）
 const ANN_SNAP_STORAGE_KEY = 'tm_annotation_snap';
+const VIDEO_TIME_SNAP_STORAGE_KEY = 'tm_annotation_time_snap';
 
-function wireSnapToggle(state) {
-  const checkbox = document.getElementById('ann-snap');
+// 既定オンのチェックボックスに、次回以降も引き継ぐ状態保存を配線する（位置補正・時間補正で共通）
+function bindPersistedCheckbox(checkbox, storageKey) {
   let enabled = true;
-  try { enabled = localStorage.getItem(ANN_SNAP_STORAGE_KEY) !== '0'; } catch (e) { /* 保存できない環境では既定のオン */ }
+  try { enabled = localStorage.getItem(storageKey) !== '0'; } catch (e) { /* 保存できない環境では既定のオン */ }
   checkbox.checked = enabled;
   checkbox.addEventListener('change', () => {
-    try { localStorage.setItem(ANN_SNAP_STORAGE_KEY, checkbox.checked ? '1' : '0'); } catch (e) { /* 保存できなくても今回の操作には影響しない */ }
+    try { localStorage.setItem(storageKey, checkbox.checked ? '1' : '0'); } catch (e) { /* 保存できなくても今回の操作には影響しない */ }
   });
-  state.snapCheckbox = checkbox;
+  return checkbox;
+}
+
+function wireSnapToggle(state) {
+  state.snapCheckbox = bindPersistedCheckbox(document.getElementById('ann-snap'), ANN_SNAP_STORAGE_KEY);
 }
 
 // 吸着先になる線（他の注釈の左/中央/右・上/中央/下）。動画では現在の時刻に表示されている注釈だけを対象にする

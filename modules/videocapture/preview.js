@@ -99,6 +99,7 @@
       laneEl: document.getElementById('vp-annotation-lanes'),
       getClips: timeline.getClips,
       toggleBtn: document.getElementById('vp-preview-toggle'),
+      timeSnapEl: document.getElementById('vp-time-snap'),
       startBtn: document.getElementById('vp-ann-start'),
       endBtn: document.getElementById('vp-ann-end'),
       onChange: timeline.refreshUi,
