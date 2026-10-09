@@ -3,10 +3,11 @@
  *
  * 区間バーの描画・選択・マウス／キー調整を担う。調整中はフォーカスやドラッグを失わないよう
  * id と表示ラベルが変わらない限り DOM を作り直さず、位置と aria 属性だけを更新する。
+ * 端の位置は annotation-time-snap.js により再生位置・他の注釈・クリップ境界へ吸着する。
  */
 const VIDEO_ANNOTATION_MIN_RANGE = 0.2; // 注釈区間の最小長（秒）。調整操作と、末尾付近で作る新規注釈の初期区間で保証する
 
-function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo, isEditable }) {
+function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo, isEditable, snap }) {
   const NUDGE_STEP = 0.5; // 矢印キーでの移動幅（秒）
   let dragging = null;
   let renderedSignature = '';
@@ -71,6 +72,12 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo,
     updatePositions();
   }
 
+  // 吸着した間だけバーを強調し、「どこかに揃った」ことを操作中に分かるようにする
+  function markSnapped(id, snapped) {
+    const bar = laneEl.querySelector(`[data-shape-id="${id}"]`);
+    if (bar) bar.classList.toggle('vp-ann-bar--snapped', snapped);
+  }
+
   function clampRange(shape, edge, time) {
     if (edge === 'start') return { startTime: Math.min(Math.max(0, shape.endTime - VIDEO_ANNOTATION_MIN_RANGE), Math.max(0, time)) };
     return { endTime: Math.max(Math.min(duration, shape.startTime + VIDEO_ANNOTATION_MIN_RANGE), Math.min(duration, time)) };
@@ -125,12 +132,16 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo,
       if (e.clientX !== dragging.startClientX) dragging.moved = true;
       const deltaTime = (e.clientX - dragging.startClientX) / rect.width * duration;
       const length = dragging.origin.endTime - dragging.origin.startTime;
-      const startTime = Math.min(Math.max(0, dragging.origin.startTime + deltaTime), duration - length);
+      const { delta, snapped } = snap.snapShift(dragging.origin.startTime + deltaTime, dragging.origin.endTime + deltaTime, dragging.id);
+      const startTime = Math.min(Math.max(0, dragging.origin.startTime + deltaTime + delta), duration - length);
       editor.updateShape(dragging.id, { startTime, endTime: startTime + length });
+      markSnapped(dragging.id, snapped);
     } else {
-      const time = Math.min(duration, Math.max(0, (e.clientX - rect.left) / rect.width * duration));
+      const raw = Math.min(duration, Math.max(0, (e.clientX - rect.left) / rect.width * duration));
+      const { time, snapped } = snap.snapTime(raw, dragging.id);
       const shape = editor.getShapes().find(s => s.id === dragging.id);
       editor.updateShape(shape.id, clampRange(shape, dragging.edge, time));
+      markSnapped(shape.id, snapped);
     }
   });
   document.addEventListener('mouseup', () => {
@@ -142,6 +153,7 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo,
       }
       document.body.style.cursor = '';
     }
+    markSnapped(dragging.id, false);
     editor.setForceVisible(null);
     dragging = null;
     updatePositions();
@@ -157,7 +169,7 @@ function createVideoAnnotationLanes({ laneEl, duration, editor, getTime, seekTo,
     e.preventDefault();
     const shape = editor.getShapes().find(s => s.id === Number(handle.parentElement.dataset.shapeId));
     const value = handle.dataset.edge === 'start' ? shape.startTime : shape.endTime;
-    editor.updateShape(shape.id, clampRange(shape, handle.dataset.edge, value + (e.key === 'ArrowRight' ? NUDGE_STEP : -NUDGE_STEP)));
+    editor.updateShape(shape.id, clampRange(shape, handle.dataset.edge, snap.stepTime(value, e.key === 'ArrowRight' ? NUDGE_STEP : -NUDGE_STEP, shape.id)));
   });
 
   function setEdgeToCurrentTime(id, edge) {

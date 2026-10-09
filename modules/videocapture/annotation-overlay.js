@@ -2,9 +2,10 @@
  * annotation-overlay.js — 動画上の注釈オーバーレイ制御
  *
  * 共有エディタと区間レーンを結び、再生中は rAF でフレームへ追従する。シークや動画要素の
- * 入れ替えでも即時反映するため、player の通知も併用する。
+ * 入れ替えでも即時反映するため、player の通知も併用する。再生/一時停止は1つの切替ボタンと
+ * スペースキーで操作する。
  */
-function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, laneEl, playBtn, pauseBtn, startBtn, endBtn, onChange }) {
+function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, duration, player, getClips, laneEl, toggleBtn, timeSnapEl, startBtn, endBtn, onChange }) {
   canvas.width = player.getEl().videoWidth;
   canvas.height = player.getEl().videoHeight;
   let lanes;
@@ -16,8 +17,8 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
 
   const editor = createAnnotationEditor(canvas, canvasWrap, null, {
     getTime: () => player.getEl().currentTime,
-    newRange: time => {
-      const endTime = Math.min(time + 3, duration);
+    newRange: (time, length = 3) => {
+      const endTime = Math.min(time + length, duration);
       return {
         startTime: Math.max(0, Math.min(time, endTime - VIDEO_ANNOTATION_MIN_RANGE)),
         endTime,
@@ -30,17 +31,18 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
     },
   });
 
+  const getTime = () => player.getEl().currentTime;
+  bindPersistedCheckbox(timeSnapEl, VIDEO_TIME_SNAP_STORAGE_KEY);
   lanes = createVideoAnnotationLanes({
-    laneEl, duration, editor,
-    getTime: () => player.getEl().currentTime,
+    laneEl, duration, editor, getTime,
     seekTo: player.seekTo,
     isEditable: () => annotationMode && !previewing,
+    snap: createAnnotationTimeSnap({ laneEl, duration, getTime, getClips, getShapes: editor.getShapes, isEnabled: () => timeSnapEl.checked }),
   });
 
   function updateButtons() {
     const disabled = previewing || editor.getSelectedId() == null;
-    playBtn.disabled = previewing;
-    pauseBtn.disabled = !previewing;
+    toggleBtn.textContent = previewing ? '⏸ 一時停止' : '▶ 再生';
     startBtn.disabled = disabled;
     endBtn.disabled = disabled;
   }
@@ -103,14 +105,26 @@ function createVideoAnnotationOverlay({ videoElA, videoElB, canvas, canvasWrap, 
   });
   player.onTick(refresh);
   player.onSeeked(refresh);
-  playBtn.addEventListener('click', () => {
+  function togglePlayback() {
+    if (previewing) {
+      player.getEl().pause();
+      return;
+    }
     previewing = true;
     applyLockState();
     player.getEl().play();
-  });
-  pauseBtn.addEventListener('click', () => {
-    player.getEl().pause();
-  });
+  }
+  toggleBtn.addEventListener('click', togglePlayback);
+  // スペースキーでも切り替える。入力欄・テキスト入力中や、自前でスペースを使う要素（チェックボックス等）、
+  // モーダル表示中は対象外。ボタンにフォーカスが残っていても、そのボタンを押したことにはせず再生を切り替える
+  function onSpaceKey(evt) {
+    if (evt.code !== 'Space' || evt.defaultPrevented || evt.ctrlKey || evt.metaKey || evt.altKey) return; // defaultPrevented: 分割アイコンなど、要素側が Space を処理済み
+    if (_TkUtils.usesSpaceKey(evt.target) || document.querySelector('.tm-modal-overlay:not([hidden])')) return;
+    evt.preventDefault(); // keyup 側も止めないとフォーカス中のボタンがクリックされる
+    if (evt.type === 'keydown' && !evt.repeat) togglePlayback();
+  }
+  window.addEventListener('keydown', onSpaceKey);
+  window.addEventListener('keyup', onSpaceKey);
   startBtn.addEventListener('click', () => lanes.setStart(editor.getSelectedId()));
   endBtn.addEventListener('click', () => lanes.setEnd(editor.getSelectedId()));
   lanes.render();
