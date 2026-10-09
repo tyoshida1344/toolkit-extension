@@ -89,6 +89,8 @@ function onCanvasMouseDown(state, evt) {
   evt.preventDefault();
   // preventDefault によりブラウザ既定の blur が起きないため、開いたままの入力欄はここで確定する
   closeTextEditor(state, true);
+  // 同様に、太さ・文字サイズ欄を入力途中のまま canvas を操作しても、欄の確定（範囲への補正）が走るようにする
+  if (_TkUtils.isTextEntry(document.activeElement)) document.activeElement.blur();
   const { scale, ...raw } = measurePointer(state.canvas, evt);
   // 描画の始点・テキストの位置・吹き出しの尻尾の先端は、クリックした位置を他の注釈へ吸着させる
   const p = state.currentTool === 'select' ? raw : snapPoint(state, raw.x, raw.y);

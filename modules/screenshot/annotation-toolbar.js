@@ -137,14 +137,25 @@ function wireToolbar(state) {
     if (target) targetSet(state, target, 'opacity', parseInt(state.opacityInput.value, 10) / 100);
   });
 
-  _TkUtils.clampInput(state.sizeInput);
-  state.sizeInput.addEventListener('input', () => {
+  // 入力中に最小値で丸めると、40 を打つ途中の「4」が 10 に戻されて手入力できない。
+  // 入力中は範囲内の値だけ反映して上限だけ丸め、最小値の補正は確定時（フォーカスを外す・Enter）に行う
+  function applySize(commit) {
     const target = getStyleTarget(state);
     if (!target) return;
-    const n = parseInt(state.sizeInput.value, 10);
-    if (isNaN(n)) return;
+    const min = parseInt(state.sizeInput.min, 10), max = parseInt(state.sizeInput.max, 10);
+    let n = parseInt(state.sizeInput.value, 10);
+    if (isNaN(n)) {
+      if (commit) syncStyleInputs(state); // 空のまま確定したときは現在の値に戻す
+      return;
+    }
+    if (n > max) n = max;
+    if (n < min && !commit) return;
+    n = Math.max(min, n);
+    if (commit || String(n) !== state.sizeInput.value) state.sizeInput.value = String(n);
     targetSet(state, target, isFontSizeType(targetType(target)) ? 'fontSize' : 'lineWidth', n);
-  });
+  }
+  state.sizeInput.addEventListener('input', () => applySize(false));
+  state.sizeInput.addEventListener('change', () => applySize(true));
 
   state.fillCheckbox.addEventListener('change', () => {
     const target = getStyleTarget(state);
