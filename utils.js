@@ -50,5 +50,19 @@ const _TkUtils = (() => {
     });
   }
 
-  return { $, qsa, escapeHtml, showToast, readText, clampInput };
+  // 文字を打ち込む要素か。Delete / Backspace / Ctrl+C などが入力欄自身の編集に使われるため、
+  // 画面側のショートカットを発火させてはいけない（色・スライダー・チェックボックスは文字入力ではないので含めない）
+  function isTextEntry(el) {
+    if (!el || !el.closest) return false;
+    if (el.closest('textarea, [contenteditable=""], [contenteditable="true"]')) return true;
+    const input = el.closest('input');
+    return !!input && !/^(checkbox|radio|range|color|button|submit|reset|file|image|hidden)$/i.test(input.type);
+  }
+
+  // スペースキーを自前の操作（native な開閉・切替・入力）に使う要素か
+  function usesSpaceKey(el) {
+    return isTextEntry(el) || !!(el && el.closest && el.closest('select, input[type="checkbox"], input[type="radio"], input[type="color"]'));
+  }
+
+  return { $, qsa, escapeHtml, showToast, readText, clampInput, isTextEntry, usesSpaceKey };
 })();

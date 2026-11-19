@@ -12,7 +12,8 @@ function renderScene(state) {
   const visibleShapes = state.getTime
     ? shapes.filter(s => isShapeVisibleAt(s, time) || s.id === state.forceVisibleId)
     : shapes;
-  visibleShapes.forEach(s => drawShape(ctx, s));
+  // 文字を再編集中の注釈は入力欄と二重に見えないよう、文字だけ描かない
+  visibleShapes.forEach(s => drawShape(ctx, s.id === state.editingId ? { ...s, text: '' } : s));
 
   if (state.draft) {
     ctx.save();
@@ -44,6 +45,7 @@ function renderScene(state) {
       if (handles.length) drawHandles(ctx, handles, getScale(canvas), state.accentColor);
     }
   }
+  drawSnapGuides(state);
 }
 
 function getExportDataUrl(state) {
