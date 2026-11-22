@@ -44,10 +44,9 @@ Toolkit.registerTab({
         tab = list && list[0];
       } catch (_) {}
       const desktopMode = modeEl.value === 'desktop';
-      if (!tab || (!desktopMode && !/^https?:\/\//.test(tab.url || ''))) {
-        Toolkit.showToast('⚠ このページでは撮影できません');
-        return;
-      }
+      const deniedMsg = '⚠ このページでは撮影できません';
+      if (!desktopMode && !await Toolkit.checkPageAccess(tab, deniedMsg)) return;
+      if (!tab) { Toolkit.showToast(deniedMsg); return; }
       const isPickingMode = modeEl.value === 'element' || modeEl.value === 'rect';
       const delaySeconds = isPickingMode ? 0 : (parseInt(delayEl.value, 10) || 0);
       btn.disabled = true;

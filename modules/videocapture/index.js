@@ -56,10 +56,9 @@ Toolkit.registerTab({
         tab = list && list[0];
       } catch (_) {}
       const desktopMode = modeEl.value === 'desktop';
-      if (!tab || (!desktopMode && !/^https?:\/\//.test(tab.url || ''))) {
-        Toolkit.showToast('⚠ このページでは録画できません');
-        return;
-      }
+      const deniedMsg = '⚠ このページでは録画できません';
+      if (!desktopMode && !await Toolkit.checkPageAccess(tab, deniedMsg)) return;
+      if (!tab) { Toolkit.showToast(deniedMsg); return; }
       recordBtn.disabled = true;
       statusEl.textContent = desktopMode ? '録画対象を選択中…' : modeEl.value === 'rect' ? '矩形選択を起動中…' : '録画準備中…';
       const message = desktopMode

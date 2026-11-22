@@ -111,7 +111,7 @@ async function readTabViewport(tabId) {
 async function startVideoCapture(tabId, mode) {
   if (vcRecordingTabId !== null) throw new Error('既に録画中です');
   const tab = await chrome.tabs.get(tabId);
-  if (!/^https?:\/\//i.test(tab.url || '')) throw new Error('このページでは録画できません');
+  if (!/^(https?|file):\/\//i.test(tab.url || '')) throw new Error('このページでは録画できません');
 
   const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
   const viewport = await readTabViewport(tabId);

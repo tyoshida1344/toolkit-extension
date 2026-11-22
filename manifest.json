@@ -4,7 +4,7 @@
   "version": "1.4.0",
   "description": "文字列生成・エポック変換・カラー変換・翻訳・メモ帳のオールインワンツール",
   "permissions": ["storage", "scripting", "activeTab", "tabCapture", "offscreen"],
-  "host_permissions": ["https://translate.googleapis.com/*", "http://*/*", "https://*/*"],
+  "host_permissions": ["https://translate.googleapis.com/*", "http://*/*", "https://*/*", "file:///*"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
