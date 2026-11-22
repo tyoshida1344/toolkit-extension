@@ -74,10 +74,20 @@ const _TkUtils = (() => {
     return [`${message}。`, { text: 'こちら', onClick: openDetails }, 'からファイルの URL へのアクセスを許可してください。'];
   }
 
-  // tab でツールを使えるなら true。使えなければ message をトーストで出す（file:// で設定がオフなら案内リンクを付ける）
-  async function checkPageAccess(tab, message) {
+  // ページが HTML の文書か。SVG などをそのまま開いたページ（body が無い XML 文書）には HTML の要素を重ねられない。
+  // 拡張子のない URL で配信されることもあるので、URL ではなく文書の種類で判定する
+  async function isHtmlPage(tabId) {
+    try {
+      const [res] = await chrome.scripting.executeScript({ target: { tabId }, func: () => document instanceof HTMLDocument });
+      return !!(res && res.result);
+    } catch (_) { return false; }
+  }
+
+  // tab でツールを使えるなら true。使えなければ message をトーストで出す（file:// で設定がオフなら案内リンクを付ける）。
+  // needsHtml: ページに要素を重ねるツール（スポイト・要素選択・矩形選択など）は HTML のページでしか使えない
+  async function checkPageAccess(tab, message, { needsHtml = false } = {}) {
     const access = tab ? await pageAccess(tab.url) : 'denied';
-    if (access === 'ok') return true;
+    if (access === 'ok' && (!needsHtml || await isHtmlPage(tab.id))) return true;
     showToast(access === 'file-denied' ? fileAccessHint(message) : message);
     return false;
   }
@@ -117,6 +127,6 @@ const _TkUtils = (() => {
 
   return {
     $, qsa, escapeHtml, showToast, renderMessage, readText, clampInput, isTextEntry, usesSpaceKey,
-    pageAccess, fileAccessHint, checkPageAccess,
+    pageAccess, isHtmlPage, fileAccessHint, checkPageAccess,
   };
 })();

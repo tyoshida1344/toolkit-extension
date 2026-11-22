@@ -58,10 +58,11 @@
         return (list && list[0]) || null;
       }
 
-      async function activeInjectableTab() {
+      // needsHtml: 検索バーのようにページへ要素を重ねる時は、SVG など HTML 以外のページを外す
+      async function activeInjectableTab(needsHtml = false) {
         const tab = await getActiveTab().catch(() => null);
         const access = tab ? await Toolkit.pageAccess(tab.url) : 'denied';
-        if (access === 'ok') return tab;
+        if (access === 'ok' && (!needsHtml || await Toolkit.isHtmlPage(tab.id))) return tab;
         setStatus(access === 'file-denied'
           ? Toolkit.fileAccessHint('このページでは実行できません')
           : 'このページでは実行できません（chrome:// や拡張機能ページ・PDF などは対象外）', true);
@@ -154,7 +155,7 @@
         const engine = window.SiteSearchEngine && window.SiteSearchEngine.run;
         const bar = window.SiteSearchBar && window.SiteSearchBar.install;
         if (!_scripting || !engine || !bar) { setStatus('検索バーを表示できません', true); return; }
-        const tab = await activeInjectableTab();
+        const tab = await activeInjectableTab(true);
         if (!tab) return;
         try {
           await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: engine, args: ['ensure'] });

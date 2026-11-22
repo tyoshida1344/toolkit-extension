@@ -57,7 +57,7 @@ Toolkit.registerTab({
       } catch (_) {}
       const desktopMode = modeEl.value === 'desktop';
       const deniedMsg = '⚠ このページでは録画できません';
-      if (!desktopMode && !await Toolkit.checkPageAccess(tab, deniedMsg)) return;
+      if (!desktopMode && !await Toolkit.checkPageAccess(tab, deniedMsg, { needsHtml: modeEl.value === 'rect' })) return;
       if (!tab) { Toolkit.showToast(deniedMsg); return; }
       recordBtn.disabled = true;
       statusEl.textContent = desktopMode ? '録画対象を選択中…' : modeEl.value === 'rect' ? '矩形選択を起動中…' : '録画準備中…';
