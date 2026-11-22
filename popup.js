@@ -5,7 +5,7 @@
  * 各モジュールは Toolkit.registerTab() で html / init を提供する。
  */
 const Toolkit = (() => {
-  const { $, qsa, escapeHtml, showToast, readText, clampInput } = _TkUtils;
+  const { $, qsa, escapeHtml, showToast, readText, clampInput, renderMessage, pageAccess, isHtmlPage, fileAccessHint, checkPageAccess } = _TkUtils;
   const { ICONS, iconButton, copyButton, checkLabel, outputRow, toggle, settingsRow, modalHtml } = _TkUI;
 
   /**
@@ -543,5 +543,6 @@ const Toolkit = (() => {
     saveState, loadState, bindState, isPersistEnabled, getPersistConfig, setPersistEnabled,
     getTabs, getTabsById, getTabConfig, setTabConfig, tryRegex, HISTORY_LIMIT, SYMBOLS,
     checkLabel, outputRow, toggle, settingsRow, modalHtml, INJECT_BTN_CSS,
+    renderMessage, pageAccess, isHtmlPage, fileAccessHint, checkPageAccess,
   };
 })();

@@ -1,5 +1,5 @@
 {
   "_": "viewer はエビデンスビューアのURL。driveParentFolder はエビデンスのフォルダを作る親フォルダのID(Driveの URL https://drive.google.com/drive/folders/<ID> の <ID>)。空なら利用者に聞いて書き込む。スキルの中でURLとIDを書くのはここだけ",
   "viewer": "https://tyoshida1344.github.io/dev-workbench/evidence/",
-  "driveParentFolder": ""
+  "driveParentFolder": "1uGbkHUiTseAOCaInIq-pfeNhnmOlH-5j"
 }

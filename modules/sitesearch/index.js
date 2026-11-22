@@ -2,8 +2,6 @@
   const MAX_PAGE_MATCHES = 2000;
   const MAX_TAB_MATCHES = 300;
   const MAX_LIST_RENDER = 300;
-  const INJECTABLE = /^https?:\/\//i;
-
   const blankNav = () => ({ tabId: null, count: 0, current: -1 });
 
   Toolkit.registerTab({
@@ -60,15 +58,19 @@
         return (list && list[0]) || null;
       }
 
-      async function activeInjectableTab() {
+      // needsHtml: 検索バーのようにページへ要素を重ねる時は、SVG など HTML 以外のページを外す
+      async function activeInjectableTab(needsHtml = false) {
         const tab = await getActiveTab().catch(() => null);
-        if (tab && INJECTABLE.test(tab.url || '')) return tab;
-        setStatus('このページでは実行できません（chrome:// や拡張機能ページ・PDF などは対象外）', true);
+        const access = tab ? await Toolkit.pageAccess(tab.url) : 'denied';
+        if (access === 'ok' && (!needsHtml || await Toolkit.isHtmlPage(tab.id))) return tab;
+        setStatus(access === 'file-denied'
+          ? Toolkit.fileAccessHint('このページでは実行できません')
+          : 'このページでは実行できません（chrome:// や拡張機能ページ・PDF などは対象外）', true);
         return null;
       }
 
       function clearResults() { resultsEl.innerHTML = ''; countEl.textContent = ''; }
-      function setStatus(msg, isError) { statusEl.textContent = msg || ''; statusEl.classList.toggle('ss-status-error', !!isError); }
+      function setStatus(msg, isError) { Toolkit.renderMessage(statusEl, msg || ''); statusEl.classList.toggle('ss-status-error', !!isError); }
       function setCountDisplay() {
         if (nav.count > 0) countEl.textContent = `${nav.current + 1} / ${nav.count}`;
         else if (scope === 'page') countEl.textContent = '';
@@ -79,7 +81,7 @@
         if (!query) {
           clearResults(); setStatus(''); nav = blankNav(); lastResults = null; save();
           const t = await getActiveTab().catch(() => null);
-          if (t && INJECTABLE.test(t.url || '')) runOnTab(t.id, 'clear').catch(() => {});
+          if (t && await Toolkit.pageAccess(t.url) === 'ok') runOnTab(t.id, 'clear').catch(() => {});
           return;
         }
         if (regexMode) {
@@ -114,7 +116,9 @@
       async function searchAllTabs(query) {
         lastResults = null;
         if (!_tabs) { setStatus('全タブ検索を利用できません', true); return; }
-        const tabs = (await _tabs.query({}).catch(() => [])).filter(t => INJECTABLE.test(t.url || ''));
+        const allTabs = await _tabs.query({}).catch(() => []);
+        const access = await Promise.all(allTabs.map(t => Toolkit.pageAccess(t.url)));
+        const tabs = allTabs.filter((_, i) => access[i] === 'ok'); // 設定がオフの file:// タブは chrome:// と同じく黙って外す
         if (!tabs.length) { setStatus('検索できるタブがありません', true); clearResults(); return; }
         const settled = await Promise.allSettled(
           tabs.map(t => runOnTab(t.id, 'count', { query, max: MAX_TAB_MATCHES }).then(res => ({ tab: t, res })))
@@ -151,7 +155,7 @@
         const engine = window.SiteSearchEngine && window.SiteSearchEngine.run;
         const bar = window.SiteSearchBar && window.SiteSearchBar.install;
         if (!_scripting || !engine || !bar) { setStatus('検索バーを表示できません', true); return; }
-        const tab = await activeInjectableTab();
+        const tab = await activeInjectableTab(true);
         if (!tab) return;
         try {
           await _scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: engine, args: ['ensure'] });

@@ -12,23 +12,84 @@ const _TkUtils = (() => {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // message は文字列か、文字列とリンク { text, onClick } を並べた配列。el の中身を置き換え、リンクを含むかを返す
+  function renderMessage(el, message) {
+    const parts = [].concat(message);
+    el.replaceChildren(...parts.map(p => {
+      if (typeof p === 'string') return p;
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'tm-link';
+      a.textContent = p.text;
+      a.addEventListener('click', e => { e.preventDefault(); p.onClick(); });
+      return a;
+    }));
+    return parts.some(p => typeof p !== 'string');
+  }
+
   const TOAST_DURATION = 1400;
-  let toastTimer = null;
+  const LINK_TOAST_DURATION = 6000; // リンクを押せるよう長めに出し、ホバー中は消さない
+  let toastTimer = null, toastDuration = TOAST_DURATION;
+  function hideToastLater(toast) {
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), toastDuration);
+  }
   function showToast(message = '📋 コピーしました') {
     let toast = document.getElementById('tm-toast');
     if (!toast) {
       toast = document.createElement('div');
       toast.id = 'tm-toast';
       toast.className = 'tm-toast';
+      // リンク付きのときは、マウスを乗せている間・リンクにフォーカスしている間は消さない
+      const pause = () => { if (toast.classList.contains('interactive')) clearTimeout(toastTimer); };
+      const resume = () => { if (toast.classList.contains('interactive')) hideToastLater(toast); };
+      toast.addEventListener('mouseenter', pause);
+      toast.addEventListener('focusin', pause);
+      toast.addEventListener('mouseleave', resume);
+      toast.addEventListener('focusout', resume);
       document.body.appendChild(toast);
     }
-    toast.textContent = message;
+    const hasLink = renderMessage(toast, message);
+    toastDuration = hasLink ? LINK_TOAST_DURATION : TOAST_DURATION;
     toast.classList.remove('show', 'error');
-    toast.classList.toggle('error', message.startsWith('⚠'));
+    toast.classList.toggle('error', String([].concat(message)[0]).startsWith('⚠'));
+    toast.classList.toggle('interactive', hasLink);
     void toast.offsetWidth;
     toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), TOAST_DURATION);
+    hideToastLater(toast);
+  }
+
+  // ツールがスクリプト注入・キャプチャできるページか。
+  // 'ok' / 'file-denied'（file:// だが「ファイルの URL へのアクセスを許可する」がオフ） / 'denied'（chrome:// など）
+  async function pageAccess(url) {
+    if (/^https?:\/\//i.test(url || '')) return 'ok';
+    if (!/^file:\/\//i.test(url || '')) return 'denied';
+    const allowed = await chrome.extension.isAllowedFileSchemeAccess().catch(() => false);
+    return allowed ? 'ok' : 'file-denied';
+  }
+
+  // message（例: 「⚠ このページでは撮影できません」）に、拡張機能の詳細画面へのリンク付きの案内を続ける
+  function fileAccessHint(message) {
+    const openDetails = () => chrome.tabs.create({ url: `chrome://extensions/?id=${chrome.runtime.id}` });
+    return [`${message}。`, { text: 'こちら', onClick: openDetails }, 'からファイルの URL へのアクセスを許可してください。'];
+  }
+
+  // ページが HTML の文書か。SVG などをそのまま開いたページ（body が無い XML 文書）には HTML の要素を重ねられない。
+  // 拡張子のない URL で配信されることもあるので、URL ではなく文書の種類で判定する
+  async function isHtmlPage(tabId) {
+    try {
+      const [res] = await chrome.scripting.executeScript({ target: { tabId }, func: () => document instanceof HTMLDocument });
+      return !!(res && res.result);
+    } catch (_) { return false; }
+  }
+
+  // tab でツールを使えるなら true。使えなければ message をトーストで出す（file:// で設定がオフなら案内リンクを付ける）。
+  // needsHtml: ページに要素を重ねるツール（スポイト・要素選択・矩形選択など）は HTML のページでしか使えない
+  async function checkPageAccess(tab, message, { needsHtml = false } = {}) {
+    const access = tab ? await pageAccess(tab.url) : 'denied';
+    if (access === 'ok' && (!needsHtml || await isHtmlPage(tab.id))) return true;
+    showToast(access === 'file-denied' ? fileAccessHint(message) : message);
+    return false;
   }
 
   function readText(el) {
@@ -64,5 +125,8 @@ const _TkUtils = (() => {
     return isTextEntry(el) || !!(el && el.closest && el.closest('select, input[type="checkbox"], input[type="radio"], input[type="color"]'));
   }
 
-  return { $, qsa, escapeHtml, showToast, readText, clampInput, isTextEntry, usesSpaceKey };
+  return {
+    $, qsa, escapeHtml, showToast, renderMessage, readText, clampInput, isTextEntry, usesSpaceKey,
+    pageAccess, isHtmlPage, fileAccessHint, checkPageAccess,
+  };
 })();

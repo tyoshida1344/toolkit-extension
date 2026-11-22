@@ -44,11 +44,10 @@ Toolkit.registerTab({
         tab = list && list[0];
       } catch (_) {}
       const desktopMode = modeEl.value === 'desktop';
-      if (!tab || (!desktopMode && !/^https?:\/\//.test(tab.url || ''))) {
-        Toolkit.showToast('⚠ このページでは撮影できません');
-        return;
-      }
+      const deniedMsg = '⚠ このページでは撮影できません';
       const isPickingMode = modeEl.value === 'element' || modeEl.value === 'rect';
+      if (!desktopMode && !await Toolkit.checkPageAccess(tab, deniedMsg, { needsHtml: isPickingMode })) return;
+      if (!tab) { Toolkit.showToast(deniedMsg); return; }
       const delaySeconds = isPickingMode ? 0 : (parseInt(delayEl.value, 10) || 0);
       btn.disabled = true;
       statusEl.textContent = desktopMode ? '撮影対象を選択中…' : modeEl.value === 'element' ? '要素選択を起動中…' : modeEl.value === 'rect' ? '矩形選択を起動中…' : '撮影中…';
