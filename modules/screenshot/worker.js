@@ -35,7 +35,7 @@ async function captureVisibleTabRetry(windowId) {
 
 async function captureScreenshot(tabId, mode) {
   const tab = await chrome.tabs.get(tabId);
-  if (!/^https?:\/\//i.test(tab.url || '')) throw new Error('このページでは撮影できません');
+  if (!/^(https?|file):\/\//i.test(tab.url || '')) throw new Error('このページでは撮影できません');
   const baseName = screenshotBaseName(tab.title);
   let dataUrl, truncated = false;
   if (mode === 'fullpage') {

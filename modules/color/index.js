@@ -97,10 +97,7 @@ Toolkit.registerTab({
         const list = await tabs.query({ active: true, currentWindow: true });
         tab = list && list[0];
       } catch (_) {}
-      if (!tab || !/^https?:\/\//.test(tab.url || '')) {
-        Toolkit.showToast('⚠ このページではスポイト機能を使用できません');
-        return;
-      }
+      if (!await Toolkit.checkPageAccess(tab, '⚠ このページではスポイト機能を使用できません', { needsHtml: true })) return;
       let dataUrl;
       try {
         dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });

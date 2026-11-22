@@ -20,29 +20,29 @@ function getStyleTarget(state) {
 
 function targetType(target) { return target.shape ? target.shape.type : target.tool; }
 
+// 未選択時（次に描く図形の既定値）の各フィールドに対応する state のキー
+const STYLE_DEFAULT_KEYS = {
+  color: 'currentColor', textColor: 'currentTextColor', opacity: 'currentOpacity', lineWidth: 'currentLineWidth',
+  fontSize: 'currentFontSize', fill: 'currentFill', fillColor: 'currentFillColor', fillOpacity: 'currentFillOpacity',
+};
+
+// テキストツールの「色」は、吹き出しの文字色と共通の文字色の既定値を使う
+function defaultKey(target, field) {
+  return STYLE_DEFAULT_KEYS[target.tool === 'text' && field === 'color' ? 'textColor' : field];
+}
+
 function targetGet(state, target, field) {
-  if (target.shape) return target.shape[field];
-  switch (field) {
-    case 'color': return state.currentColor;
-    case 'opacity': return state.currentOpacity;
-    case 'lineWidth': return state.currentLineWidth;
-    case 'fontSize': return state.currentFontSize;
-    case 'fill': return state.currentFill;
-    case 'fillColor': return state.currentFillColor;
-    case 'fillOpacity': return state.currentFillOpacity;
-    default: return undefined;
-  }
+  return target.shape ? target.shape[field] : state[defaultKey(target, field)];
 }
 
 function targetSet(state, target, field, value) {
   if (target.shape) { target.shape[field] = value; renderScene(state); state.onChange(); return; }
-  if (field === 'color') state.currentColor = value;
-  else if (field === 'opacity') state.currentOpacity = value;
-  else if (field === 'lineWidth') state.currentLineWidth = value;
-  else if (field === 'fontSize') state.currentFontSize = value;
-  else if (field === 'fill') state.currentFill = value;
-  else if (field === 'fillColor') state.currentFillColor = value;
-  else if (field === 'fillOpacity') state.currentFillOpacity = value;
+  state[defaultKey(target, field)] = value;
+}
+
+function setInputLabel(input, label) {
+  input.title = label;
+  input.setAttribute('aria-label', label);
 }
 
 function syncStyleInputs(state) {
@@ -50,19 +50,24 @@ function syncStyleInputs(state) {
   state.styleFieldsEl.hidden = !target;
   state.styleHintEl.hidden = !!target;
   state.deleteBtn.hidden = !(target && target.shape);
+  state.orderGroupEl.hidden = !(target && target.shape);
   if (!target) return;
 
   const type = targetType(target);
   const isFontType = isFontSizeType(type);
   const label = isFontType ? '文字サイズ' : '太さ';
   state.sizeLabel.textContent = label;
-  state.sizeInput.title = label;
-  state.sizeInput.setAttribute('aria-label', label);
+  setInputLabel(state.sizeInput, label);
   state.sizeInput.min = isFontType ? '10' : '1';
   state.sizeInput.max = isFontType ? '72' : '20';
   state.sizeInput.value = String(isFontType ? targetGet(state, target, 'fontSize') : targetGet(state, target, 'lineWidth'));
 
+  const isBubble = type === 'bubble';
+  setInputLabel(state.colorInput, isBubble ? '枠の色' : type === 'text' ? '文字色' : '色');
+  state.colorLabel.hidden = !isBubble;
   state.colorInput.value = targetGet(state, target, 'color');
+  state.textColorGroupEl.hidden = !isBubble;
+  if (isBubble) state.textColorInput.value = targetGet(state, target, 'textColor');
   state.opacityInput.value = String(Math.round(targetGet(state, target, 'opacity') * 100));
   state.opacityLabel.textContent = `${state.opacityInput.value}%`;
 
@@ -77,6 +82,7 @@ function syncStyleInputs(state) {
     state.fillOpacityInput.value = String(Math.round(targetGet(state, target, 'fillOpacity') * 100));
     state.fillOpacityLabel.textContent = `${state.fillOpacityInput.value}%`;
   }
+  syncOrderButtons(state, target.shape);
 }
 
 function selectShape(state, id) {
@@ -89,6 +95,7 @@ function selectShape(state, id) {
 function setTool(state, tool) {
   closeTextEditor(state, true);
   state.draft = null;
+  state.guides = [];
   cancelBubbleAwaitingTail(state);
   state.dragMove = null;
   state.resizeDrag = null;
@@ -110,6 +117,9 @@ function wireToolbar(state) {
   state.styleFieldsEl = document.getElementById('ann-style-fields');
   state.styleHintEl = document.getElementById('ann-style-hint');
   state.colorInput = document.getElementById('ann-color');
+  state.colorLabel = document.getElementById('ann-color-label');
+  state.textColorGroupEl = document.getElementById('ann-text-color-group');
+  state.textColorInput = document.getElementById('ann-text-color');
   state.opacityInput = document.getElementById('ann-opacity');
   state.opacityLabel = document.getElementById('ann-opacity-label');
   state.sizeInput = document.getElementById('ann-size');
@@ -121,6 +131,8 @@ function wireToolbar(state) {
   state.fillOpacityLabel = document.getElementById('ann-fill-opacity-label');
   state.deleteBtn = document.getElementById('ann-delete');
   state.deleteBtn.insertAdjacentHTML('afterbegin', _TkUI.ICONS.trash);
+  wireSnapToggle(state);
+  wireOrderButtons(state);
 
   toolButtons.forEach(btn => btn.addEventListener('click', () => setTool(state, btn.dataset.tool)));
 
@@ -129,20 +141,36 @@ function wireToolbar(state) {
     if (target) targetSet(state, target, 'color', state.colorInput.value);
   });
 
+  state.textColorInput.addEventListener('input', () => {
+    const target = getStyleTarget(state);
+    if (target) targetSet(state, target, 'textColor', state.textColorInput.value);
+  });
+
   state.opacityInput.addEventListener('input', () => {
     const target = getStyleTarget(state);
     state.opacityLabel.textContent = `${state.opacityInput.value}%`;
     if (target) targetSet(state, target, 'opacity', parseInt(state.opacityInput.value, 10) / 100);
   });
 
-  _TkUtils.clampInput(state.sizeInput);
-  state.sizeInput.addEventListener('input', () => {
+  // 入力中に最小値で丸めると、40 を打つ途中の「4」が 10 に戻されて手入力できない。
+  // 入力中は範囲内の値だけ反映して上限だけ丸め、最小値の補正は確定時（フォーカスを外す・Enter）に行う
+  function applySize(commit) {
     const target = getStyleTarget(state);
     if (!target) return;
-    const n = parseInt(state.sizeInput.value, 10);
-    if (isNaN(n)) return;
+    const min = parseInt(state.sizeInput.min, 10), max = parseInt(state.sizeInput.max, 10);
+    let n = parseInt(state.sizeInput.value, 10);
+    if (isNaN(n)) {
+      if (commit) syncStyleInputs(state); // 空のまま確定したときは現在の値に戻す
+      return;
+    }
+    if (n > max) n = max;
+    if (n < min && !commit) return;
+    n = Math.max(min, n);
+    if (commit || String(n) !== state.sizeInput.value) state.sizeInput.value = String(n);
     targetSet(state, target, isFontSizeType(targetType(target)) ? 'fontSize' : 'lineWidth', n);
-  });
+  }
+  state.sizeInput.addEventListener('input', () => applySize(false));
+  state.sizeInput.addEventListener('change', () => applySize(true));
 
   state.fillCheckbox.addEventListener('change', () => {
     const target = getStyleTarget(state);

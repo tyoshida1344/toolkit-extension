@@ -26,7 +26,7 @@ function shapeBounds(ctx, s) {
   }
   if (s.type === 'bubble') return bubbleRect(s);
   ctx.font = `${s.fontSize}px ${ANN_FONT_FAMILY}`;
-  const lineHeight = s.fontSize * 1.3;
+  const lineHeight = s.fontSize * ANN_LINE_HEIGHT;
   const lines = textLines(s);
   const w = Math.max(...lines.map(l => ctx.measureText(l).width), 1);
   return { x: s.x, y: s.y, w, h: lineHeight * Math.max(lines.length, 1) };
@@ -104,6 +104,13 @@ function applyResize(s, handleId, original, dx, dy) {
   if (handleId.includes('n')) top = Math.min(original.bottom - RESIZE_MIN, original.top + dy);
   if (handleId.includes('s')) bottom = Math.max(original.top + RESIZE_MIN, original.bottom + dy);
   s.x1 = left; s.y1 = top; s.x2 = right; s.y2 = bottom;
+}
+
+// 移動の基点（ドラッグ開始時・コピペ時の座標）。applyMoveDelta に渡す
+function captureMoveOrigin(s) {
+  return s.type === 'text'
+    ? { x: s.x, y: s.y }
+    : { x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, tailX: s.tailX, tailY: s.tailY };
 }
 
 function applyMoveDelta(s, origin, dx, dy) {

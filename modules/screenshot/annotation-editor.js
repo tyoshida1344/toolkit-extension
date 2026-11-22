@@ -2,7 +2,7 @@
  * annotation-editor.js — 注釈エディタのエントリポイント
  *
  * state を組み立て、annotation-shapes / annotation-geometry / annotation-render /
- * annotation-toolbar / annotation-interactions の配線を行う。preview.js から呼び出される。
+ * annotation-toolbar / annotation-order / annotation-interactions（テキスト入力・キーボード・コピペ・吸着を含む）の配線を行う。preview.js から呼び出される。
  */
 function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
   const state = {
@@ -14,6 +14,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
     nextId: 1,
     currentTool: 'rect',
     currentColor: '#ff3b30',
+    currentTextColor: '#000000', // テキスト注釈の色・吹き出しの文字色の既定値（図形の色とは独立に変更できる）
     currentOpacity: 1, // 0-1
     currentLineWidth: 3,
     currentFontSize: 20,
@@ -27,6 +28,9 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
     dragMove: null, // 選択中の図形をドラッグ移動中の状態 { id, origin, startPoint }
     resizeDrag: null, // 選択中の図形をハンドルでリサイズ中の状態 { id, handleId, original, startPoint }
     textEditorEl: null,
+    editingId: null, // 文字を再編集中の注釈 id（入力欄と二重に見えないよう描画側で文字を隠す）
+    clipboard: null, // コピー中の注釈 { shape, pasteCount }（同じプレビュー画面内のみ有効）
+    guides: [], // 位置揃えで吸着中のガイド線 [{ axis: 'x'|'y', pos }]
     getTime: options.getTime || null,
     newRange: options.newRange || null,
     onChange: options.onChange || (() => {}),

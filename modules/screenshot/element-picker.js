@@ -246,7 +246,7 @@ function elementPickerOverlay(shotIntervalMs, maxShots) {
 
 async function runElementPicker(tabId) {
   const tab = await chrome.tabs.get(tabId);
-  if (!/^https?:\/\//i.test(tab.url || '')) throw new Error('このページでは選択できません');
+  if (!/^(https?|file):\/\//i.test(tab.url || '')) throw new Error('このページでは選択できません');
   await chrome.scripting.executeScript({
     target: { tabId },
     func: elementPickerOverlay,
