@@ -11,8 +11,13 @@ const BUBBLE_PAD_Y = 10;
 
 function textLines(s) { return (s.text || '').split('\n'); }
 
-// 英単語（空白を含まない ASCII・ラテン文字の連なり）は単語単位、それ以外は1文字単位で区切る
-const WRAP_TOKEN_RE = /[\x21-\x7EÀ-ɏ]+[ \t]*|[ \t]+|./gu;
+// 行頭に置かない閉じ括弧・句読点と、行末に置かない開き括弧（入力欄の textarea と同じく禁則処理する）
+const WRAP_NO_START = '、。，．,.!?！？)）」』】〕〉》］｝:：;；…‥';
+const WRAP_NO_END = '（「『【〔〈《［｛';
+// 英単語（空白を含まない ASCII・ラテン文字の連なり）は単語単位、それ以外は1文字単位で区切る。
+// 禁則文字は前後の文字と同じ区切りに含め、その間では折り返さない
+const WRAP_TOKEN_RE = new RegExp(
+  `[\x21-\x7E\u00C0-\u024F]+[${WRAP_NO_START}]*[ \t]*|[ \t]+|[${WRAP_NO_END}]*.[${WRAP_NO_START}]*`, 'gu');
 
 // 入力欄（textarea）と同じ位置で折り返すよう、maxWidth を超える手前で行を分ける。
 // 1単語が maxWidth より長い場合は文字単位で折る
