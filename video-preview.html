@@ -203,8 +203,13 @@
             <span class="tm-inline" id="ann-style-fields">
               <span class="ann-field-group">
                 <input type="color" class="ann-color-input" id="ann-color" value="#ff3b30" title="色" aria-label="色">
+                <span class="ann-size-label" id="ann-color-label" hidden>枠</span>
                 <input type="range" class="ann-opacity-input" id="ann-opacity" min="0" max="100" value="100" title="不透明度" aria-label="不透明度">
                 <span class="ann-size-label" id="ann-opacity-label">100%</span>
+              </span>
+              <span class="ann-field-group" id="ann-text-color-group" hidden>
+                <input type="color" class="ann-color-input" id="ann-text-color" value="#000000" title="文字色" aria-label="文字色">
+                <span class="ann-size-label">文字色</span>
               </span>
               <span class="ann-field-group">
                 <input type="number" class="tm-input ann-size-input" id="ann-size" min="1" max="20" value="3" title="太さ" aria-label="太さ">
@@ -218,6 +223,13 @@
                   <span class="ann-size-label" id="ann-fill-opacity-label" hidden>100%</span>
                 </span>
               </span>
+            </span>
+            <span class="ann-field-group" id="ann-order-group" hidden>
+              <button type="button" class="tm-icon-btn ann-tip-btn ann-order-btn" data-order="front" data-tip="最前面へ（Ctrl+Shift+↑）" aria-label="最前面へ"></button>
+              <button type="button" class="tm-icon-btn ann-tip-btn ann-order-btn" data-order="forward" data-tip="前面へ（Ctrl+↑）" aria-label="前面へ"></button>
+              <button type="button" class="tm-icon-btn ann-tip-btn ann-order-btn" data-order="backward" data-tip="背面へ（Ctrl+↓）" aria-label="背面へ"></button>
+              <button type="button" class="tm-icon-btn ann-tip-btn ann-order-btn" data-order="back" data-tip="最背面へ（Ctrl+Shift+↓）" aria-label="最背面へ"></button>
+              <span class="ann-size-label">重なり順</span>
             </span>
             <span class="ann-size-label" id="ann-style-hint">オブジェクトをクリックすると編集できます</span>
             <button type="button" class="tm-btn tm-btn-danger tm-btn-sm ann-tip-btn" id="ann-delete" data-tip="選択中のオブジェクトを削除（Delete / Backspace）" hidden>削除</button>
@@ -255,6 +267,7 @@
   <script src="modules/screenshot/annotation-geometry.js"></script>
   <script src="modules/screenshot/annotation-render.js"></script>
   <script src="modules/screenshot/annotation-toolbar.js"></script>
+  <script src="modules/screenshot/annotation-order.js"></script>
   <script src="modules/screenshot/annotation-snap.js"></script>
   <script src="modules/screenshot/annotation-text-editor.js"></script>
   <script src="modules/screenshot/annotation-clipboard.js"></script>

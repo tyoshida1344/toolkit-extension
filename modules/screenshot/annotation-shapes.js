@@ -5,7 +5,36 @@
  */
 const ANN_FONT_FAMILY = "'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif";
 
+const ANN_LINE_HEIGHT = 1.3; // 入力欄（.ann-text-editor の line-height）と揃える
+const BUBBLE_PAD_X = 14; // 吹き出しの枠と文字の間の余白（キャンバス内座標）
+const BUBBLE_PAD_Y = 10;
+
 function textLines(s) { return (s.text || '').split('\n'); }
+
+// 英単語（空白を含まない ASCII・ラテン文字の連なり）は単語単位、それ以外は1文字単位で区切る
+const WRAP_TOKEN_RE = /[\x21-\x7EÀ-ɏ]+[ \t]*|[ \t]+|./gu;
+
+// 入力欄（textarea）と同じ位置で折り返すよう、maxWidth を超える手前で行を分ける。
+// 1単語が maxWidth より長い場合は文字単位で折る
+function wrapText(c, text, maxWidth) {
+  const fits = str => c.measureText(str).width <= maxWidth;
+  const out = [];
+  text.split('\n').forEach(para => {
+    let line = '';
+    (para.match(WRAP_TOKEN_RE) || []).forEach(tok => {
+      if (fits((line + tok).trimEnd())) { line += tok; return; }
+      if (line) { out.push(line.trimEnd()); line = ''; }
+      if (!tok.trim()) return; // 折り返し位置の空白は次の行頭に持ち越さない
+      if (fits(tok.trimEnd())) { line = tok; return; }
+      for (const ch of tok) {
+        if (!line || fits(line + ch)) line += ch;
+        else { out.push(line); line = ch; }
+      }
+    });
+    out.push(line.trimEnd());
+  });
+  return out;
+}
 
 function isShapeVisibleAt(shape, time) {
   return shape.startTime == null || (shape.startTime <= time && time <= shape.endTime);
@@ -45,12 +74,20 @@ function drawArrowShape(c, s) {
 
 function drawTextShape(c, s) {
   c.fillStyle = s.color; c.font = `${s.fontSize}px ${ANN_FONT_FAMILY}`; c.textBaseline = 'top';
-  const lineHeight = s.fontSize * 1.3;
+  const lineHeight = s.fontSize * ANN_LINE_HEIGHT;
   textLines(s).forEach((line, i) => c.fillText(line, s.x, s.y + i * lineHeight));
 }
 
 function bubbleRect(s) {
   return { x: Math.min(s.x1, s.x2), y: Math.min(s.y1, s.y2), w: Math.abs(s.x2 - s.x1), h: Math.abs(s.y2 - s.y1) };
+}
+
+// 吹き出しの文字を置く領域（枠から余白を除いた内側）
+function bubbleContentRect(rect) {
+  return {
+    x: rect.x + BUBBLE_PAD_X, y: rect.y + BUBBLE_PAD_Y,
+    w: Math.max(0, rect.w - BUBBLE_PAD_X * 2), h: Math.max(0, rect.h - BUBBLE_PAD_Y * 2),
+  };
 }
 
 // 吹き出し本体の枠上で、尻尾の先端 (px, py) に最も近い辺の位置を求める
@@ -96,13 +133,15 @@ function drawBubbleShape(c, s) {
   c.strokeStyle = s.color; c.lineWidth = BORDER; c.stroke();
 
   if (s.text) {
+    const box = bubbleContentRect(rect);
     c.save();
     c.beginPath();
-    c.rect(rect.x + 8, rect.y + 6, Math.max(0, rect.w - 16), Math.max(0, rect.h - 12));
+    c.rect(box.x, box.y, box.w, box.h);
     c.clip();
-    c.fillStyle = s.color; c.font = `${s.fontSize}px ${ANN_FONT_FAMILY}`; c.textBaseline = 'top';
-    const lineHeight = s.fontSize * 1.3;
-    textLines(s).forEach((line, i) => c.fillText(line, rect.x + 8, rect.y + 6 + i * lineHeight));
+    c.fillStyle = s.textColor || s.color; c.font = `${s.fontSize}px ${ANN_FONT_FAMILY}`; c.textBaseline = 'top';
+    const lineHeight = s.fontSize * ANN_LINE_HEIGHT;
+    const leading = (lineHeight - s.fontSize) / 2; // 入力欄と同じく行の高さの上下に均等な余白を取る
+    wrapText(c, s.text, box.w).forEach((line, i) => c.fillText(line, box.x, box.y + leading + i * lineHeight));
     c.restore();
   }
 }

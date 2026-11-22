@@ -26,7 +26,7 @@ function shapeBounds(ctx, s) {
   }
   if (s.type === 'bubble') return bubbleRect(s);
   ctx.font = `${s.fontSize}px ${ANN_FONT_FAMILY}`;
-  const lineHeight = s.fontSize * 1.3;
+  const lineHeight = s.fontSize * ANN_LINE_HEIGHT;
   const lines = textLines(s);
   const w = Math.max(...lines.map(l => ctx.measureText(l).width), 1);
   return { x: s.x, y: s.y, w, h: lineHeight * Math.max(lines.length, 1) };

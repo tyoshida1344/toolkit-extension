@@ -2,7 +2,7 @@
  * annotation-editor.js — 注釈エディタのエントリポイント
  *
  * state を組み立て、annotation-shapes / annotation-geometry / annotation-render /
- * annotation-toolbar / annotation-interactions（テキスト入力・キーボード・コピペ・吸着を含む）の配線を行う。preview.js から呼び出される。
+ * annotation-toolbar / annotation-order / annotation-interactions（テキスト入力・キーボード・コピペ・吸着を含む）の配線を行う。preview.js から呼び出される。
  */
 function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
   const state = {
@@ -14,6 +14,7 @@ function createAnnotationEditor(canvas, canvasWrap, baseImage, options = {}) {
     nextId: 1,
     currentTool: 'rect',
     currentColor: '#ff3b30',
+    currentTextColor: '#000000', // テキスト注釈の色・吹き出しの文字色の既定値（図形の色とは独立に変更できる）
     currentOpacity: 1, // 0-1
     currentLineWidth: 3,
     currentFontSize: 20,
