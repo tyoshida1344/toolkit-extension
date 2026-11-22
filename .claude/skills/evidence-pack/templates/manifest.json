@@ -1,0 +1,28 @@
+{
+  "schema": "dev-workbench/evidence@1",
+  "title": "PR #0 ここに確認したことの見出し",
+  "source": {
+    "repository": "owner/name",
+    "pullRequest": 0,
+    "commit": "0000000",
+    "url": "https://github.com/owner/name/pull/0"
+  },
+  "recordedAt": "2026-01-01",
+  "summary": { "ok": 1, "partial": 0, "ng": 0 },
+  "notes": ["確かめた環境や前提をここに書く(無ければこの行ごと消す)"],
+  "sections": [
+    {
+      "title": "節の名前",
+      "items": [
+        {
+          "id": "1",
+          "title": "受入確認の文言をそのまま書く",
+          "result": "ok",
+          "checks": ["○ 実際に画面に出た値を書く"],
+          "image": "01-slug.png"
+        }
+      ]
+    }
+  ],
+  "attachments": []
+}
