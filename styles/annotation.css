@@ -8,7 +8,8 @@
 .ann-toolbar > .tm-inline:nth-child(2) { flex-direction: column; align-items: stretch; }
 #ann-style-fields { width: 100%; flex-direction: column; align-items: stretch; }
 /* .tm-inline / .tm-btn / .tm-check-label は display:flex 系を持つため、[hidden] だけでは隠れない（.tm-tab[hidden] 等と同じ対処） */
-#ann-toolbar[hidden], #ann-style-fields[hidden], #ann-delete[hidden], #ann-fill-group[hidden] { display: none; }
+#ann-toolbar[hidden], #ann-style-fields[hidden], #ann-delete[hidden], #ann-fill-group[hidden],
+#ann-text-color-group[hidden], #ann-order-group[hidden] { display: none; }
 /* 色・不透明度と太さの枠は、中身の量に関わらず高さを揃える */
 .ann-field-group {
   display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 44px;
@@ -28,6 +29,14 @@
   z-index: 10;
 }
 .ann-tool-btn:hover::after, .ann-tip-btn:hover::after { opacity: 1; }
+#ann-order-group { gap: 4px; }
+/* 無効時もホバーでツールチップは出し、押せないことだけを薄さとカーソルで示す。
+   ボタン自体に opacity を付けると重ね合わせの文脈が作られ、ツールチップが後続の削除ボタンの下に隠れるうえ
+   ツールチップまで薄くなるため、アイコンだけを薄くする */
+.ann-order-btn:disabled { cursor: default; }
+.ann-order-btn:disabled .tm-ico { opacity: .35; }
+.ann-order-btn:disabled:hover { background: none; color: inherit; }
+.ann-order-btn:disabled:active { transform: none; }
 #ann-delete { gap: 6px; }
 #ann-delete .tm-ico { width: 14px; height: 14px; }
 .ann-color-input {

@@ -17,6 +17,21 @@ function closeTextEditor(state, commit) {
   if (wasEditing) renderScene(state); // 再編集中に隠していた元の文字を戻す（キャンセル時もここで復元する）
 }
 
+const EDITOR_INSET_X = 5; // .ann-text-editor の border(1px)＋左右 padding(4px)（CSS px）
+const EDITOR_INSET_Y = 3; // .ann-text-editor の border(1px)＋上下 padding(2px)（CSS px）
+
+// 吹き出しの入力欄は、入力欄内の文字が描画後の文字と同じ位置・同じ折り返し幅になるよう配置する
+function bubbleEditorOpts(shape, scale, onCommit) {
+  const box = bubbleContentRect(bubbleRect(shape));
+  return {
+    cssX: box.x * scale - EDITOR_INSET_X, cssY: box.y * scale - EDITOR_INSET_Y,
+    // 小さすぎる吹き出しでも入力欄が潰れないよう最小サイズを確保する
+    cssWidth: Math.max(20, box.w * scale) + EDITOR_INSET_X * 2, cssHeight: Math.max(16, box.h * scale) + EDITOR_INSET_Y * 2,
+    color: shape.textColor || shape.color, fontSize: shape.fontSize, scale, resizable: false, autoGrow: false,
+    initialText: shape.text, onCommit,
+  };
+}
+
 function openTextEditor(state, opts) {
   closeTextEditor(state, true);
   const el = document.createElement('textarea');
@@ -58,13 +73,7 @@ function reeditShapeText(state, shape) {
   state.editingId = shape.id; // 入力欄の下に元の文字が二重に見えないよう、確定/キャンセルまで描画しない
   renderScene(state);
   if (shape.type === 'bubble') {
-    const rect = bubbleRect(shape);
-    openTextEditor(state, {
-      cssX: (rect.x + 8) * scale, cssY: (rect.y + 6) * scale,
-      cssWidth: Math.max(20, (rect.w - 16) * scale), cssHeight: Math.max(16, (rect.h - 12) * scale),
-      color: shape.color, fontSize: shape.fontSize, scale, resizable: false, autoGrow: false,
-      initialText: shape.text, onCommit: commit,
-    });
+    openTextEditor(state, bubbleEditorOpts(shape, scale, commit));
     return;
   }
   const b = shapeBounds(state.ctx, shape);

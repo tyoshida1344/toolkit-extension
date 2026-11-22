@@ -1,7 +1,8 @@
 /**
  * annotation-keyboard.js — 注釈エディタのキーボードショートカット
  *
- * Escape（操作のキャンセル）、Delete / Backspace（削除）、Ctrl/Cmd+C・V（コピペ）を扱う。
+ * Escape（操作のキャンセル）、Delete / Backspace（削除）、Ctrl/Cmd+C・V（コピペ）、
+ * Ctrl/Cmd+↑・↓（前後関係。Shift 付きで最前面・最背面）を扱う。
  * 入力欄（太さ・文字サイズなど）で文字を編集しているときは、そのキー操作を注釈の操作として扱わない。
  */
 function wireKeyboard(state) {
@@ -18,6 +19,13 @@ function wireKeyboard(state) {
     if ((evt.key === 'Delete' || evt.key === 'Backspace') && state.currentTool === 'select' && state.selectedId != null) {
       evt.preventDefault();
       state.deleteBtn.click();
+      return;
+    }
+    if ((evt.ctrlKey || evt.metaKey) && !evt.altKey && (evt.key === 'ArrowUp' || evt.key === 'ArrowDown')) {
+      if (state.selectedId == null) return;
+      evt.preventDefault();
+      const up = evt.key === 'ArrowUp';
+      reorderSelectedShape(state, evt.shiftKey ? (up ? 'front' : 'back') : (up ? 'forward' : 'backward'));
       return;
     }
     if ((evt.ctrlKey || evt.metaKey) && !evt.altKey && !evt.shiftKey && !String(window.getSelection()).length) {

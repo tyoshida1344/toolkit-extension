@@ -29,6 +29,14 @@ const _TkUI = (() => {
       '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>'),
     text: svgIco('',
       '<polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>'),
+    'order-front': svgIco('',
+      '<line x1="5" y1="4" x2="19" y2="4"></line><line x1="12" y1="20" x2="12" y2="9"></line><polyline points="7 14 12 9 17 14"></polyline>'),
+    'order-forward': svgIco('',
+      '<line x1="12" y1="19" x2="12" y2="5"></line><polyline points="6 11 12 5 18 11"></polyline>'),
+    'order-backward': svgIco('',
+      '<line x1="12" y1="5" x2="12" y2="19"></line><polyline points="6 13 12 19 18 13"></polyline>'),
+    'order-back': svgIco('',
+      '<line x1="5" y1="20" x2="19" y2="20"></line><line x1="12" y1="4" x2="12" y2="15"></line><polyline points="7 10 12 15 17 10"></polyline>'),
     trash: svgIco('',
       '<polyline points="3 6 5 6 21 6"></polyline>' +
       '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>' +

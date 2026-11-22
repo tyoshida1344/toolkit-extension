@@ -99,18 +99,12 @@ function onCanvasMouseDown(state, evt) {
   if (state.currentTool === 'bubble' && state.bubbleAwaitingTail) {
     const body = state.bubbleAwaitingTail;
     cancelBubbleAwaitingTail(state);
-    const rect = bubbleRect(body);
     const shape = addAnnotationShape(state, {
-      type: 'bubble', color: state.currentColor, opacity: state.currentOpacity, fontSize: state.currentFontSize,
-      x1: body.x1, y1: body.y1, x2: body.x2, y2: body.y2, tailX: p.x, tailY: p.y, text: '',
+      type: 'bubble', color: state.currentColor, textColor: state.currentTextColor, opacity: state.currentOpacity,
+      fontSize: state.currentFontSize, x1: body.x1, y1: body.y1, x2: body.x2, y2: body.y2, tailX: p.x, tailY: p.y, text: '',
     });
     renderScene(state);
-    openTextEditor(state, {
-      cssX: (rect.x + 8) * scale, cssY: (rect.y + 6) * scale,
-      cssWidth: Math.max(20, (rect.w - 16) * scale), cssHeight: Math.max(16, (rect.h - 12) * scale),
-      color: state.currentColor, fontSize: state.currentFontSize, scale, resizable: false, autoGrow: false,
-      onCommit: text => { shape.text = text; renderScene(state); state.onChange(); },
-    });
+    openTextEditor(state, bubbleEditorOpts(shape, scale, text => { shape.text = text; renderScene(state); state.onChange(); }));
     return;
   }
 
@@ -138,10 +132,10 @@ function onCanvasMouseDown(state, evt) {
     openTextEditor(state, {
       cssX: p.x * scale, cssY: p.y * scale,
       cssWidth: Math.max(100, 160 * scale), cssHeight: state.currentFontSize * scale * 1.6,
-      color: state.currentColor, fontSize: state.currentFontSize, scale, resizable: true, autoGrow: true,
+      color: state.currentTextColor, fontSize: state.currentFontSize, scale, resizable: true, autoGrow: true,
       onCommit: text => {
         if (!text.trim()) return;
-        addAnnotationShape(state, { type: 'text', color: state.currentColor, opacity: state.currentOpacity, fontSize: state.currentFontSize, x: p.x, y: p.y, text });
+        addAnnotationShape(state, { type: 'text', color: state.currentTextColor, opacity: state.currentOpacity, fontSize: state.currentFontSize, x: p.x, y: p.y, text });
         renderScene(state);
       },
     });
